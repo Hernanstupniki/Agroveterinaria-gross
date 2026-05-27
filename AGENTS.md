@@ -1,7 +1,107 @@
-# AGENTS.md - MAMAYUCCA / OrdenYa v2 Session Operating Contract
+# AGENTS.md - Agroveterinaria Gross Session Operating Contract
+
+> Current project override, updated for this repository.
+> Any older references to MAMAYUCCA, OrdenYa, n8n, Prisma, Supabase, Vercel, WhatsApp bot automation, or e-commerce modules are historical carry-over unless the current user request explicitly asks for them.
+> Do not edit the VPS connection reference section unless the user explicitly asks to update those connection details.
+
+---
+
+## Current Project Overview
+
+**Agroveterinaria Gross** is a Next.js web app for veterinary/agroveterinary clinic management. It includes dashboard, clients, pets, clinical history, vaccines, studies/files, treatments, appointments, surgeries, WhatsApp reminders, operations and system configuration screens.
+
+### Current Stack
+
+- Next.js 16.2.6
+- React 19
+- TypeScript
+- Tailwind CSS v4
+- shadcn/ui-style component set
+- lucide-react icons
+- pnpm
+- Static/mock data in `lib/mock-data.ts`
+- Public assets in `public/`
+
+### Current Repository
+
+- GitHub: `https://github.com/Hernanstupniki/Agroveterinaria-gross`
+- Main branch: `main`
+
+### Current Production Target
+
+- App domain: `https://agroveterinariagross.zubuagency.com`
+- Deployment platform requested for this project: Dokploy on the VPS.
+
+### Current Developer Commands
+
+Use `pnpm` only:
+
+```bash
+pnpm dev
+pnpm build
+pnpm lint
+```
+
+Known local note: `pnpm lint` may fail if `eslint` is not installed in the project dependencies. Use `pnpm build` as the reliable current verification command unless lint is fixed.
+
+### Current App Structure
+
+```txt
+app/
+  layout.tsx
+  page.tsx
+  clientes/
+  mascotas/
+  historial/
+  vacunas/
+  estudios/
+  tratamientos/
+  turnos/
+  cirugias/
+  operaciones/
+  recordatorios/
+  configuracion/
+
+components/
+  layout/
+  dashboard/
+  clientes/
+  mascotas/
+  historial/
+  vacunas/
+  estudios/
+  tratamientos/
+  turnos/
+  cirugias/
+  operaciones/
+  recordatorios/
+  configuracion/
+  ui/
+
+lib/
+  mock-data.ts
+  utils.ts
+
+public/
+  agroveterinaria-gross.png
+  favicon-*.png
+```
+
+### Current Deployment Rules
+
+Before deploying:
+
+1. Inspect local git status.
+2. Build locally with `pnpm build`.
+3. Commit intended changes.
+4. Push to `origin/main`.
+5. Use Dokploy connected to `Hernanstupniki/Agroveterinaria-gross`.
+6. Verify `https://agroveterinariagross.zubuagency.com` responds after deploy.
+
+Preserve production data and existing VPS/Dokploy state. Prefer Dokploy's normal Git-based deployment flow over manual file replacement.
 
 > Read this file immediately after every user request and before taking any action.
-> This is the mandatory operating contract for the MAMAYUCCA / OrdenYa v2 CRM/ERP workspace.
+> This is the mandatory operating contract for this workspace. The current project override above supersedes stale project references below.
 
 ---
 
