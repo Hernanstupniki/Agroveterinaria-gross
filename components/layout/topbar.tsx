@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useState } from "react"
 import { Search, Bell, User, ChevronDown, PawPrint } from "lucide-react"
 import { Input } from "@/components/ui/input"
@@ -27,13 +28,16 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Badge } from "@/components/ui/badge"
+import { mascotas } from "@/lib/mock-data"
 
-const recentPets = [
-  { id: 1, name: "Luna", species: "Perro", breed: "Golden Retriever", owner: "María García" },
-  { id: 2, name: "Simón", species: "Gato", breed: "Siamés", owner: "Carlos López" },
-  { id: 3, name: "Rocky", species: "Perro", breed: "Bulldog Francés", owner: "Ana Martínez" },
-  { id: 4, name: "Milo", species: "Perro", breed: "Beagle", owner: "Juan Rodríguez" },
-]
+const patientOptions = mascotas.map((pet) => ({
+  id: pet.id,
+  name: pet.nombre,
+  species: pet.especie,
+  breed: pet.raza,
+  owner: pet.dueno,
+  status: pet.estadoGeneral,
+}))
 
 const notifications = [
   { id: 1, text: "Turno confirmado: Luna a las 10:30", time: "Hace 5 min", unread: true },
@@ -43,15 +47,15 @@ const notifications = [
 
 export function Topbar() {
   const [petSelectorOpen, setPetSelectorOpen] = useState(false)
-  const [selectedPet, setSelectedPet] = useState<typeof recentPets[0] | null>(null)
+  const [selectedPet, setSelectedPet] = useState<typeof patientOptions[0] | null>(
+    patientOptions.find((pet) => pet.name === "Rocky") || patientOptions[0] || null,
+  )
   const unreadCount = notifications.filter(n => n.unread).length
 
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b border-border bg-card px-4 lg:px-6">
-      {/* Mobile spacer for hamburger */}
       <div className="w-10 lg:hidden" />
-      
-      {/* Search */}
+
       <div className="relative flex-1 max-w-md">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -60,59 +64,82 @@ export function Topbar() {
         />
       </div>
 
-      {/* Quick Pet Selector */}
-      <Popover open={petSelectorOpen} onOpenChange={setPetSelectorOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={petSelectorOpen}
-            className="hidden md:flex items-center gap-2 min-w-[200px] justify-between"
-          >
-            <div className="flex items-center gap-2">
-              <PawPrint className="h-4 w-4 text-primary" />
-              <span className="truncate">
-                {selectedPet ? selectedPet.name : "Seleccionar mascota"}
-              </span>
-            </div>
-            <ChevronDown className="h-4 w-4 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[300px] p-0" align="end">
-          <Command>
-            <CommandInput placeholder="Buscar mascota..." />
-            <CommandList>
-              <CommandEmpty>No se encontraron mascotas.</CommandEmpty>
-              <CommandGroup heading="Recientes">
-                {recentPets.map((pet) => (
-                  <CommandItem
-                    key={pet.id}
-                    onSelect={() => {
-                      setSelectedPet(pet)
-                      setPetSelectorOpen(false)
-                    }}
-                    className="flex items-center gap-3 py-2"
-                  >
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                        {pet.name[0]}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col">
-                      <span className="font-medium">{pet.name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {pet.breed} • {pet.owner}
-                      </span>
-                    </div>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
+      <div className="hidden items-center gap-2 lg:flex">
+        <Popover open={petSelectorOpen} onOpenChange={setPetSelectorOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={petSelectorOpen}
+              title="Seleccioná una mascota para acceder rápidamente a su ficha clínica y datos relacionados."
+              className="h-11 min-w-[250px] justify-between border-primary/25 bg-primary/5 hover:bg-primary/10"
+            >
+              <div className="flex min-w-0 items-center gap-2 text-left">
+                <PawPrint className="h-4 w-4 shrink-0 text-primary" />
+                <div className="min-w-0">
+                  <p className="text-[11px] font-medium uppercase leading-none text-primary">
+                    Paciente activo
+                  </p>
+                  <p className="truncate text-sm font-semibold">
+                    {selectedPet ? selectedPet.name : "Seleccionar paciente"}
+                  </p>
+                </div>
+              </div>
+              <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[340px] p-0" align="end">
+            <Command>
+              <div className="border-b px-3 py-2">
+                <p className="text-xs text-muted-foreground">
+                  Seleccioná una mascota para acceder rápidamente a su ficha clínica y datos relacionados.
+                </p>
+              </div>
+              <CommandInput placeholder="Buscar paciente, dueño o raza..." />
+              <CommandList>
+                <CommandEmpty>No se encontraron mascotas.</CommandEmpty>
+                <CommandGroup heading="Pacientes recientes">
+                  {patientOptions.map((pet) => (
+                    <CommandItem
+                      key={pet.id}
+                      value={`${pet.name} ${pet.owner} ${pet.breed}`}
+                      onSelect={() => {
+                        setSelectedPet(pet)
+                        setPetSelectorOpen(false)
+                      }}
+                      className="flex cursor-pointer items-center gap-3 py-2"
+                    >
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                          {pet.name[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{pet.name}</span>
+                          {selectedPet?.id === pet.id && (
+                            <Badge className="bg-primary text-primary-foreground">Activo</Badge>
+                          )}
+                        </div>
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {pet.breed} · {pet.owner}
+                        </span>
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
 
-      {/* Notifications */}
+        <Button size="sm" className="h-11 bg-primary hover:bg-primary/90" asChild disabled={!selectedPet}>
+          <Link href={selectedPet ? `/mascotas/${selectedPet.id}` : "/mascotas"}>
+            Ver ficha
+          </Link>
+        </Button>
+      </div>
+
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="icon" className="relative">
@@ -156,7 +183,6 @@ export function Topbar() {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* User Menu */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="flex items-center gap-2 px-2">
