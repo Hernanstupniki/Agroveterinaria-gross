@@ -47,9 +47,7 @@ const notifications = [
 
 export function Topbar() {
   const [petSelectorOpen, setPetSelectorOpen] = useState(false)
-  const [selectedPet, setSelectedPet] = useState<typeof patientOptions[0] | null>(
-    patientOptions.find((pet) => pet.name === "Rocky") || patientOptions[0] || null,
-  )
+  const [selectedPet, setSelectedPet] = useState<typeof patientOptions[0] | null>(null)
   const unreadCount = notifications.filter(n => n.unread).length
 
   return (
@@ -81,7 +79,7 @@ export function Topbar() {
                     Paciente activo
                   </p>
                   <p className="truncate text-sm font-semibold">
-                    {selectedPet ? selectedPet.name : "Seleccionar paciente"}
+                    {selectedPet ? selectedPet.name : "Ver ficha"}
                   </p>
                 </div>
               </div>
@@ -98,6 +96,26 @@ export function Topbar() {
               <CommandInput placeholder="Buscar paciente, dueño o raza..." />
               <CommandList>
                 <CommandEmpty>No se encontraron mascotas.</CommandEmpty>
+                <CommandGroup heading="Predeterminado">
+                  <CommandItem
+                    value="ver ficha sin paciente activo"
+                    onSelect={() => {
+                      setSelectedPet(null)
+                      setPetSelectorOpen(false)
+                    }}
+                    className="flex cursor-pointer items-center gap-3 py-2"
+                  >
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-primary">
+                      <PawPrint className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="font-medium">Ver ficha</span>
+                      <span className="block truncate text-xs text-muted-foreground">
+                        Sin paciente activo seleccionado
+                      </span>
+                    </div>
+                  </CommandItem>
+                </CommandGroup>
                 <CommandGroup heading="Pacientes recientes">
                   {patientOptions.map((pet) => (
                     <CommandItem
@@ -133,11 +151,17 @@ export function Topbar() {
           </PopoverContent>
         </Popover>
 
-        <Button size="sm" className="h-11 bg-primary hover:bg-primary/90" asChild disabled={!selectedPet}>
-          <Link href={selectedPet ? `/mascotas/${selectedPet.id}` : "/mascotas"}>
+        {selectedPet ? (
+          <Button size="sm" className="h-11 bg-primary hover:bg-primary/90" asChild>
+            <Link href={`/mascotas/${selectedPet.id}`}>
+              Ver ficha
+            </Link>
+          </Button>
+        ) : (
+          <Button size="sm" className="h-11 bg-primary hover:bg-primary/90" disabled>
             Ver ficha
-          </Link>
-        </Button>
+          </Button>
+        )}
       </div>
 
       <DropdownMenu>
