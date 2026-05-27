@@ -46,10 +46,11 @@ function SidebarContent({ collapsed, onToggle }: { collapsed: boolean; onToggle?
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
       {/* Logo */}
-      <div className={cn(
+      <Link href="/" className={cn(
         "relative flex items-center overflow-hidden border-b border-white/40 bg-[radial-gradient(circle_at_18%_28%,rgba(179,0,122,0.055),transparent_34%),radial-gradient(circle_at_84%_72%,rgba(201,217,47,0.09),transparent_38%),linear-gradient(145deg,#fffdfefe_0%,#fefdff_48%,#fcfff4_100%)] shadow-[inset_0_-1px_0_rgba(179,0,122,0.09)] after:absolute after:inset-x-0 after:bottom-0 after:h-1 after:bg-[linear-gradient(90deg,#b3007a,#c9d92f)]",
+        "cursor-pointer transition-all duration-200 hover:brightness-[1.03] hover:shadow-[inset_0_-1px_0_rgba(179,0,122,0.09),0_8px_24px_rgba(179,0,122,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
         collapsed ? "h-16 justify-center px-2 py-2" : "h-24 px-5 py-4"
-      )}>
+      )} title="Ir al dashboard" aria-label="Ir al dashboard">
         <div className="relative z-10 flex h-full w-full items-center justify-center px-1 drop-shadow-[0_8px_18px_rgba(179,0,122,0.16)]">
           <Image
             src="/agroveterinaria-gross.png"
@@ -60,7 +61,7 @@ function SidebarContent({ collapsed, onToggle }: { collapsed: boolean; onToggle?
             priority
           />
         </div>
-      </div>
+      </Link>
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto sidebar-scrollbar px-2 py-4">

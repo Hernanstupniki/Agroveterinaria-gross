@@ -310,12 +310,12 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
             <CardDescription>Cargar una nueva acción clínica sin salir de la ficha</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-6">
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
               {quickActions.map((action) => (
-                <Button key={action.label} asChild variant="outline" className={`h-14 justify-start gap-2 ${action.className}`}>
-                  <Link href={action.href}>
-                    <action.icon className="h-4 w-4" />
-                    {action.label}
+                <Button key={action.label} asChild variant="outline" className={`h-14 min-w-0 justify-start gap-2 px-3 ${action.className}`}>
+                  <Link href={action.href} title={action.label}>
+                    <action.icon className="h-4 w-4 shrink-0" />
+                    <span className="min-w-0 whitespace-normal text-left text-sm leading-tight">{action.label}</span>
                   </Link>
                 </Button>
               ))}
@@ -373,24 +373,15 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
             </CardHeader>
             <CardContent className="space-y-5 pt-5">
               {planVacunasMascota.length > 0 ? (
-                vacunaGroups.map((estado) => {
-                  const vacunasEstado = planVacunasMascota.filter((vacuna) => vacuna.estado === estado)
-                  if (!vacunasEstado.length) return null
-
-                  return (
-                    <div key={estado} className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <Badge className={vacunaEstadoStyles[estado].badge}>{vacunaEstadoStyles[estado].label}</Badge>
-                        <span className="text-sm text-muted-foreground">{vacunasEstado.length} registro(s)</span>
-                      </div>
-                      <div className="grid gap-3 lg:grid-cols-2">
-                        {vacunasEstado.map((vacuna) => (
-                          <VaccinePlanItem key={vacuna.id} vacuna={vacuna} />
-                        ))}
-                      </div>
-                    </div>
-                  )
-                })
+                <div className="grid gap-3 xl:grid-cols-2">
+                  {vacunaGroups.flatMap((estado) =>
+                    planVacunasMascota
+                      .filter((vacuna) => vacuna.estado === estado)
+                      .map((vacuna) => (
+                        <VaccinePlanItem key={vacuna.id} vacuna={vacuna} />
+                      )),
+                  )}
+                </div>
               ) : (
                 <div className="rounded-lg border border-dashed p-6 text-center">
                   <Syringe className="mx-auto h-8 w-8 text-muted-foreground" />
@@ -665,11 +656,11 @@ function VaccinePlanItem({ vacuna }: { vacuna: (typeof vacunasClinicas)[number] 
   const isActionable = Boolean(vacuna.proximaFecha || vacuna.fechaRecomendada)
 
   return (
-    <article className={`rounded-lg border p-4 ${style.card}`}>
+    <article className={`rounded-lg border p-3 ${style.card}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 gap-3">
-          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${style.icon}`}>
-            <Syringe className="h-5 w-5" />
+          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${style.icon}`}>
+            <Syringe className="h-4 w-4" />
           </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
@@ -679,37 +670,46 @@ function VaccinePlanItem({ vacuna }: { vacuna: (typeof vacunasClinicas)[number] 
                 <Badge variant="outline" className="border-primary/40 text-primary">Recordatorio programado</Badge>
               )}
             </div>
-            <p className="mt-1 text-sm text-muted-foreground">{vacuna.observaciones}</p>
+            <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{vacuna.observaciones}</p>
           </div>
         </div>
       </div>
 
-      <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-        <TimelineDetail label="Fecha aplicada" value={formatDate(vacuna.fechaAplicada)} />
-        <TimelineDetail label="Próxima fecha recomendada" value={formatDate(vacuna.proximaFecha || vacuna.fechaRecomendada)} />
-        <TimelineDetail label="Veterinario responsable" value={vacuna.veterinario || "A definir"} />
-        <TimelineDetail label="Próximo recordatorio" value={formatDate(vacuna.proximoRecordatorio)} />
+      <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+        <CompactDetail label="Aplicada" value={formatDate(vacuna.fechaAplicada)} />
+        <CompactDetail label="Próxima" value={formatDate(vacuna.proximaFecha || vacuna.fechaRecomendada)} />
+        <CompactDetail label="Veterinario" value={vacuna.veterinario || "A definir"} />
+        <CompactDetail label="Recordatorio" value={formatDate(vacuna.proximoRecordatorio)} />
       </div>
 
-      <div className="mt-4 rounded-lg border bg-background/70 p-3">
-        <div className="mb-2 flex items-center gap-2 text-sm font-medium text-primary">
+      <div className="mt-3 rounded-lg border bg-background/70 p-2.5">
+        <div className="mb-1.5 flex items-center gap-2 text-xs font-medium text-primary">
           <MessageCircle className="h-4 w-4" />
           Vista previa WhatsApp
         </div>
-        <p className="text-sm text-muted-foreground">{vacuna.mensajePreview}</p>
+        <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">{vacuna.mensajePreview}</p>
       </div>
 
-      <div className="mt-4 flex flex-wrap justify-end gap-2">
+      <div className="mt-3 flex flex-wrap justify-end gap-2">
         <Button variant="outline" size="sm" disabled={!isActionable}>
           <Calendar className="mr-2 h-4 w-4" />
-          Programar recordatorio
+          Programar
         </Button>
         <Button size="sm" className={vacuna.estado === "Vencida" ? "bg-destructive hover:bg-destructive/90" : "bg-primary hover:bg-primary/90"}>
           <MessageCircle className="mr-2 h-4 w-4" />
-          Enviar recordatorio
+          Enviar
         </Button>
       </div>
     </article>
+  )
+}
+
+function CompactDetail({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md bg-background/70 px-2.5 py-2">
+      <p className="text-[11px] leading-none text-muted-foreground">{label}</p>
+      <p className="mt-1 truncate text-sm font-medium">{value}</p>
+    </div>
   )
 }
 
