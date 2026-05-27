@@ -149,6 +149,22 @@
   body {
     @apply bg-background text-foreground;
   }
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="menuitem"]:not([aria-disabled="true"]),
+  [role="option"]:not([aria-disabled="true"]),
+  [data-slot="dropdown-menu-trigger"]:not([aria-disabled="true"]),
+  [data-slot="dropdown-menu-item"]:not([aria-disabled="true"]),
+  [data-slot="select-trigger"]:not([aria-disabled="true"]),
+  [data-slot="select-item"]:not([aria-disabled="true"]),
+  a[href],
+  summary {
+    cursor: pointer;
+  }
+  button:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
 }
 
 /* Custom scrollbar for sidebar */
