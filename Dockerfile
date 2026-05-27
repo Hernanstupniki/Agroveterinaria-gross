@@ -3,7 +3,7 @@ FROM node:24-alpine AS deps
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN corepack enable
+RUN npm install -g pnpm@9.15.4
 
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
@@ -13,7 +13,7 @@ FROM node:24-alpine AS builder
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN corepack enable
+RUN npm install -g pnpm@9.15.4
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -26,7 +26,7 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 
-RUN corepack enable
+RUN npm install -g pnpm@9.15.4
 
 COPY --from=builder /app ./
 
