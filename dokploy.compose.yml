@@ -23,3 +23,5 @@ services:
 networks:
   proxy:
     external: true
+  dokploy-network:
+    external: true
