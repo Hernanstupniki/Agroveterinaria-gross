@@ -1,0 +1,4 @@
+Una seccion donde tengan todas las vacunas, puedan agregar, y cuando se les coloca a los animales, que este conectado a cada animal estas vacunas, cuales tienen y cuales no, por tipo de animal tambien, que se tenga en cuenta la edad para recordatorios.
+Seccion donde se guarden los medicamentos, info de estos, y este conectado a la seccion de tratamientos.
+Aclrar que se va a poder crear usuarios para que accedar solo a ciertas secciones.
+Avisos de  control en tratamientos o consultas.
