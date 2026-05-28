@@ -1,0 +1,27 @@
+name: agroveterinaria-gross
+
+services:
+  agroveterinaria-gross-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agroveterinaria-gross-web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+      PORT: "3000"
+    networks:
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.agroveterinaria-gross-web.rule=Host(`agroveterinariagross.zubuagency.com`)
+      - traefik.http.routers.agroveterinaria-gross-web.entrypoints=web,websecure
+      - traefik.http.routers.agroveterinaria-gross-web.tls=true
+      - traefik.http.routers.agroveterinaria-gross-web.tls.certresolver=mytlschallenge
+      - traefik.http.services.agroveterinaria-gross-web.loadbalancer.server.port=3000
+
+networks:
+  proxy:
+    external: true
