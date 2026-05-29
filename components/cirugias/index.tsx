@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { AlertTriangle, Calendar, CheckCircle2, Clock, Plus, Scissors, ShieldCheck } from "lucide-react"
+import { AlertTriangle, Clock, Plus, Scissors, ShieldCheck } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -34,19 +34,59 @@ export default function CirugiasScreen() {
       {({ client, pet }) => {
         const petSurgeries = cirugias.filter((cirugia) => cirugia.mascotaId === pet.id)
         const scheduledSurgeries = petSurgeries.filter((cirugia) => scheduledStates.includes(cirugia.estado))
-        const completedSurgeries = petSurgeries.filter((cirugia) => cirugia.estado === "Realizada")
         const veterinarios = profesionales.filter((profesional) => profesional.rol === "Veterinario")
 
         return (
-          <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_430px]">
-            <div className="space-y-5">
-              <div className="grid gap-3 md:grid-cols-3">
-                <StatCard icon={Calendar} label="Agendadas" value={scheduledSurgeries.length} />
-                <StatCard icon={CheckCircle2} label="Realizadas" value={completedSurgeries.length} />
-                <StatCard icon={Scissors} label="Historial" value={petSurgeries.length} />
-              </div>
+          <div className="space-y-5">
+            <Card className="border-primary/30 bg-primary/5 shadow-sm">
+              <CardHeader className="text-center">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                  <Plus className="h-7 w-7" />
+                </div>
+                <CardTitle className="text-2xl">Agendar cirugia</CardTitle>
+                <CardDescription>
+                  Crea el evento de agenda antes de permitir el registro quirurgico.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="mx-auto grid w-full max-w-5xl gap-4">
+                <div className="rounded-lg border bg-background p-3 text-sm">
+                  <p className="font-semibold">{client.nombre}</p>
+                  <p className="text-muted-foreground">{pet.nombre} - {pet.especie}</p>
+                </div>
 
-              <Card>
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <Field label="Tipo de cirugia" placeholder="Ej: Castracion, extirpacion, limpieza dental" />
+                  <Field
+                    label="Veterinario"
+                    placeholder={veterinarios.map((veterinario) => veterinario.nombre).join(" / ")}
+                  />
+                  <Field label="Fecha" placeholder="AAAA-MM-DD" />
+                  <Field label="Hora" placeholder="HH:MM" />
+                  <Field label="Duracion estimada" placeholder="Ej: 45 minutos" />
+                  <Field label="Riesgo" placeholder="Bajo / Moderado / Alto" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Notas preoperatorias</Label>
+                  <Textarea placeholder="Ayuno, estudios requeridos, consentimiento, observaciones..." />
+                </div>
+
+                <div className="rounded-lg border border-primary/20 bg-background p-3 text-sm">
+                  <div className="flex items-center gap-2 font-medium text-primary">
+                    <Clock className="h-4 w-4" />
+                    Estado inicial: agendada
+                  </div>
+                  <p className="mt-1 text-muted-foreground">
+                    Luego se podra pasar a en preparacion, realizada, cancelada o reprogramada.
+                  </p>
+                </div>
+
+                <Button className="h-14 w-full bg-primary text-base font-bold hover:bg-primary/90" asChild>
+                  <Link href="/">Agendar cirugia y volver al inicio</Link>
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Scissors className="h-5 w-5 text-primary" />
@@ -90,9 +130,9 @@ export default function CirugiasScreen() {
                     </div>
                   )}
                 </CardContent>
-              </Card>
+            </Card>
 
-              <Card className={scheduledSurgeries.length ? "border-success/25 bg-success/5" : "border-destructive/30 bg-destructive/5"}>
+            <Card className={scheduledSurgeries.length ? "border-success/25 bg-success/5" : "border-destructive/30 bg-destructive/5"}>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     {scheduledSurgeries.length ? (
@@ -134,57 +174,6 @@ export default function CirugiasScreen() {
                     </div>
                   )}
                 </CardContent>
-              </Card>
-            </div>
-
-            <Card className="h-fit border-primary/20">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Plus className="h-5 w-5 text-primary" />
-                  Agendar cirugia
-                </CardTitle>
-                <CardDescription>
-                  Crea el evento de agenda antes de permitir el registro quirurgico.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="rounded-lg border bg-muted/25 p-3 text-sm">
-                  <p className="font-semibold">{client.nombre}</p>
-                  <p className="text-muted-foreground">{pet.nombre} - {pet.especie}</p>
-                </div>
-
-                <Field label="Tipo de cirugia" placeholder="Ej: Castracion, extirpacion, limpieza dental" />
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Field label="Fecha" placeholder="AAAA-MM-DD" />
-                  <Field label="Hora" placeholder="HH:MM" />
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Field label="Duracion estimada" placeholder="Ej: 45 minutos" />
-                  <Field label="Riesgo" placeholder="Bajo / Moderado / Alto" />
-                </div>
-                <Field
-                  label="Veterinario"
-                  placeholder={veterinarios.map((veterinario) => veterinario.nombre).join(" / ")}
-                />
-                <div className="space-y-2">
-                  <Label>Notas preoperatorias</Label>
-                  <Textarea placeholder="Ayuno, estudios requeridos, consentimiento, observaciones..." />
-                </div>
-
-                <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm">
-                  <div className="flex items-center gap-2 font-medium text-primary">
-                    <Clock className="h-4 w-4" />
-                    Estado inicial: agendada
-                  </div>
-                  <p className="mt-1 text-muted-foreground">
-                    Luego se podra pasar a en preparacion, realizada, cancelada o reprogramada.
-                  </p>
-                </div>
-
-                <Button className="h-11 w-full bg-primary hover:bg-primary/90" asChild>
-                  <Link href="/">Agendar cirugia y volver al inicio</Link>
-                </Button>
-              </CardContent>
             </Card>
           </div>
         )
@@ -208,21 +197,5 @@ function Info({ label, value }: { label: string; value: string }) {
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="truncate font-medium">{value}</p>
     </div>
-  )
-}
-
-function StatCard({ icon: Icon, label, value }: { icon: typeof Scissors; label: string; value: number }) {
-  return (
-    <Card>
-      <CardContent className="flex items-center gap-3 p-4">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-          <Icon className="h-5 w-5" />
-        </div>
-        <div>
-          <p className="text-2xl font-bold">{value}</p>
-          <p className="text-sm text-muted-foreground">{label}</p>
-        </div>
-      </CardContent>
-    </Card>
   )
 }

@@ -59,7 +59,7 @@ export function ClientesPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+      <div className="flex flex-col gap-4">
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-sm font-medium text-primary">
             <Users className="h-4 w-4" />
@@ -72,15 +72,18 @@ export function ClientesPage() {
             </p>
           </div>
         </div>
+      </div>
 
-        <Dialog>
+      <Dialog>
+        <div className="flex justify-center">
           <DialogTrigger asChild>
-            <Button className="h-11 bg-primary hover:bg-primary/90">
-              <UserPlus className="mr-2 h-4 w-4" />
+            <Button className="h-20 w-full max-w-xl rounded-xl bg-primary px-8 text-xl font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 sm:text-2xl">
+              <UserPlus className="mr-3 h-7 w-7" />
               Nuevo cliente
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+        </div>
+        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Nuevo cliente con mascotas</DialogTitle>
               <DialogDescription>
@@ -146,9 +149,8 @@ export function ClientesPage() {
                 </Button>
               </div>
             </div>
-          </DialogContent>
-        </Dialog>
-      </div>
+        </DialogContent>
+      </Dialog>
 
       <div className="grid gap-5 xl:grid-cols-[380px_minmax(0,1fr)]">
         <Card>
@@ -217,8 +219,8 @@ export function ClientesPage() {
                   <CardTitle className="text-xl">{selectedCliente.nombre}</CardTitle>
                   <CardDescription>Ficha del cliente y mascotas vinculadas</CardDescription>
                 </div>
-                <Button variant="outline">
-                  <PawPrint className="mr-2 h-4 w-4" />
+                <Button className="h-14 rounded-xl bg-primary px-5 text-base font-bold shadow-md shadow-primary/15 hover:bg-primary/90">
+                  <PawPrint className="mr-2 h-5 w-5" />
                   Agregar mascota
                 </Button>
               </div>

@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Calendar, Check, Clock, MessageCircle, Plus, Syringe, AlertTriangle } from "lucide-react"
+import { Calendar, MessageCircle, Plus, Syringe } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -35,20 +35,49 @@ export function VacunasPage() {
     >
       {({ client, pet }) => {
         const vaccines = vacunasClinicas.filter((vacuna) => vacuna.mascotaId === pet.id)
-        const applied = vaccines.filter((vacuna) => vacuna.estado === "Aplicada").length
-        const next = vaccines.filter((vacuna) => vacuna.estado === "Próxima" || vacuna.estado === "Pendiente").length
-        const expired = vaccines.filter((vacuna) => vacuna.estado === "Vencida").length
-
         return (
-          <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
-            <div className="space-y-5">
-              <div className="grid gap-3 md:grid-cols-3">
-                <StatCard icon={Check} label="Aplicadas" value={applied} />
-                <StatCard icon={Clock} label="Proximas/Pendientes" value={next} />
-                <StatCard icon={AlertTriangle} label="Vencidas" value={expired} danger />
-              </div>
+          <div className="space-y-5">
+            <Card className="border-primary/30 bg-primary/5 shadow-sm">
+              <CardHeader className="text-center">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                  <Plus className="h-7 w-7" />
+                </div>
+                <CardTitle className="text-2xl">Registrar vacuna</CardTitle>
+                <CardDescription>
+                  La carga queda preparada para impactar en historia clinica, actividad diaria y recordatorio.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="mx-auto grid w-full max-w-5xl gap-4">
+                <div className="rounded-lg border bg-background p-3 text-sm">
+                  <p className="font-semibold">{client.nombre}</p>
+                  <p className="text-muted-foreground">{pet.nombre} - {pet.especie}</p>
+                </div>
 
-              <Card>
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <Field label="Vacuna" placeholder="Ej: Antirrabica, Quintuple, Bordetella" />
+                  <Field label="Veterinario responsable" placeholder="Dr./Dra." />
+                  <Field label="Fecha aplicada" placeholder="AAAA-MM-DD" />
+                  <Field label="Proxima fecha" placeholder="AAAA-MM-DD" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Observaciones</Label>
+                  <Textarea placeholder="Lote, laboratorio, reaccion, indicaciones..." />
+                </div>
+
+                <div className="rounded-lg border border-primary/20 bg-background p-3 text-sm">
+                  <p className="font-medium text-primary">Recordatorio preparado</p>
+                  <p className="mt-1 text-muted-foreground">
+                    Si hay proxima fecha, el sistema deja listo el seguimiento por WhatsApp.
+                  </p>
+                </div>
+
+                <Button className="h-14 w-full bg-primary text-base font-bold hover:bg-primary/90" asChild>
+                  <Link href="/">Guardar vacuna y volver al inicio</Link>
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Syringe className="h-5 w-5 text-primary" />
@@ -101,49 +130,6 @@ export function VacunasPage() {
                     </div>
                   )}
                 </CardContent>
-              </Card>
-            </div>
-
-            <Card className="h-fit border-primary/20">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Plus className="h-5 w-5 text-primary" />
-                  Registrar vacuna
-                </CardTitle>
-                <CardDescription>
-                  La carga queda preparada para impactar en historia clinica, actividad diaria y recordatorio.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="rounded-lg border bg-muted/25 p-3 text-sm">
-                  <p className="font-semibold">{client.nombre}</p>
-                  <p className="text-muted-foreground">{pet.nombre} - {pet.especie}</p>
-                </div>
-
-                <Field label="Vacuna" placeholder="Ej: Antirrabica, Quintuple, Bordetella" />
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Field label="Fecha aplicada" placeholder="AAAA-MM-DD" />
-                  <Field label="Proxima fecha" placeholder="AAAA-MM-DD" />
-                </div>
-                <Field label="Veterinario responsable" placeholder="Dr./Dra." />
-                <div className="space-y-2">
-                  <Label>Observaciones</Label>
-                  <Textarea placeholder="Lote, laboratorio, reaccion, indicaciones..." />
-                </div>
-
-                <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm">
-                  <p className="font-medium text-primary">Recordatorio preparado</p>
-                  <p className="mt-1 text-muted-foreground">
-                    Si hay proxima fecha, el sistema deja listo el seguimiento por WhatsApp.
-                  </p>
-                </div>
-
-                <Button className="h-11 w-full bg-primary hover:bg-primary/90" asChild>
-                  <Link href="/">
-                    Guardar vacuna y volver al inicio
-                  </Link>
-                </Button>
-              </CardContent>
             </Card>
           </div>
         )
@@ -167,21 +153,5 @@ function Info({ label, value }: { label: string; value: string }) {
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="truncate font-medium">{value}</p>
     </div>
-  )
-}
-
-function StatCard({ icon: Icon, label, value, danger }: { icon: typeof Syringe; label: string; value: number; danger?: boolean }) {
-  return (
-    <Card className={danger ? "border-destructive/30 bg-destructive/5" : ""}>
-      <CardContent className="flex items-center gap-3 p-4">
-        <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${danger ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"}`}>
-          <Icon className="h-5 w-5" />
-        </div>
-        <div>
-          <p className="text-2xl font-bold">{value}</p>
-          <p className="text-sm text-muted-foreground">{label}</p>
-        </div>
-      </CardContent>
-    </Card>
   )
 }

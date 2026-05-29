@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Activity, Calendar, CheckCircle, Clock, Pill, Plus, Stethoscope } from "lucide-react"
+import { Calendar, CheckCircle, Pill, Plus, Stethoscope } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -29,18 +29,45 @@ export function TratamientosPage() {
       {({ client, pet }) => {
         const treatments = tratamientosActivos.filter((tratamiento) => tratamiento.mascotaId === pet.id)
         const controls = controlesPendientes.filter((control) => control.mascotaId === pet.id)
-        const activeTreatments = treatments.filter((tratamiento) => tratamiento.estado === "Activo")
 
         return (
-          <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_430px]">
-            <div className="space-y-5">
-              <div className="grid gap-3 md:grid-cols-3">
-                <StatCard icon={Pill} label="Tratamientos activos" value={activeTreatments.length} />
-                <StatCard icon={Clock} label="Controles pendientes" value={controls.length} />
-                <StatCard icon={Activity} label="Registros historicos" value={treatments.length} />
-              </div>
+          <div className="space-y-5">
+            <Card className="border-primary/30 bg-primary/5 shadow-sm">
+              <CardHeader className="text-center">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                  <Plus className="h-7 w-7" />
+                </div>
+                <CardTitle className="text-2xl">Nuevo tratamiento</CardTitle>
+                <CardDescription>
+                  El tratamiento queda preparado para historia clinica, actividad del dia y seguimiento activo.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="mx-auto grid w-full max-w-5xl gap-4">
+                <div className="rounded-lg border bg-background p-3 text-sm">
+                  <p className="font-semibold">{client.nombre}</p>
+                  <p className="text-muted-foreground">{pet.nombre} - {pet.especie}</p>
+                </div>
 
-              <Card>
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <Field label="Nombre del tratamiento" placeholder="Ej: Leishmaniasis" />
+                  <Field label="Diagnostico / motivo" placeholder="Diagnostico clinico" />
+                  <Field label="Fecha de inicio" placeholder="AAAA-MM-DD" />
+                  <Field label="Proximo control" placeholder="AAAA-MM-DD" />
+                  <Field label="Medicacion / indicacion" placeholder="Medicamento o pauta" />
+                  <Field label="Responsable" placeholder="Dr./Dra." />
+                </div>
+                <div className="space-y-2">
+                  <Label>Observaciones y seguimiento</Label>
+                  <Textarea placeholder="Evolucion, controles, signos a vigilar, recordatorios o proximas acciones..." />
+                </div>
+
+                <Button className="h-14 w-full bg-primary text-base font-bold hover:bg-primary/90" asChild>
+                  <Link href="/">Guardar tratamiento y volver al inicio</Link>
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Stethoscope className="h-5 w-5 text-primary" />
@@ -112,44 +139,6 @@ export function TratamientosPage() {
                     </div>
                   )}
                 </CardContent>
-              </Card>
-            </div>
-
-            <Card className="h-fit border-primary/20">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Plus className="h-5 w-5 text-primary" />
-                  Nuevo tratamiento
-                </CardTitle>
-                <CardDescription>
-                  El tratamiento queda preparado para historia clinica, actividad del dia y seguimiento activo.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="rounded-lg border bg-muted/25 p-3 text-sm">
-                  <p className="font-semibold">{client.nombre}</p>
-                  <p className="text-muted-foreground">{pet.nombre} - {pet.especie}</p>
-                </div>
-
-                <Field label="Nombre del tratamiento" placeholder="Ej: Leishmaniasis" />
-                <Field label="Diagnostico / motivo" placeholder="Diagnostico clinico" />
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Field label="Fecha de inicio" placeholder="AAAA-MM-DD" />
-                  <Field label="Proximo control" placeholder="AAAA-MM-DD" />
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Field label="Medicacion / indicacion" placeholder="Medicamento o pauta" />
-                  <Field label="Responsable" placeholder="Dr./Dra." />
-                </div>
-                <div className="space-y-2">
-                  <Label>Observaciones y seguimiento</Label>
-                  <Textarea placeholder="Evolucion, controles, signos a vigilar, recordatorios o proximas acciones..." />
-                </div>
-
-                <Button className="h-11 w-full bg-primary hover:bg-primary/90" asChild>
-                  <Link href="/">Guardar tratamiento y volver al inicio</Link>
-                </Button>
-              </CardContent>
             </Card>
           </div>
         )
@@ -173,21 +162,5 @@ function Info({ label, value }: { label: string; value: string }) {
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="truncate font-medium">{value}</p>
     </div>
-  )
-}
-
-function StatCard({ icon: Icon, label, value }: { icon: typeof Pill; label: string; value: number }) {
-  return (
-    <Card>
-      <CardContent className="flex items-center gap-3 p-4">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-          <Icon className="h-5 w-5" />
-        </div>
-        <div>
-          <p className="text-2xl font-bold">{value}</p>
-          <p className="text-sm text-muted-foreground">{label}</p>
-        </div>
-      </CardContent>
-    </Card>
   )
 }
