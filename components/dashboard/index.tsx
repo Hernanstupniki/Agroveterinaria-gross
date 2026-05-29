@@ -10,8 +10,8 @@ import {
   UserPlus,
   Users,
 } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { NewClientDialog } from "@/components/clientes/new-client-dialog"
 
 const primaryActions = [
   {
@@ -24,7 +24,7 @@ const primaryActions = [
   {
     title: "Nuevo cliente",
     description: "Alta rapida con una o mas mascotas vinculadas.",
-    href: "/clientes",
+    href: null,
     icon: UserPlus,
     className: "border-primary/20 bg-card hover:border-primary/50 hover:bg-primary/5",
   },
@@ -43,7 +43,7 @@ const primaryActions = [
     className: "border-primary/20 bg-card hover:border-primary/50 hover:bg-primary/5",
   },
   {
-    title: "Cirugias",
+    title: "Cirugías",
     description: "Agendar o registrar una cirugia ya programada.",
     href: "/cirugias",
     icon: Scissors,
@@ -70,8 +70,8 @@ export function Dashboard() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        {primaryActions.map((action) => (
-          <Link key={action.title} href={action.href} className="group block min-h-[210px]">
+        {primaryActions.map((action) => {
+          const card = (
             <Card className={`h-full transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${action.className}`}>
               <CardContent className="flex h-full flex-col justify-between gap-6 p-5">
                 <div className="space-y-4">
@@ -89,17 +89,27 @@ export function Dashboard() {
                 </div>
               </CardContent>
             </Card>
-          </Link>
-        ))}
-      </div>
+          )
 
-      <div className="flex flex-wrap gap-3">
-        <Button className="h-14 rounded-xl bg-primary px-7 text-base font-bold shadow-md shadow-primary/15 hover:bg-primary/90" asChild>
-          <Link href="/clientes">Buscar cliente o paciente</Link>
-        </Button>
-        <Button className="h-14 rounded-xl bg-primary px-7 text-base font-bold shadow-md shadow-primary/15 hover:bg-primary/90" asChild>
-          <Link href="/vacunas">Cargar vacuna rapida</Link>
-        </Button>
+          if (!action.href) {
+            return (
+              <NewClientDialog
+                key={action.title}
+                trigger={
+                  <button type="button" className="group block min-h-[210px] text-left">
+                    {card}
+                  </button>
+                }
+              />
+            )
+          }
+
+          return (
+            <Link key={action.title} href={action.href} className="group block min-h-[210px]">
+              {card}
+            </Link>
+          )
+        })}
       </div>
     </div>
   )

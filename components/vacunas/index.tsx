@@ -1,7 +1,7 @@
 "use client"
 
-import Link from "next/link"
 import { useMemo, useState } from "react"
+import Link from "next/link"
 import type { LucideIcon } from "lucide-react"
 import {
   AlertTriangle,
@@ -42,8 +42,6 @@ import {
   vaccineSchemes,
 } from "@/lib/vaccine-workflow"
 
-type VaccineMode = "registrar" | "pendientes" | "esquemas" | null
-
 const scheduleStatusStyles: Record<string, string> = {
   pendiente: "bg-primary text-primary-foreground",
   vencida: "bg-destructive text-destructive-foreground",
@@ -58,11 +56,9 @@ function formatDate(date?: string | null) {
 }
 
 export function VacunasPage() {
-  const [mode, setMode] = useState<VaccineMode>(null)
-
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 rounded-2xl border border-primary/20 bg-primary/5 p-5 md:flex-row md:items-center md:justify-between">
+      <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5">
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 rounded-full bg-primary px-3 py-1 text-sm font-bold text-primary-foreground">
             <Syringe className="h-4 w-4" />
@@ -75,48 +71,36 @@ export function VacunasPage() {
             </p>
           </div>
         </div>
-        {mode && (
-          <Button variant="outline" className="h-12 rounded-xl" onClick={() => setMode(null)}>
-            Ver acciones de Vacunas
-          </Button>
-        )}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <ActionCard
-          active={mode === "registrar"}
           icon={Syringe}
           title="Registrar vacuna"
           description="Seleccionar cliente, mascota, vacuna, dosis y fecha de aplicacion."
           buttonLabel="Registrar vacuna"
-          onClick={() => setMode("registrar")}
+          href="/vacunas/registrar"
         />
         <ActionCard
-          active={mode === "pendientes"}
           icon={ClipboardList}
           title="Vacunas pendientes"
           description="Ver proximas dosis, pendientes y vencidas de todas las mascotas."
           buttonLabel="Ver pendientes"
-          onClick={() => setMode("pendientes")}
+          href="/vacunas/pendientes"
         />
         <ActionCard
-          active={mode === "esquemas"}
           icon={Settings}
           title="Esquemas de vacunacion"
           description="Configurar vacunas, dosis, intervalos y refuerzos por especie."
           buttonLabel="Abrir esquemas"
-          onClick={() => setMode("esquemas")}
+          href="/vacunas/esquemas"
         />
       </div>
-
-      {mode === "registrar" && <VaccineRegistrationFlow />}
-      {mode === "pendientes" && <PendingVaccines onRegister={() => setMode("registrar")} />}
-      {mode === "esquemas" && <VaccineSchemes />}
     </div>
   )
 }
 
-function VaccineRegistrationFlow() {
+export function VaccineRegistrationFlow() {
   return (
     <ClinicalActionFlow
       title="Registrar vacuna"
@@ -300,7 +284,7 @@ function VaccineRegistrationForm({
   )
 }
 
-function PendingVaccines({ onRegister }: { onRegister: () => void }) {
+export function PendingVaccines() {
   const pendingItems = mascotas.flatMap((pet) =>
     buildPetVaccineSchedule(pet.id).map((item) => ({
       ...item,
@@ -344,8 +328,10 @@ function PendingVaccines({ onRegister }: { onRegister: () => void }) {
                       {item.client?.nombre} - {item.pet.nombre}
                     </p>
                   </div>
-                  <Button className="h-12 rounded-xl bg-primary px-5 font-bold hover:bg-primary/90" onClick={onRegister}>
-                    Registrar esta dosis
+                  <Button className="h-12 rounded-xl bg-primary px-5 font-bold hover:bg-primary/90" asChild>
+                    <Link href={`/vacunas/registrar?clienteId=${item.client?.id || ""}&mascotaId=${item.pet.id}`}>
+                      Registrar esta dosis
+                    </Link>
                   </Button>
                 </div>
                 <div className="mt-4 grid gap-2 text-sm md:grid-cols-3">
@@ -367,7 +353,7 @@ function PendingVaccines({ onRegister }: { onRegister: () => void }) {
   )
 }
 
-function VaccineSchemes() {
+export function VaccineSchemes() {
   return (
     <Card>
       <CardHeader>
@@ -434,37 +420,37 @@ function VaccineSchemes() {
 }
 
 function ActionCard({
-  active,
   icon: Icon,
   title,
   description,
   buttonLabel,
-  onClick,
+  href,
 }: {
-  active: boolean
   icon: LucideIcon
   title: string
   description: string
   buttonLabel: string
-  onClick: () => void
+  href: string
 }) {
   return (
-    <Card className={`transition-all ${active ? "border-primary/50 bg-primary/5 shadow-md shadow-primary/10" : "hover:border-primary/40"}`}>
-      <CardContent className="flex h-full flex-col gap-5 p-5">
-        <div className="flex items-start gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-            <Icon className="h-7 w-7" />
+    <Link href={href} className="group block">
+      <Card className="h-full transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg">
+        <CardContent className="flex h-full flex-col gap-5 p-5">
+          <div className="flex items-start gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+              <Icon className="h-7 w-7" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold leading-tight">{title}</h2>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-xl font-bold leading-tight">{title}</h2>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
+          <div className="mt-auto flex h-14 items-center justify-center rounded-xl bg-primary px-4 text-base font-bold text-primary-foreground group-hover:bg-primary/90">
+            {buttonLabel}
           </div>
-        </div>
-        <Button className="mt-auto h-14 rounded-xl bg-primary text-base font-bold hover:bg-primary/90" onClick={onClick}>
-          {buttonLabel}
-        </Button>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </Link>
   )
 }
 

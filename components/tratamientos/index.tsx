@@ -27,8 +27,6 @@ import {
   type TreatmentStatus,
 } from "@/lib/treatment-workflow"
 
-type TreatmentMode = "registrar" | "activos" | "protocolos" | null
-
 const statusStyles: Record<TreatmentStatus, string> = {
   activo: "bg-success text-success-foreground",
   pausado: "bg-warning text-warning-foreground",
@@ -42,11 +40,9 @@ function formatDate(date?: string | null) {
 }
 
 export function TratamientosPage() {
-  const [mode, setMode] = useState<TreatmentMode>(null)
-
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 rounded-2xl border border-primary/20 bg-primary/5 p-5 md:flex-row md:items-center md:justify-between">
+      <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5">
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 rounded-full bg-primary px-3 py-1 text-sm font-bold text-primary-foreground">
             <Pill className="h-4 w-4" />
@@ -59,48 +55,36 @@ export function TratamientosPage() {
             </p>
           </div>
         </div>
-        {mode && (
-          <Button variant="outline" className="h-12 rounded-xl" onClick={() => setMode(null)}>
-            Ver acciones de Tratamientos
-          </Button>
-        )}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <ActionCard
-          active={mode === "registrar"}
           icon={Pill}
           title="Registrar tratamiento"
           description="Seleccionar cliente, mascota, protocolo, fecha de inicio y controles."
           buttonLabel="Registrar tratamiento"
-          onClick={() => setMode("registrar")}
+          href="/tratamientos/registrar"
         />
         <ActionCard
-          active={mode === "activos"}
           icon={ClipboardList}
           title="Tratamientos activos"
           description="Ver procesos en curso, proximo control y acciones de seguimiento."
           buttonLabel="Ver activos"
-          onClick={() => setMode("activos")}
+          href="/tratamientos/activos"
         />
         <ActionCard
-          active={mode === "protocolos"}
           icon={Settings}
           title="Protocolos de tratamiento"
           description="Configurar tratamientos comunes, frecuencia de control y recordatorios."
           buttonLabel="Abrir protocolos"
-          onClick={() => setMode("protocolos")}
+          href="/tratamientos/protocolos"
         />
       </div>
-
-      {mode === "registrar" && <TreatmentRegistrationFlow />}
-      {mode === "activos" && <ActiveTreatments />}
-      {mode === "protocolos" && <TreatmentProtocols />}
     </div>
   )
 }
 
-function TreatmentRegistrationFlow() {
+export function TreatmentRegistrationFlow() {
   return (
     <ClinicalActionFlow
       title="Registrar tratamiento"
@@ -215,7 +199,7 @@ function TreatmentRegistrationForm({
   )
 }
 
-function ActiveTreatments() {
+export function ActiveTreatments() {
   return (
     <Card>
       <CardHeader>
@@ -282,7 +266,7 @@ function ActiveTreatments() {
   )
 }
 
-function TreatmentProtocols() {
+export function TreatmentProtocols() {
   return (
     <Card>
       <CardHeader>
@@ -338,37 +322,37 @@ function TreatmentProtocols() {
 }
 
 function ActionCard({
-  active,
   icon: Icon,
   title,
   description,
   buttonLabel,
-  onClick,
+  href,
 }: {
-  active: boolean
   icon: LucideIcon
   title: string
   description: string
   buttonLabel: string
-  onClick: () => void
+  href: string
 }) {
   return (
-    <Card className={`transition-all ${active ? "border-primary/50 bg-primary/5 shadow-md shadow-primary/10" : "hover:border-primary/40"}`}>
-      <CardContent className="flex h-full flex-col gap-5 p-5">
-        <div className="flex items-start gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-            <Icon className="h-7 w-7" />
+    <Link href={href} className="group block">
+      <Card className="h-full transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg">
+        <CardContent className="flex h-full flex-col gap-5 p-5">
+          <div className="flex items-start gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+              <Icon className="h-7 w-7" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold leading-tight">{title}</h2>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-xl font-bold leading-tight">{title}</h2>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
+          <div className="mt-auto flex h-14 items-center justify-center rounded-xl bg-primary px-4 text-base font-bold text-primary-foreground group-hover:bg-primary/90">
+            {buttonLabel}
           </div>
-        </div>
-        <Button className="mt-auto h-14 rounded-xl bg-primary text-base font-bold hover:bg-primary/90" onClick={onClick}>
-          {buttonLabel}
-        </Button>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </Link>
   )
 }
 

@@ -2,6 +2,7 @@
 
 import { useMemo, useState, type ReactNode } from "react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import type { LucideIcon } from "lucide-react"
 import { ArrowLeft, PawPrint, Search, UserPlus, Users } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -29,9 +30,16 @@ export function ClinicalActionFlow({
   icon: Icon,
   children,
 }: ClinicalActionFlowProps) {
+  const searchParams = useSearchParams()
+  const initialClientId = Number(searchParams.get("clienteId"))
+  const initialPetId = Number(searchParams.get("mascotaId"))
+  const initialClient = clientes.some((client) => client.id === initialClientId) ? initialClientId : null
+  const initialPet = mascotas.some((pet) => pet.id === initialPetId && (!initialClient || pet.clienteId === initialClient))
+    ? initialPetId
+    : null
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedClientId, setSelectedClientId] = useState<number | null>(null)
-  const [selectedPetId, setSelectedPetId] = useState<number | null>(null)
+  const [selectedClientId, setSelectedClientId] = useState<number | null>(initialClient)
+  const [selectedPetId, setSelectedPetId] = useState<number | null>(initialPet)
 
   const selectedClient = clientes.find((client) => client.id === selectedClientId) || null
   const selectedPet = mascotas.find((pet) => pet.id === selectedPetId) || null
@@ -87,7 +95,7 @@ export function ClinicalActionFlow({
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5 text-primary" />
-              Buscar cliente o paciente
+              Buscar cliente o mascota
             </CardTitle>
             <CardDescription>
               Selecciona un cliente existente. Si no esta cargado, podes ir a Clientes y crearlo con sus mascotas.
@@ -222,7 +230,7 @@ export function ClinicalActionFlow({
                   Cambiar mascota
                 </Button>
                 <Button variant="outline" size="sm" asChild>
-                  <Link href={`/mascotas/${selectedPet.id}`}>Ver ficha clinica</Link>
+                  <Link href={`/mascotas/${selectedPet.id}`}>Abrir ficha clinica</Link>
                 </Button>
               </div>
             </CardContent>

@@ -22,17 +22,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
+import { NewClientDialog } from "@/components/clientes/new-client-dialog"
 import { clientes, mascotas } from "@/lib/mock-data"
 
 type Client = (typeof clientes)[number]
@@ -40,7 +32,6 @@ type Client = (typeof clientes)[number]
 export function ClientesPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCliente, setSelectedCliente] = useState<Client>(clientes[0])
-  const [petForms, setPetForms] = useState([1])
 
   const filteredClientes = clientes.filter((cliente) => {
     const term = searchTerm.toLowerCase().trim()
@@ -74,82 +65,16 @@ export function ClientesPage() {
         </div>
       </div>
 
-      <Dialog>
-        <div className="flex justify-center">
-          <DialogTrigger asChild>
+      <div className="flex justify-center">
+        <NewClientDialog
+          trigger={
             <Button className="h-20 w-full max-w-xl rounded-xl bg-primary px-8 text-xl font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 sm:text-2xl">
               <UserPlus className="mr-3 h-7 w-7" />
               Nuevo cliente
             </Button>
-          </DialogTrigger>
-        </div>
-        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Nuevo cliente con mascotas</DialogTitle>
-              <DialogDescription>
-                Alta preparada para guardar cliente y mascotas vinculadas en una sola operacion.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="grid gap-5 py-2">
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label="Nombre del cliente" placeholder="Ej: Maria Garcia" />
-                <Field label="Telefono / WhatsApp" placeholder="(376) XXX XXXX" />
-                <Field label="Email" placeholder="cliente@email.com" />
-                <Field label="Direccion" placeholder="Direccion del cliente" />
-              </div>
-
-              <div className="space-y-3 rounded-lg border bg-muted/25 p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <h3 className="font-semibold">Mascotas vinculadas</h3>
-                    <p className="text-sm text-muted-foreground">
-                      La mascota se carga junto al cliente, sin ir a otro modulo.
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    className="h-11 bg-primary px-4 font-semibold hover:bg-primary/90"
-                    onClick={() => setPetForms((forms) => [...forms, forms.length + 1])}
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Otra mascota
-                  </Button>
-                </div>
-
-                <div className="space-y-4">
-                  {petForms.map((formNumber) => (
-                    <div key={formNumber} className="rounded-lg border bg-card p-4">
-                      <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-primary">
-                        <PawPrint className="h-4 w-4" />
-                        Mascota {formNumber}
-                      </div>
-                      <div className="grid gap-3 md:grid-cols-3">
-                        <Field label="Nombre" placeholder="Ej: Luna" />
-                        <Field label="Especie" placeholder="Perro, gato..." />
-                        <Field label="Raza" placeholder="Raza" />
-                        <Field label="Nacimiento" placeholder="AAAA-MM-DD" />
-                        <Field label="Peso" placeholder="Kg" />
-                        <Field label="Sexo" placeholder="Hembra / Macho" />
-                      </div>
-                      <div className="mt-3">
-                        <Label>Antecedentes o alertas</Label>
-                        <Textarea placeholder="Alergias, antecedentes, observaciones clinicas..." />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" className="h-12 px-5">Cancelar</Button>
-                <Button className="h-12 bg-primary px-6 text-base font-bold hover:bg-primary/90">
-                  Guardar cliente y mascotas
-                </Button>
-              </div>
-            </div>
-        </DialogContent>
-      </Dialog>
+          }
+        />
+      </div>
 
       <div className="grid gap-5 xl:grid-cols-[380px_minmax(0,1fr)]">
         <Card>
@@ -270,29 +195,29 @@ export function ClientesPage() {
                       </div>
                     </div>
 
-                    <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-                      <Button className="h-11 bg-primary font-semibold hover:bg-primary/90" asChild>
+                    <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                      <Button className="h-12 justify-center rounded-xl bg-primary px-4 font-bold hover:bg-primary/90" asChild>
                         <Link href={`/mascotas/${mascota.id}`}>
                           <FileHeart className="mr-2 h-4 w-4" />
                           Ficha
                         </Link>
                       </Button>
-                      <Button className="h-11 bg-primary font-semibold hover:bg-primary/90" asChild>
-                        <Link href="/vacunas">
+                      <Button className="h-12 justify-center rounded-xl bg-primary px-4 font-bold hover:bg-primary/90" asChild>
+                        <Link href={`/vacunas/registrar?clienteId=${selectedCliente.id}&mascotaId=${mascota.id}`}>
                           <Syringe className="mr-2 h-4 w-4" />
                           Vacunas
                         </Link>
                       </Button>
-                      <Button className="h-11 bg-primary font-semibold hover:bg-primary/90" asChild>
-                        <Link href="/tratamientos">
+                      <Button className="h-12 justify-center rounded-xl bg-primary px-4 font-bold hover:bg-primary/90" asChild>
+                        <Link href={`/tratamientos/registrar?clienteId=${selectedCliente.id}&mascotaId=${mascota.id}`}>
                           <Pill className="mr-2 h-4 w-4" />
-                          Trat.
+                          Tratamientos
                         </Link>
                       </Button>
-                      <Button className="h-11 bg-primary font-semibold hover:bg-primary/90" asChild>
-                        <Link href="/cirugias">
+                      <Button className="h-12 justify-center rounded-xl bg-primary px-4 font-bold hover:bg-primary/90" asChild>
+                        <Link href={`/cirugias/agendar?clienteId=${selectedCliente.id}&mascotaId=${mascota.id}`}>
                           <Scissors className="mr-2 h-4 w-4" />
-                          Cirugia
+                          Cirugías
                         </Link>
                       </Button>
                     </div>

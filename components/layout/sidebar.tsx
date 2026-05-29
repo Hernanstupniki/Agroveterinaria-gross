@@ -14,7 +14,7 @@ const menuItems = [
   { href: "/clientes", label: "Clientes", icon: Users },
   { href: "/vacunas", label: "Vacunas", icon: Syringe },
   { href: "/tratamientos", label: "Tratamientos", icon: Pill },
-  { href: "/cirugias", label: "Cirugias", icon: Scissors },
+  { href: "/cirugias", label: "Cirugías", icon: Scissors },
 ]
 
 function SidebarContent({ collapsed, onToggle }: { collapsed: boolean; onToggle?: () => void }) {
