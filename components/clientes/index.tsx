@@ -3,40 +3,25 @@
 import { useState } from "react"
 import Link from "next/link"
 import {
-  Search,
-  Plus,
-  Phone,
+  FileHeart,
   Mail,
   MapPin,
   MessageCircle,
   PawPrint,
-  MoreHorizontal,
-  CheckCircle,
-  XCircle,
-  Eye,
-  Edit,
-  Trash2,
+  Phone,
+  Pill,
+  Plus,
+  Scissors,
+  Search,
+  Stethoscope,
+  Syringe,
+  UserPlus,
+  Users,
 } from "lucide-react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -45,219 +30,318 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { clientes, mascotas } from "@/lib/mock-data"
+
+type Client = (typeof clientes)[number]
 
 export function ClientesPage() {
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedCliente, setSelectedCliente] = useState<typeof clientes[0] | null>(null)
+  const [selectedCliente, setSelectedCliente] = useState<Client>(clientes[0])
+  const [petForms, setPetForms] = useState([1])
 
-  const filteredClientes = clientes.filter(
-    (cliente) =>
-      cliente.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      cliente.telefono.includes(searchTerm) ||
-      cliente.email.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const filteredClientes = clientes.filter((cliente) => {
+    const term = searchTerm.toLowerCase().trim()
+    const clienteMascotas = mascotas.filter((mascota) => cliente.mascotas.includes(mascota.id))
 
-  const getMascotasByCliente = (mascotaIds: number[]) => {
-    return mascotas.filter((m) => mascotaIds.includes(m.id))
-  }
+    return (
+      !term ||
+      cliente.nombre.toLowerCase().includes(term) ||
+      cliente.telefono.toLowerCase().includes(term) ||
+      cliente.email.toLowerCase().includes(term) ||
+      clienteMascotas.some((mascota) => mascota.nombre.toLowerCase().includes(term))
+    )
+  })
+
+  const mascotasCliente = mascotas.filter((mascota) => selectedCliente.mascotas.includes(mascota.id))
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Clientes</h1>
-          <p className="text-muted-foreground">
-            Gestión de clientes y dueños de mascotas
-          </p>
+    <div className="space-y-5">
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-sm font-medium text-primary">
+            <Users className="h-4 w-4" />
+            Clientes y mascotas
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Clientes</h1>
+            <p className="max-w-2xl text-muted-foreground">
+              Gestiona dueños, mascotas vinculadas y accesos a historia clinica desde un solo lugar.
+            </p>
+          </div>
         </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Nuevo Cliente
-        </Button>
+
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button className="h-11 bg-primary hover:bg-primary/90">
+              <UserPlus className="mr-2 h-4 w-4" />
+              Nuevo cliente
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Nuevo cliente con mascotas</DialogTitle>
+              <DialogDescription>
+                Alta preparada para guardar cliente y mascotas vinculadas en una sola operacion.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="grid gap-5 py-2">
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Nombre del cliente" placeholder="Ej: Maria Garcia" />
+                <Field label="Telefono / WhatsApp" placeholder="(376) XXX XXXX" />
+                <Field label="Email" placeholder="cliente@email.com" />
+                <Field label="Direccion" placeholder="Direccion del cliente" />
+              </div>
+
+              <div className="space-y-3 rounded-lg border bg-muted/25 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="font-semibold">Mascotas vinculadas</h3>
+                    <p className="text-sm text-muted-foreground">
+                      La mascota se carga junto al cliente, sin ir a otro modulo.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPetForms((forms) => [...forms, forms.length + 1])}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Otra mascota
+                  </Button>
+                </div>
+
+                <div className="space-y-4">
+                  {petForms.map((formNumber) => (
+                    <div key={formNumber} className="rounded-lg border bg-card p-4">
+                      <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-primary">
+                        <PawPrint className="h-4 w-4" />
+                        Mascota {formNumber}
+                      </div>
+                      <div className="grid gap-3 md:grid-cols-3">
+                        <Field label="Nombre" placeholder="Ej: Luna" />
+                        <Field label="Especie" placeholder="Perro, gato..." />
+                        <Field label="Raza" placeholder="Raza" />
+                        <Field label="Nacimiento" placeholder="AAAA-MM-DD" />
+                        <Field label="Peso" placeholder="Kg" />
+                        <Field label="Sexo" placeholder="Hembra / Macho" />
+                      </div>
+                      <div className="mt-3">
+                        <Label>Antecedentes o alertas</Label>
+                        <Textarea placeholder="Alergias, antecedentes, observaciones clinicas..." />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button variant="outline">Cancelar</Button>
+                <Button className="bg-primary hover:bg-primary/90">
+                  Guardar cliente y mascotas
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      {/* Search */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por nombre, teléfono o email..."
-              className="pl-9"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid gap-5 xl:grid-cols-[380px_minmax(0,1fr)]">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Search className="h-5 w-5 text-primary" />
+              Ingresar cliente
+            </CardTitle>
+            <CardDescription>Busca por cliente, telefono, email o nombre de mascota.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                className="h-11 pl-10"
+                placeholder="Buscar cliente o mascota..."
+              />
+            </div>
 
-      {/* Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Listado de Clientes</CardTitle>
-          <CardDescription>{filteredClientes.length} clientes registrados</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead className="hidden md:table-cell">Contacto</TableHead>
-                  <TableHead className="hidden lg:table-cell">Dirección</TableHead>
-                  <TableHead>Mascotas</TableHead>
-                  <TableHead className="hidden sm:table-cell">WhatsApp</TableHead>
-                  <TableHead className="w-[60px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredClientes.map((cliente) => {
-                  const mascotasCliente = getMascotasByCliente(cliente.mascotas)
-                  return (
-                    <TableRow key={cliente.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-9 w-9">
-                            <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                              {cliente.nombre.split(' ').map(n => n[0]).join('')}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium">{cliente.nombre}</p>
-                            <p className="text-xs text-muted-foreground md:hidden">
-                              {cliente.telefono}
-                            </p>
-                          </div>
+            <div className="space-y-2">
+              {filteredClientes.map((cliente) => {
+                const clienteMascotas = mascotas.filter((mascota) => cliente.mascotas.includes(mascota.id))
+                const isSelected = selectedCliente.id === cliente.id
+
+                return (
+                  <button
+                    key={cliente.id}
+                    type="button"
+                    onClick={() => setSelectedCliente(cliente)}
+                    className={`w-full rounded-lg border p-3 text-left transition-colors ${
+                      isSelected ? "border-primary/40 bg-primary/5" : "bg-card hover:border-primary/30 hover:bg-primary/5"
+                    }`}
+                  >
+                    <div className="flex gap-3">
+                      <Avatar className="h-10 w-10">
+                        <AvatarFallback className="bg-primary/10 text-primary">
+                          {cliente.nombre.split(" ").map((part) => part[0]).join("")}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold">{cliente.nombre}</p>
+                        <p className="text-sm text-muted-foreground">{cliente.telefono}</p>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {clienteMascotas.map((mascota) => (
+                            <Badge key={mascota.id} variant="outline" className="text-xs">
+                              {mascota.nombre}
+                            </Badge>
+                          ))}
                         </div>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2 text-sm">
-                            <Phone className="h-3 w-3 text-muted-foreground" />
-                            {cliente.telefono}
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Mail className="h-3 w-3" />
-                            {cliente.email}
-                          </div>
+                      </div>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="space-y-5">
+          <Card className="border-primary/20">
+            <CardHeader>
+              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <CardTitle className="text-xl">{selectedCliente.nombre}</CardTitle>
+                  <CardDescription>Ficha del cliente y mascotas vinculadas</CardDescription>
+                </div>
+                <Button variant="outline">
+                  <PawPrint className="mr-2 h-4 w-4" />
+                  Agregar mascota
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <ContactItem icon={Phone} label="Telefono" value={selectedCliente.telefono} />
+              <ContactItem icon={Mail} label="Email" value={selectedCliente.email} />
+              <ContactItem icon={MapPin} label="Direccion" value={selectedCliente.direccion} />
+              <ContactItem
+                icon={MessageCircle}
+                label="WhatsApp"
+                value={selectedCliente.consentimientoWhatsApp ? "Habilitado" : "Sin consentimiento"}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <PawPrint className="h-5 w-5 text-primary" />
+                Mascotas asociadas
+              </CardTitle>
+              <CardDescription>
+                Desde cada mascota se accede a ficha clinica, vacunas, tratamientos y cirugias.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 lg:grid-cols-2">
+                {mascotasCliente.map((mascota) => (
+                  <article key={mascota.id} className="rounded-lg border bg-card p-4">
+                    <div className="flex items-start gap-3">
+                      <Avatar className="h-12 w-12">
+                        <AvatarFallback className="bg-primary text-primary-foreground text-lg">
+                          {mascota.nombre[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-lg font-semibold">{mascota.nombre}</h3>
+                          <Badge variant="outline">{mascota.estadoGeneral}</Badge>
                         </div>
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell">
-                        <div className="flex items-center gap-2 text-sm">
-                          <MapPin className="h-3 w-3 text-muted-foreground shrink-0" />
-                          <span className="truncate max-w-[200px]">{cliente.direccion}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-auto p-1"
-                              onClick={() => setSelectedCliente(cliente)}
-                            >
-                              <div className="flex items-center gap-1">
-                                <PawPrint className="h-4 w-4 text-primary" />
-                                <span className="font-medium">{mascotasCliente.length}</span>
-                              </div>
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Mascotas de {cliente.nombre}</DialogTitle>
-                              <DialogDescription>
-                                {mascotasCliente.length} mascota(s) registrada(s)
-                              </DialogDescription>
-                            </DialogHeader>
-                            <ScrollArea className="max-h-[400px]">
-                              <div className="space-y-3">
-                                {mascotasCliente.map((mascota) => (
-                                  <div
-                                    key={mascota.id}
-                                    className="flex items-center justify-between rounded-lg border p-3"
-                                  >
-                                    <div className="flex items-center gap-3">
-                                      <Avatar className="h-10 w-10">
-                                        <AvatarFallback className="bg-primary/10 text-primary">
-                                          {mascota.nombre[0]}
-                                        </AvatarFallback>
-                                      </Avatar>
-                                      <div>
-                                        <p className="font-medium">{mascota.nombre}</p>
-                                        <p className="text-sm text-muted-foreground">
-                                          {mascota.especie} • {mascota.raza}
-                                        </p>
-                                      </div>
-                                    </div>
-                                    <Button variant="outline" size="sm" asChild>
-                                      <Link href={`/mascotas/${mascota.id}`}>
-                                        Ver ficha
-                                      </Link>
-                                    </Button>
-                                  </div>
-                                ))}
-                              </div>
-                            </ScrollArea>
-                          </DialogContent>
-                        </Dialog>
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        {cliente.consentimientoWhatsApp ? (
-                          <Badge variant="outline" className="gap-1 text-success border-success/50">
-                            <CheckCircle className="h-3 w-3" />
-                            Activo
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="gap-1 text-muted-foreground">
-                            <XCircle className="h-3 w-3" />
-                            No
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
-                              <Eye className="mr-2 h-4 w-4" />
-                              Ver detalle
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Editar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <MessageCircle className="mr-2 h-4 w-4" />
-                              Enviar WhatsApp
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <PawPrint className="mr-2 h-4 w-4" />
-                              Agregar mascota
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive">
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Eliminar
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+                        <p className="text-sm text-muted-foreground">
+                          {mascota.especie} - {mascota.raza} - {mascota.edad}
+                        </p>
+                        <p className="mt-2 text-sm">
+                          Ultimo diagnostico: <span className="font-medium">{mascota.ultimoDiagnostico}</span>
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/mascotas/${mascota.id}`}>
+                          <FileHeart className="mr-2 h-4 w-4" />
+                          Ficha
+                        </Link>
+                      </Button>
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href="/vacunas">
+                          <Syringe className="mr-2 h-4 w-4" />
+                          Vacunas
+                        </Link>
+                      </Button>
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href="/tratamientos">
+                          <Pill className="mr-2 h-4 w-4" />
+                          Trat.
+                        </Link>
+                      </Button>
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href="/cirugias">
+                          <Scissors className="mr-2 h-4 w-4" />
+                          Cirugia
+                        </Link>
+                      </Button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-primary/20 bg-primary/5">
+            <CardContent className="flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-background text-primary">
+                  <Stethoscope className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="font-semibold">Atencion rapida del cliente seleccionado</p>
+                  <p className="text-sm text-muted-foreground">
+                    Elegi una mascota y carga lo ocurrido desde el modulo clinico correspondiente.
+                  </p>
+                </div>
+              </div>
+              <Button className="bg-primary hover:bg-primary/90" asChild>
+                <Link href="/tratamientos">Iniciar carga clinica</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function Field({ label, placeholder }: { label: string; placeholder: string }) {
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <Input placeholder={placeholder} />
+    </div>
+  )
+}
+
+function ContactItem({ icon: Icon, label, value }: { icon: typeof Phone; label: string; value: string }) {
+  return (
+    <div className="rounded-lg border bg-muted/25 p-3">
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <Icon className="h-4 w-4 text-primary" />
+        {label}
+      </div>
+      <p className="mt-1 truncate text-sm font-semibold">{value}</p>
     </div>
   )
 }

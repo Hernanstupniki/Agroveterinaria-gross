@@ -1,52 +1,20 @@
 "use client"
 
-import { useMemo, useState } from "react"
 import Link from "next/link"
-import {
-  AlertTriangle,
-  Calendar,
-  Check,
-  Clock,
-  Edit,
-  MessageCircle,
-  MoreHorizontal,
-  Plus,
-  Search,
-  Syringe,
-} from "lucide-react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Calendar, Check, Clock, MessageCircle, Plus, Syringe, AlertTriangle } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { vacunasClinicas, mascotas, clientes } from "@/lib/mock-data"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { ClinicalActionFlow } from "@/components/clinical/action-flow"
+import { vacunasClinicas } from "@/lib/mock-data"
 
 const estadoColors: Record<string, string> = {
   Aplicada: "bg-success text-success-foreground",
-  Próxima: "bg-primary text-primary-foreground",
+  Proxima: "bg-primary text-primary-foreground",
+  "Próxima": "bg-primary text-primary-foreground",
   Pendiente: "bg-secondary text-secondary-foreground",
   Vencida: "bg-destructive text-destructive-foreground",
 }
@@ -58,300 +26,156 @@ function formatDate(date?: string | null) {
 }
 
 export function VacunasPage() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [activeTab, setActiveTab] = useState("todas")
-  const [mascotaFilter, setMascotaFilter] = useState("todas")
-  const [duenoFilter, setDuenoFilter] = useState("todos")
-  const [estadoFilter, setEstadoFilter] = useState("todos")
-  const [fechaProxima, setFechaProxima] = useState("")
-
-  const stats = {
-    aplicadas: vacunasClinicas.filter((v) => v.estado === "Aplicada").length,
-    proximas: vacunasClinicas.filter((v) => v.estado === "Próxima").length,
-    pendientes: vacunasClinicas.filter((v) => v.estado === "Pendiente").length,
-    vencidas: vacunasClinicas.filter((v) => v.estado === "Vencida").length,
-  }
-
-  const filteredVacunas = useMemo(() => {
-    const term = searchTerm.toLowerCase().trim()
-
-    return vacunasClinicas.filter((vacuna) => {
-      const matchesSearch =
-        !term ||
-        vacuna.mascota.toLowerCase().includes(term) ||
-        vacuna.dueno.toLowerCase().includes(term) ||
-        vacuna.vacuna.toLowerCase().includes(term)
-      const matchesMascota = mascotaFilter === "todas" || String(vacuna.mascotaId) === mascotaFilter
-      const matchesDueno = duenoFilter === "todos" || vacuna.dueno === duenoFilter
-      const matchesEstado = estadoFilter === "todos" || vacuna.estado === estadoFilter
-      const matchesFecha = !fechaProxima || vacuna.proximaFecha === fechaProxima || vacuna.fechaRecomendada === fechaProxima
-      const matchesTab = activeTab === "todas" || vacuna.estado.toLowerCase() === activeTab
-
-      return matchesSearch && matchesMascota && matchesDueno && matchesEstado && matchesFecha && matchesTab
-    })
-  }, [activeTab, duenoFilter, estadoFilter, fechaProxima, mascotaFilter, searchTerm])
-
-  const vacunasVencidas = vacunasClinicas.filter((vacuna) => vacuna.estado === "Vencida")
-
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Vacunas</h1>
-          <p className="text-muted-foreground">
-            Control global de vacunación y recordatorios WhatsApp por paciente
-          </p>
-        </div>
-        <Button className="bg-primary hover:bg-primary/90">
-          <Plus className="mr-2 h-4 w-4" />
-          Registrar vacuna
-        </Button>
-      </div>
+    <ClinicalActionFlow
+      title="Vacunas"
+      description="Elegir cliente y mascota para revisar el plan, cargar una vacuna y preparar recordatorio."
+      actionLabel="Cargar vacuna"
+      icon={Syringe}
+    >
+      {({ client, pet }) => {
+        const vaccines = vacunasClinicas.filter((vacuna) => vacuna.mascotaId === pet.id)
+        const applied = vaccines.filter((vacuna) => vacuna.estado === "Aplicada").length
+        const next = vaccines.filter((vacuna) => vacuna.estado === "Próxima" || vacuna.estado === "Pendiente").length
+        const expired = vaccines.filter((vacuna) => vacuna.estado === "Vencida").length
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <StatCard icon={Check} label="Aplicadas" value={stats.aplicadas} tone="success" />
-        <StatCard icon={Clock} label="Próximas" value={stats.proximas} tone="primary" />
-        <StatCard icon={AlertTriangle} label="Vencidas" value={stats.vencidas} tone="danger" />
-        <StatCard icon={Syringe} label="Pendientes" value={stats.pendientes} tone="secondary" />
-      </div>
+        return (
+          <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
+            <div className="space-y-5">
+              <div className="grid gap-3 md:grid-cols-3">
+                <StatCard icon={Check} label="Aplicadas" value={applied} />
+                <StatCard icon={Clock} label="Proximas/Pendientes" value={next} />
+                <StatCard icon={AlertTriangle} label="Vencidas" value={expired} danger />
+              </div>
 
-      {vacunasVencidas.length > 0 && (
-        <Card className="border-destructive/50 bg-destructive/5">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="h-5 w-5" />
-              Vacunas vencidas que requieren contacto
-            </CardTitle>
-            <CardDescription>Priorizar estos pacientes para coordinar aplicación o turno.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-              {vacunasVencidas.map((vacuna) => (
-                <div key={vacuna.id} className="rounded-lg border bg-card p-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarFallback className="bg-destructive/10 text-destructive">
-                          {vacuna.mascota[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium">{vacuna.mascota}</p>
-                        <p className="text-sm text-muted-foreground">{vacuna.vacuna}</p>
-                      </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Syringe className="h-5 w-5 text-primary" />
+                    Plan de vacunas de {pet.nombre}
+                  </CardTitle>
+                  <CardDescription>
+                    Lectura rapida de vacunas aplicadas, pendientes, proximas y vencidas.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {vaccines.length > 0 ? (
+                    <div className="grid gap-3 lg:grid-cols-2">
+                      {vaccines.map((vacuna) => (
+                        <article
+                          key={vacuna.id}
+                          className={`rounded-lg border p-4 ${
+                            vacuna.estado === "Vencida" ? "border-destructive/40 bg-destructive/5" : "bg-card"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h3 className="font-semibold">{vacuna.vacuna}</h3>
+                                <Badge className={estadoColors[vacuna.estado] || "bg-muted"}>{vacuna.estado}</Badge>
+                              </div>
+                              <p className="mt-1 text-sm text-muted-foreground">{vacuna.observaciones}</p>
+                            </div>
+                          </div>
+
+                          <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+                            <Info label="Aplicada" value={formatDate(vacuna.fechaAplicada)} />
+                            <Info label="Proxima fecha" value={formatDate(vacuna.proximaFecha || vacuna.fechaRecomendada)} />
+                            <Info label="Veterinario" value={vacuna.veterinario || "A definir"} />
+                            <Info label="Recordatorio" value={formatDate(vacuna.proximoRecordatorio)} />
+                          </div>
+
+                          <div className="mt-3 rounded-lg border bg-muted/25 p-3 text-sm">
+                            <div className="mb-1 flex items-center gap-2 font-medium text-primary">
+                              <MessageCircle className="h-4 w-4" />
+                              Vista previa WhatsApp
+                            </div>
+                            <p className="line-clamp-2 text-muted-foreground">{vacuna.mensajePreview}</p>
+                          </div>
+                        </article>
+                      ))}
                     </div>
-                    <Badge className="bg-destructive text-destructive-foreground">{formatDate(vacuna.proximaFecha)}</Badge>
-                  </div>
-                  <div className="mt-3 flex gap-2">
-                    <Button size="sm" className="bg-destructive hover:bg-destructive/90">
-                      <MessageCircle className="mr-2 h-4 w-4" />
-                      Enviar WhatsApp
-                    </Button>
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href={`/mascotas/${vacuna.mascotaId}`}>Ver mascota</Link>
-                    </Button>
-                  </div>
+                  ) : (
+                    <div className="rounded-lg border border-dashed p-6 text-center text-muted-foreground">
+                      Esta mascota todavia no tiene plan de vacunas cargado.
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card className="h-fit border-primary/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Plus className="h-5 w-5 text-primary" />
+                  Registrar vacuna
+                </CardTitle>
+                <CardDescription>
+                  La carga queda preparada para impactar en historia clinica, actividad diaria y recordatorio.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="rounded-lg border bg-muted/25 p-3 text-sm">
+                  <p className="font-semibold">{client.nombre}</p>
+                  <p className="text-muted-foreground">{pet.nombre} - {pet.especie}</p>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col gap-4">
-            <div>
-              <CardTitle>Registro de vacunas</CardTitle>
-              <CardDescription>Aplicadas, próximas, pendientes y vencidas de toda la veterinaria</CardDescription>
-            </div>
-            <div className="grid gap-3 lg:grid-cols-[1.4fr_1fr_1fr_1fr_180px]">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por mascota, dueño o vacuna..."
-                  className="pl-9"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <Select value={mascotaFilter} onValueChange={setMascotaFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Mascota" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todas">Todas las mascotas</SelectItem>
-                  {mascotas.map((mascota) => (
-                    <SelectItem key={mascota.id} value={String(mascota.id)}>{mascota.nombre}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={duenoFilter} onValueChange={setDuenoFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Dueño" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos los dueños</SelectItem>
-                  {clientes.map((cliente) => (
-                    <SelectItem key={cliente.id} value={cliente.nombre}>{cliente.nombre}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={estadoFilter} onValueChange={setEstadoFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos los estados</SelectItem>
-                  <SelectItem value="Aplicada">Aplicada</SelectItem>
-                  <SelectItem value="Próxima">Próxima</SelectItem>
-                  <SelectItem value="Pendiente">Pendiente</SelectItem>
-                  <SelectItem value="Vencida">Vencida</SelectItem>
-                </SelectContent>
-              </Select>
-              <Input
-                type="date"
-                value={fechaProxima}
-                onChange={(e) => setFechaProxima(e.target.value)}
-                aria-label="Filtrar por próxima fecha"
-              />
-            </div>
+                <Field label="Vacuna" placeholder="Ej: Antirrabica, Quintuple, Bordetella" />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="Fecha aplicada" placeholder="AAAA-MM-DD" />
+                  <Field label="Proxima fecha" placeholder="AAAA-MM-DD" />
+                </div>
+                <Field label="Veterinario responsable" placeholder="Dr./Dra." />
+                <div className="space-y-2">
+                  <Label>Observaciones</Label>
+                  <Textarea placeholder="Lote, laboratorio, reaccion, indicaciones..." />
+                </div>
+
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm">
+                  <p className="font-medium text-primary">Recordatorio preparado</p>
+                  <p className="mt-1 text-muted-foreground">
+                    Si hay proxima fecha, el sistema deja listo el seguimiento por WhatsApp.
+                  </p>
+                </div>
+
+                <Button className="h-11 w-full bg-primary hover:bg-primary/90" asChild>
+                  <Link href="/">
+                    Guardar vacuna y volver al inicio
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
           </div>
-        </CardHeader>
-        <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="mb-4 flex h-auto flex-wrap justify-start">
-              <TabsTrigger value="todas">Todas</TabsTrigger>
-              <TabsTrigger value="aplicada">Aplicadas</TabsTrigger>
-              <TabsTrigger value="próxima">Próximas</TabsTrigger>
-              <TabsTrigger value="pendiente">Pendientes</TabsTrigger>
-              <TabsTrigger value="vencida" className="text-destructive">
-                Vencidas ({stats.vencidas})
-              </TabsTrigger>
-            </TabsList>
+        )
+      }}
+    </ClinicalActionFlow>
+  )
+}
 
-            <TabsContent value={activeTab}>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Mascota</TableHead>
-                      <TableHead>Dueño</TableHead>
-                      <TableHead>Vacuna</TableHead>
-                      <TableHead>Estado</TableHead>
-                      <TableHead className="hidden md:table-cell">Fecha aplicada</TableHead>
-                      <TableHead className="hidden lg:table-cell">Próxima fecha</TableHead>
-                      <TableHead className="hidden xl:table-cell">Recordatorio WhatsApp</TableHead>
-                      <TableHead className="w-[60px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredVacunas.map((vacuna) => (
-                      <TableRow key={vacuna.id} className={vacuna.estado === "Vencida" ? "bg-destructive/5" : ""}>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-8 w-8">
-                              <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                                {vacuna.mascota[0]}
-                              </AvatarFallback>
-                            </Avatar>
-                            <Link href={`/mascotas/${vacuna.mascotaId}`} className="font-medium hover:text-primary">
-                              {vacuna.mascota}
-                            </Link>
-                          </div>
-                        </TableCell>
-                        <TableCell>{vacuna.dueno}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Syringe className="h-4 w-4 text-primary" />
-                            <span className="font-medium">{vacuna.vacuna}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={estadoColors[vacuna.estado]}>{vacuna.estado}</Badge>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">{formatDate(vacuna.fechaAplicada)}</TableCell>
-                        <TableCell className="hidden lg:table-cell">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            {formatDate(vacuna.proximaFecha || vacuna.fechaRecomendada)}
-                          </div>
-                        </TableCell>
-                        <TableCell className="hidden xl:table-cell">
-                          <div className="space-y-1">
-                            <Badge variant={vacuna.recordatorioProgramado ? "outline" : "secondary"} className={vacuna.recordatorioProgramado ? "border-primary/40 text-primary" : ""}>
-                              {vacuna.recordatorioProgramado ? "Programado" : "Sin programar"}
-                            </Badge>
-                            <p className="text-xs text-muted-foreground">{formatDate(vacuna.proximoRecordatorio)}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem asChild>
-                                <Link href={`/mascotas/${vacuna.mascotaId}`}>Ver mascota</Link>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Check className="mr-2 h-4 w-4" />
-                                Registrar aplicación
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Calendar className="mr-2 h-4 w-4" />
-                                Programar recordatorio
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <MessageCircle className="mr-2 h-4 w-4" />
-                                Enviar WhatsApp
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Editar
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+function Field({ label, placeholder }: { label: string; placeholder: string }) {
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <Input placeholder={placeholder} />
     </div>
   )
 }
 
-function StatCard({
-  icon: Icon,
-  label,
-  value,
-  tone,
-}: {
-  icon: typeof Syringe
-  label: string
-  value: number
-  tone: "success" | "primary" | "danger" | "secondary"
-}) {
-  const toneClass = {
-    success: "bg-success/10 text-success",
-    primary: "bg-primary/10 text-primary",
-    danger: "bg-destructive/10 text-destructive",
-    secondary: "bg-secondary/20 text-secondary-foreground",
-  }[tone]
-
+function Info({ label, value }: { label: string; value: string }) {
   return (
-    <Card>
-      <CardContent className="flex items-center gap-4 pt-6">
-        <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${toneClass}`}>
-          <Icon className="h-6 w-6" />
+    <div className="rounded-md bg-muted/35 px-3 py-2">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="truncate font-medium">{value}</p>
+    </div>
+  )
+}
+
+function StatCard({ icon: Icon, label, value, danger }: { icon: typeof Syringe; label: string; value: number; danger?: boolean }) {
+  return (
+    <Card className={danger ? "border-destructive/30 bg-destructive/5" : ""}>
+      <CardContent className="flex items-center gap-3 p-4">
+        <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${danger ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"}`}>
+          <Icon className="h-5 w-5" />
         </div>
         <div>
           <p className="text-2xl font-bold">{value}</p>

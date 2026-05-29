@@ -220,9 +220,9 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
     <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Button variant="ghost" size="sm" asChild className="-ml-2 w-fit">
-          <Link href="/mascotas">
+          <Link href="/clientes">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Volver a mascotas
+            Volver a clientes
           </Link>
         </Button>
         <div className="flex flex-wrap gap-2">

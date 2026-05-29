@@ -1,344 +1,228 @@
 "use client"
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import Link from "next/link"
+import { AlertTriangle, Calendar, CheckCircle2, Clock, Plus, Scissors, ShieldCheck } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  Search,
-  Plus,
-  Calendar,
-  Clock,
-  Stethoscope,
-  AlertTriangle,
-  CheckCircle2,
-  Timer,
-  FileText,
-} from "lucide-react"
-import { cirugias, mascotas, profesionales } from "@/lib/mock-data"
+import { ClinicalActionFlow } from "@/components/clinical/action-flow"
+import { cirugias, profesionales } from "@/lib/mock-data"
 
-const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: React.ReactNode }> = {
-  "Programada": { label: "Programada", variant: "secondary", icon: <Calendar className="h-3 w-3" /> },
-  "En curso": { label: "En Curso", variant: "default", icon: <Timer className="h-3 w-3" /> },
-  "Completada": { label: "Completada", variant: "outline", icon: <CheckCircle2 className="h-3 w-3" /> },
-  "Cancelada": { label: "Cancelada", variant: "destructive", icon: <AlertTriangle className="h-3 w-3" /> },
-  "Pendiente confirmación": { label: "Pendiente", variant: "secondary", icon: <Clock className="h-3 w-3" /> },
-}
+const scheduledStates = ["Programada", "Pendiente confirmaciÃ³n", "En preparacion", "En preparaciÃ³n"]
 
-const riskConfig: Record<string, { label: string; color: string }> = {
-  "Bajo": { label: "Bajo", color: "bg-green-100 text-green-800" },
-  "Moderado": { label: "Moderado", color: "bg-yellow-100 text-yellow-800" },
-  "Alto": { label: "Alto", color: "bg-red-100 text-red-800" },
+const estadoColors: Record<string, string> = {
+  Programada: "bg-primary text-primary-foreground",
+  "Pendiente confirmaciÃ³n": "bg-warning text-warning-foreground",
+  "En preparacion": "bg-secondary text-secondary-foreground",
+  "En preparaciÃ³n": "bg-secondary text-secondary-foreground",
+  Realizada: "bg-success text-success-foreground",
+  Cancelada: "bg-destructive text-destructive-foreground",
+  Reprogramada: "bg-muted text-muted-foreground",
 }
 
 export default function CirugiasScreen() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-
-  const filteredCirugias = cirugias.filter((cirugia) => {
-    const matchesSearch =
-      cirugia.tipo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      cirugia.mascota.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      cirugia.dueno.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = statusFilter === "all" || cirugia.estado === statusFilter
-    return matchesSearch && matchesStatus
-  })
-
-  const getMascotaInfo = (mascotaId: number) => mascotas.find((m) => m.id === mascotaId)
-  const veterinarios = profesionales.filter((p) => p.rol === "Veterinario")
-
-  const programadasCount = cirugias.filter((c) => c.estado === "Programada").length
-  const enCursoCount = cirugias.filter((c) => c.estado === "En curso").length
-  const completadasCount = cirugias.filter((c) => c.estado === "Completada").length
-
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Cirugías</h1>
-          <p className="text-muted-foreground">
-            Gestión de procedimientos quirúrgicos
-          </p>
-        </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-primary hover:bg-primary/90">
-              <Plus className="mr-2 h-4 w-4" />
-              Programar Cirugía
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Programar Nueva Cirugía</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Mascota</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar mascota" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {mascotas.map((mascota) => (
-                        <SelectItem key={mascota.id} value={String(mascota.id)}>
-                          {mascota.nombre} - {mascota.especie}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Veterinario</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar veterinario" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {veterinarios.map((vet) => (
-                        <SelectItem key={vet.id} value={String(vet.id)}>
-                          {vet.nombre}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Tipo de Cirugía</Label>
-                <Input placeholder="Ej: Castración, Extracción dental..." />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Fecha</Label>
-                  <Input type="date" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Hora</Label>
-                  <Input type="time" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Duración Estimada</Label>
-                  <Input placeholder="Ej: 45 minutos" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Nivel de Riesgo</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar riesgo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Bajo">Bajo</SelectItem>
-                      <SelectItem value="Moderado">Moderado</SelectItem>
-                      <SelectItem value="Alto">Alto</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Notas Preoperatorias</Label>
-                <Textarea placeholder="Instrucciones especiales, ayuno previo, etc." />
-              </div>
-              <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button className="bg-primary hover:bg-primary/90" onClick={() => setIsDialogOpen(false)}>
-                  Programar Cirugía
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
+    <ClinicalActionFlow
+      title="Cirugias"
+      description="Agendar, validar y registrar procedimientos quirurgicos vinculados a agenda e historia clinica."
+      actionLabel="Agendar o registrar"
+      icon={Scissors}
+    >
+      {({ client, pet }) => {
+        const petSurgeries = cirugias.filter((cirugia) => cirugia.mascotaId === pet.id)
+        const scheduledSurgeries = petSurgeries.filter((cirugia) => scheduledStates.includes(cirugia.estado))
+        const completedSurgeries = petSurgeries.filter((cirugia) => cirugia.estado === "Realizada")
+        const veterinarios = profesionales.filter((profesional) => profesional.rol === "Veterinario")
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="rounded-full bg-blue-100 p-3">
-                <Calendar className="h-5 w-5 text-blue-600" />
+        return (
+          <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_430px]">
+            <div className="space-y-5">
+              <div className="grid gap-3 md:grid-cols-3">
+                <StatCard icon={Calendar} label="Agendadas" value={scheduledSurgeries.length} />
+                <StatCard icon={CheckCircle2} label="Realizadas" value={completedSurgeries.length} />
+                <StatCard icon={Scissors} label="Historial" value={petSurgeries.length} />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Programadas</p>
-                <p className="text-2xl font-bold">{programadasCount}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="rounded-full bg-primary/10 p-3">
-                <Timer className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">En Curso</p>
-                <p className="text-2xl font-bold">{enCursoCount}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="rounded-full bg-green-100 p-3">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Completadas</p>
-                <p className="text-2xl font-bold">{completadasCount}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="rounded-full bg-orange-100 p-3">
-                <Stethoscope className="h-5 w-5 text-orange-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total</p>
-                <p className="text-2xl font-bold">{cirugias.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col gap-4 sm:flex-row">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por tipo, mascota o dueño..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Estado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los estados</SelectItem>
-                <SelectItem value="Programada">Programada</SelectItem>
-                <SelectItem value="En curso">En Curso</SelectItem>
-                <SelectItem value="Completada">Completada</SelectItem>
-                <SelectItem value="Cancelada">Cancelada</SelectItem>
-                <SelectItem value="Pendiente confirmación">Pendiente</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Surgery Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Lista de Cirugías</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Mascota</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Hora</TableHead>
-                  <TableHead>Veterinario</TableHead>
-                  <TableHead>Riesgo</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredCirugias.map((cirugia) => {
-                  const mascotaInfo = getMascotaInfo(cirugia.mascotaId)
-                  const status = statusConfig[cirugia.estado] || statusConfig["Programada"]
-                  const riesgo = cirugia.prequirurgico?.riesgoQuirurgico || "Bajo"
-                  const risk = riskConfig[riesgo] || riskConfig["Bajo"]
-
-                  return (
-                    <TableRow key={cirugia.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-lg">
-                            {mascotaInfo?.especie === "Perro" ? "🐕" : mascotaInfo?.especie === "Gato" ? "🐈" : "🐾"}
-                          </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Scissors className="h-5 w-5 text-primary" />
+                    Cirugias de {pet.nombre}
+                  </CardTitle>
+                  <CardDescription>
+                    Toda cirugia realizada debe estar asociada a una agenda/turno quirurgico.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {petSurgeries.length > 0 ? (
+                    petSurgeries.map((cirugia) => (
+                      <article key={cirugia.id} className="rounded-lg border bg-card p-4">
+                        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                           <div>
-                            <p className="font-medium">{cirugia.mascota}</p>
-                            <p className="text-sm text-muted-foreground">{cirugia.dueno}</p>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="font-semibold">{cirugia.tipo}</h3>
+                              <Badge className={estadoColors[cirugia.estado] || "bg-muted"}>
+                                {cirugia.estado}
+                              </Badge>
+                            </div>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                              {cirugia.fecha} - {cirugia.hora} - {cirugia.veterinario}
+                            </p>
                           </div>
+                          <Badge variant="outline">
+                            Riesgo {cirugia.prequirurgico?.riesgoQuirurgico || "A definir"}
+                          </Badge>
                         </div>
-                      </TableCell>
-                      <TableCell className="font-medium">{cirugia.tipo}</TableCell>
-                      <TableCell>{cirugia.fecha}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3 text-muted-foreground" />
-                          {cirugia.hora}
+
+                        <div className="mt-3 grid gap-2 text-sm md:grid-cols-3">
+                          <Info label="Consentimiento" value={cirugia.consentimiento.firmado ? "Firmado" : "Pendiente"} />
+                          <Info label="Prequirurgico" value={cirugia.prequirurgico ? "Cargado" : "Pendiente"} />
+                          <Info label="Registro" value={cirugia.registroCirugia ? "Realizado" : "Sin registrar"} />
                         </div>
-                      </TableCell>
-                      <TableCell>{cirugia.veterinario}</TableCell>
-                      <TableCell>
-                        <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${risk.color}`}>
-                          {risk.label}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={status.variant} className="gap-1">
-                          {status.icon}
-                          {status.label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="sm">
-                          <FileText className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
+                      </article>
+                    ))
+                  ) : (
+                    <div className="rounded-lg border border-dashed p-6 text-center text-muted-foreground">
+                      {pet.nombre} no tiene cirugias cargadas.
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className={scheduledSurgeries.length ? "border-success/25 bg-success/5" : "border-destructive/30 bg-destructive/5"}>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    {scheduledSurgeries.length ? (
+                      <ShieldCheck className="h-5 w-5 text-success" />
+                    ) : (
+                      <AlertTriangle className="h-5 w-5 text-destructive" />
+                    )}
+                    Registrar cirugia ya agendada
+                  </CardTitle>
+                  <CardDescription>
+                    Validacion obligatoria antes de marcar una cirugia como realizada.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {scheduledSurgeries.length > 0 ? (
+                    scheduledSurgeries.map((cirugia) => (
+                      <div key={cirugia.id} className="rounded-lg border bg-card p-4">
+                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                          <div>
+                            <p className="font-semibold">{cirugia.tipo}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Turno quirurgico: {cirugia.fecha} - {cirugia.hora}
+                            </p>
+                          </div>
+                          <Button className="bg-primary hover:bg-primary/90" asChild>
+                            <Link href="/">Registrar realizada y volver al inicio</Link>
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="rounded-lg border border-destructive/30 bg-background p-4">
+                      <p className="font-semibold text-destructive">
+                        Para registrar una cirugia primero debe estar agendada.
+                      </p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Usa el formulario de agenda para crear el turno quirurgico de {pet.nombre}.
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card className="h-fit border-primary/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Plus className="h-5 w-5 text-primary" />
+                  Agendar cirugia
+                </CardTitle>
+                <CardDescription>
+                  Crea el evento de agenda antes de permitir el registro quirurgico.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="rounded-lg border bg-muted/25 p-3 text-sm">
+                  <p className="font-semibold">{client.nombre}</p>
+                  <p className="text-muted-foreground">{pet.nombre} - {pet.especie}</p>
+                </div>
+
+                <Field label="Tipo de cirugia" placeholder="Ej: Castracion, extirpacion, limpieza dental" />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="Fecha" placeholder="AAAA-MM-DD" />
+                  <Field label="Hora" placeholder="HH:MM" />
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="Duracion estimada" placeholder="Ej: 45 minutos" />
+                  <Field label="Riesgo" placeholder="Bajo / Moderado / Alto" />
+                </div>
+                <Field
+                  label="Veterinario"
+                  placeholder={veterinarios.map((veterinario) => veterinario.nombre).join(" / ")}
+                />
+                <div className="space-y-2">
+                  <Label>Notas preoperatorias</Label>
+                  <Textarea placeholder="Ayuno, estudios requeridos, consentimiento, observaciones..." />
+                </div>
+
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm">
+                  <div className="flex items-center gap-2 font-medium text-primary">
+                    <Clock className="h-4 w-4" />
+                    Estado inicial: agendada
+                  </div>
+                  <p className="mt-1 text-muted-foreground">
+                    Luego se podra pasar a en preparacion, realizada, cancelada o reprogramada.
+                  </p>
+                </div>
+
+                <Button className="h-11 w-full bg-primary hover:bg-primary/90" asChild>
+                  <Link href="/">Agendar cirugia y volver al inicio</Link>
+                </Button>
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
+        )
+      }}
+    </ClinicalActionFlow>
+  )
+}
+
+function Field({ label, placeholder }: { label: string; placeholder: string }) {
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <Input placeholder={placeholder} />
     </div>
+  )
+}
+
+function Info({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md bg-muted/35 px-3 py-2">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="truncate font-medium">{value}</p>
+    </div>
+  )
+}
+
+function StatCard({ icon: Icon, label, value }: { icon: typeof Scissors; label: string; value: number }) {
+  return (
+    <Card>
+      <CardContent className="flex items-center gap-3 p-4">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <Icon className="h-5 w-5" />
+        </div>
+        <div>
+          <p className="text-2xl font-bold">{value}</p>
+          <p className="text-sm text-muted-foreground">{label}</p>
+        </div>
+      </CardContent>
+    </Card>
   )
 }
