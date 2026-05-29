@@ -103,7 +103,7 @@ export function TratamientosPage() {
                         </div>
 
                         <div className="mt-3 flex flex-wrap gap-2">
-                          <Button variant="outline" size="sm">
+                          <Button className="h-11 bg-primary font-semibold hover:bg-primary/90">
                             <Plus className="mr-2 h-4 w-4" />
                             Agregar control
                           </Button>

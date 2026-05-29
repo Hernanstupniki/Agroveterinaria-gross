@@ -109,8 +109,7 @@ export function ClientesPage() {
                   </div>
                   <Button
                     type="button"
-                    variant="outline"
-                    size="sm"
+                    className="h-11 bg-primary px-4 font-semibold hover:bg-primary/90"
                     onClick={() => setPetForms((forms) => [...forms, forms.length + 1])}
                   >
                     <Plus className="mr-2 h-4 w-4" />
@@ -143,8 +142,8 @@ export function ClientesPage() {
               </div>
 
               <div className="flex justify-end gap-2">
-                <Button variant="outline">Cancelar</Button>
-                <Button className="bg-primary hover:bg-primary/90">
+                <Button variant="outline" className="h-12 px-5">Cancelar</Button>
+                <Button className="h-12 bg-primary px-6 text-base font-bold hover:bg-primary/90">
                   Guardar cliente y mascotas
                 </Button>
               </div>
@@ -272,25 +271,25 @@ export function ClientesPage() {
                     </div>
 
                     <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-                      <Button variant="outline" size="sm" asChild>
+                      <Button className="h-11 bg-primary font-semibold hover:bg-primary/90" asChild>
                         <Link href={`/mascotas/${mascota.id}`}>
                           <FileHeart className="mr-2 h-4 w-4" />
                           Ficha
                         </Link>
                       </Button>
-                      <Button variant="outline" size="sm" asChild>
+                      <Button className="h-11 bg-primary font-semibold hover:bg-primary/90" asChild>
                         <Link href="/vacunas">
                           <Syringe className="mr-2 h-4 w-4" />
                           Vacunas
                         </Link>
                       </Button>
-                      <Button variant="outline" size="sm" asChild>
+                      <Button className="h-11 bg-primary font-semibold hover:bg-primary/90" asChild>
                         <Link href="/tratamientos">
                           <Pill className="mr-2 h-4 w-4" />
                           Trat.
                         </Link>
                       </Button>
-                      <Button variant="outline" size="sm" asChild>
+                      <Button className="h-11 bg-primary font-semibold hover:bg-primary/90" asChild>
                         <Link href="/cirugias">
                           <Scissors className="mr-2 h-4 w-4" />
                           Cirugia
@@ -316,7 +315,7 @@ export function ClientesPage() {
                   </p>
                 </div>
               </div>
-              <Button className="bg-primary hover:bg-primary/90" asChild>
+              <Button className="h-12 bg-primary px-5 font-bold hover:bg-primary/90" asChild>
                 <Link href="/tratamientos">Iniciar carga clinica</Link>
               </Button>
             </CardContent>

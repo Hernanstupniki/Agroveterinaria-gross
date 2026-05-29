@@ -226,11 +226,11 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
           </Link>
         </Button>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm">
+          <Button className="h-11 bg-primary px-4 font-semibold hover:bg-primary/90">
             <Edit className="mr-2 h-4 w-4" />
             Editar ficha
           </Button>
-          <Button size="sm" className="bg-primary hover:bg-primary/90">
+          <Button className="h-11 bg-primary px-4 font-semibold hover:bg-primary/90">
             <Plus className="mr-2 h-4 w-4" />
             Nueva atención
           </Button>
@@ -363,7 +363,7 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
                   </CardTitle>
                   <CardDescription>Aplicadas, próximas, pendientes y vencidas para este paciente</CardDescription>
                 </div>
-                <Button size="sm" className="bg-primary hover:bg-primary/90" asChild>
+                <Button className="h-12 bg-primary px-5 font-bold hover:bg-primary/90" asChild>
                   <Link href="/vacunas">
                     <Plus className="mr-2 h-4 w-4" />
                     Registrar vacuna
@@ -683,11 +683,11 @@ function VaccinePlanItem({ vacuna }: { vacuna: (typeof vacunasClinicas)[number] 
       </div>
 
       <div className="mt-3 flex flex-wrap justify-end gap-2">
-        <Button variant="outline" size="sm" disabled={!isActionable}>
+        <Button className="h-11 bg-primary font-semibold hover:bg-primary/90" disabled={!isActionable}>
           <Calendar className="mr-2 h-4 w-4" />
           Programar
         </Button>
-        <Button size="sm" className={vacuna.estado === "Vencida" ? "bg-destructive hover:bg-destructive/90" : "bg-primary hover:bg-primary/90"}>
+        <Button className={vacuna.estado === "Vencida" ? "h-11 bg-destructive font-semibold hover:bg-destructive/90" : "h-11 bg-primary font-semibold hover:bg-primary/90"}>
           <MessageCircle className="mr-2 h-4 w-4" />
           Enviar
         </Button>

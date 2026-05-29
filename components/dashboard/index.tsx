@@ -94,10 +94,10 @@ export function Dashboard() {
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <Button className="h-12 bg-primary px-5 hover:bg-primary/90" asChild>
+        <Button className="h-14 rounded-xl bg-primary px-7 text-base font-bold shadow-md shadow-primary/15 hover:bg-primary/90" asChild>
           <Link href="/clientes">Buscar cliente o paciente</Link>
         </Button>
-        <Button variant="outline" className="h-12 px-5" asChild>
+        <Button className="h-14 rounded-xl bg-primary px-7 text-base font-bold shadow-md shadow-primary/15 hover:bg-primary/90" asChild>
           <Link href="/vacunas">Cargar vacuna rapida</Link>
         </Button>
       </div>

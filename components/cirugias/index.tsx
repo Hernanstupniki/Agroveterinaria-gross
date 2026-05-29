@@ -157,7 +157,7 @@ export default function CirugiasScreen() {
                               Turno quirurgico: {cirugia.fecha} - {cirugia.hora}
                             </p>
                           </div>
-                          <Button className="bg-primary hover:bg-primary/90" asChild>
+                          <Button className="h-12 bg-primary px-5 font-bold hover:bg-primary/90" asChild>
                             <Link href="/">Registrar realizada y volver al inicio</Link>
                           </Button>
                         </div>

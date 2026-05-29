@@ -315,7 +315,7 @@ function VaccineWorkspace({
                 <Label>Observaciones</Label>
                 <Textarea className="bg-background" placeholder="Indicaciones generales del esquema..." />
               </div>
-              <Button className="mt-4 h-12 bg-primary hover:bg-primary/90">
+              <Button className="mt-4 h-14 rounded-xl bg-primary px-6 text-base font-bold shadow-md shadow-primary/15 hover:bg-primary/90">
                 <Plus className="mr-2 h-4 w-4" />
                 Crear esquema
               </Button>
