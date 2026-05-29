@@ -682,14 +682,6 @@ function VaccinePlanItem({ vacuna }: { vacuna: (typeof vacunasClinicas)[number] 
         <CompactDetail label="Recordatorio" value={formatDate(vacuna.proximoRecordatorio)} />
       </div>
 
-      <div className="mt-3 rounded-lg border bg-background/70 p-2.5">
-        <div className="mb-1.5 flex items-center gap-2 text-xs font-medium text-primary">
-          <MessageCircle className="h-4 w-4" />
-          Vista previa WhatsApp
-        </div>
-        <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">{vacuna.mensajePreview}</p>
-      </div>
-
       <div className="mt-3 flex flex-wrap justify-end gap-2">
         <Button variant="outline" size="sm" disabled={!isActionable}>
           <Calendar className="mr-2 h-4 w-4" />
