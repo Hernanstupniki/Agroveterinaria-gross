@@ -1,7 +1,8 @@
 "use client"
 
-import { useMemo, useState } from "react"
 import Link from "next/link"
+import { useMemo, useState } from "react"
+import type { LucideIcon } from "lucide-react"
 import {
   AlertTriangle,
   Bell,
@@ -28,6 +29,7 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { ClinicalActionFlow } from "@/components/clinical/action-flow"
+import { clientes, mascotas } from "@/lib/mock-data"
 import {
   buildPetVaccinationHistory,
   buildPetVaccineSchedule,
@@ -40,7 +42,7 @@ import {
   vaccineSchemes,
 } from "@/lib/vaccine-workflow"
 
-type VaccineMode = "registrar" | "pendientes" | "esquemas"
+type VaccineMode = "registrar" | "pendientes" | "esquemas" | null
 
 const scheduleStatusStyles: Record<string, string> = {
   pendiente: "bg-primary text-primary-foreground",
@@ -56,19 +58,78 @@ function formatDate(date?: string | null) {
 }
 
 export function VacunasPage() {
+  const [mode, setMode] = useState<VaccineMode>(null)
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 rounded-2xl border border-primary/20 bg-primary/5 p-5 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-2 rounded-full bg-primary px-3 py-1 text-sm font-bold text-primary-foreground">
+            <Syringe className="h-4 w-4" />
+            Vacunas
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold tracking-normal">Que queres hacer con vacunas?</h1>
+            <p className="mt-1 max-w-2xl text-muted-foreground">
+              Registro clinico diario, control de pendientes y configuracion de esquemas quedan separados para que no se mezclen tareas.
+            </p>
+          </div>
+        </div>
+        {mode && (
+          <Button variant="outline" className="h-12 rounded-xl" onClick={() => setMode(null)}>
+            Ver acciones de Vacunas
+          </Button>
+        )}
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <ActionCard
+          active={mode === "registrar"}
+          icon={Syringe}
+          title="Registrar vacuna"
+          description="Seleccionar cliente, mascota, vacuna, dosis y fecha de aplicacion."
+          buttonLabel="Registrar vacuna"
+          onClick={() => setMode("registrar")}
+        />
+        <ActionCard
+          active={mode === "pendientes"}
+          icon={ClipboardList}
+          title="Vacunas pendientes"
+          description="Ver proximas dosis, pendientes y vencidas de todas las mascotas."
+          buttonLabel="Ver pendientes"
+          onClick={() => setMode("pendientes")}
+        />
+        <ActionCard
+          active={mode === "esquemas"}
+          icon={Settings}
+          title="Esquemas de vacunacion"
+          description="Configurar vacunas, dosis, intervalos y refuerzos por especie."
+          buttonLabel="Abrir esquemas"
+          onClick={() => setMode("esquemas")}
+        />
+      </div>
+
+      {mode === "registrar" && <VaccineRegistrationFlow />}
+      {mode === "pendientes" && <PendingVaccines onRegister={() => setMode("registrar")} />}
+      {mode === "esquemas" && <VaccineSchemes />}
+    </div>
+  )
+}
+
+function VaccineRegistrationFlow() {
   return (
     <ClinicalActionFlow
-      title="Vacunas"
-      description="Elegir cliente y mascota para registrar dosis, revisar pendientes o configurar esquemas por especie."
-      actionLabel="Gestionar vacunas"
+      title="Registrar vacuna"
+      description="Primero elegi cliente y mascota; despues carga vacuna, dosis, fecha y origen del registro."
+      actionLabel="Registrar vacuna"
       icon={Syringe}
     >
-      {({ client, pet }) => <VaccineWorkspace key={pet.id} client={client} pet={pet} />}
+      {({ client, pet }) => <VaccineRegistrationForm key={pet.id} client={client} pet={pet} />}
     </ClinicalActionFlow>
   )
 }
 
-function VaccineWorkspace({
+function VaccineRegistrationForm({
   client,
   pet,
 }: {
@@ -76,8 +137,8 @@ function VaccineWorkspace({
   pet: { id: number; nombre: string; especie: string; raza: string }
 }) {
   const speciesVaccines = useMemo(() => getActiveVaccinesForSpecies(pet.especie), [pet.especie])
-  const firstVaccineId = speciesVaccines[0]?.id || vaccineSchemes[0]?.id || ""
-  const [mode, setMode] = useState<VaccineMode>("registrar")
+  const availableVaccines = speciesVaccines.length > 0 ? speciesVaccines : vaccineSchemes.filter((scheme) => scheme.active)
+  const firstVaccineId = availableVaccines[0]?.id || ""
   const [selectedVaccineId, setSelectedVaccineId] = useState(firstVaccineId)
   const selectedDoses = getDosesForVaccine(selectedVaccineId)
   const [selectedDoseId, setSelectedDoseId] = useState(selectedDoses[0]?.id || "")
@@ -91,7 +152,6 @@ function VaccineWorkspace({
   const selectedVaccine = vaccineSchemes.find((scheme) => scheme.id === selectedVaccineId)
   const selectedDose = vaccineDoses.find((dose) => dose.id === effectiveDoseId)
   const history = buildPetVaccinationHistory(pet.id)
-  const schedule = buildPetVaccineSchedule(pet.id)
   const nextDose = selectedVaccine && selectedDose ? calculateNextDose(selectedVaccine.id, selectedDose.id, appliedAt) : null
   const previousDose = selectedDoses.find((dose) => selectedDose && dose.order === selectedDose.order - 1)
   const hasPreviousDose = previousDose ? history.some((record) => record.doseId === previousDose.id) : true
@@ -99,297 +159,312 @@ function VaccineWorkspace({
     (record) => record.vaccineId === selectedVaccineId && record.doseId === effectiveDoseId && record.appliedAt === appliedAt,
   )
   const outOfOrder = Boolean(previousDose && !hasPreviousDose)
-  const canSave = Boolean(selectedVaccine && selectedDose && appliedAt && !duplicateDose && (!outOfOrder || origin === "carga_historica" || manualConfirm))
+  const canSave = Boolean(
+    selectedVaccine &&
+      selectedDose &&
+      appliedAt &&
+      !duplicateDose &&
+      (!outOfOrder || origin === "carga_historica" || manualConfirm),
+  )
 
   return (
     <div className="space-y-5">
-      <div className="grid gap-3 lg:grid-cols-3">
-        <ModeButton
-          active={mode === "registrar"}
-          icon={Syringe}
-          title="Registrar vacuna aplicada"
-          description="Cargar dosis, fecha y calcular proxima aplicacion."
-          onClick={() => setMode("registrar")}
-        />
-        <ModeButton
-          active={mode === "pendientes"}
-          icon={ClipboardList}
-          title="Ver vacunas pendientes"
-          description="Revisar calendario, vencidas y recordatorios preparados."
-          onClick={() => setMode("pendientes")}
-        />
-        <ModeButton
-          active={mode === "esquemas"}
-          icon={Settings}
-          title="Configurar esquemas"
-          description="Definir vacunas, dosis, intervalos y estado del esquema."
-          onClick={() => setMode("esquemas")}
-        />
-      </div>
+      <Card className="border-primary/30 bg-primary/5 shadow-sm">
+        <CardHeader className="text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+            <Plus className="h-7 w-7" />
+          </div>
+          <CardTitle className="text-2xl">Registrar vacuna aplicada</CardTitle>
+          <CardDescription>
+            Al guardar se prepara historia clinica, dosis aplicada, proxima aplicacion y recordatorio.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="mx-auto grid w-full max-w-5xl gap-5">
+          <PatientSummary client={client} pet={pet} />
 
-      {mode === "registrar" && (
-        <Card className="border-primary/30 bg-primary/5 shadow-sm">
-          <CardHeader className="text-center">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-              <Plus className="h-7 w-7" />
-            </div>
-            <CardTitle className="text-2xl">Registrar vacuna aplicada</CardTitle>
-            <CardDescription>
-              Al guardar se prepara historia clinica, dosis aplicada, proxima aplicacion y recordatorio.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="mx-auto grid w-full max-w-5xl gap-5">
-            <PatientSummary client={client} pet={pet} />
-
-            <div className="grid gap-4 lg:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Vacuna</Label>
-                <Select
-                  value={selectedVaccineId}
-                  onValueChange={(value) => {
-                    setSelectedVaccineId(value)
-                    setSelectedDoseId(getDosesForVaccine(value)[0]?.id || "")
-                  }}
-                >
-                  <SelectTrigger className="h-12 bg-background">
-                    <SelectValue placeholder="Seleccionar vacuna" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {speciesVaccines.map((scheme) => (
-                      <SelectItem key={scheme.id} value={scheme.id}>
-                        {scheme.name} - {scheme.species}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Dosis aplicada</Label>
-                <Select value={effectiveDoseId} onValueChange={setSelectedDoseId}>
-                  <SelectTrigger className="h-12 bg-background">
-                    <SelectValue placeholder="Seleccionar dosis" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {selectedDoses.map((dose) => (
-                      <SelectItem key={dose.id} value={dose.id}>
-                        {dose.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Field label="Fecha de aplicacion" value={appliedAt} onChange={setAppliedAt} placeholder="AAAA-MM-DD" />
-              <Field label="Aplicada por" placeholder="Veterinario/responsable" />
-            </div>
-
-            <div className="grid gap-3 rounded-lg border bg-background p-4 md:grid-cols-2">
-              <label className="flex items-start gap-3 text-sm">
-                <Checkbox
-                  checked={origin === "carga_historica"}
-                  onCheckedChange={(checked) => setOrigin(checked ? "carga_historica" : "aplicada_hoy")}
-                />
-                <span>
-                  <span className="block font-medium">Cargar como registro historico</span>
-                  <span className="text-muted-foreground">Usar si la dosis ya estaba aplicada anteriormente.</span>
-                </span>
-              </label>
-              <label className="flex items-start gap-3 text-sm">
-                <Checkbox checked={manualConfirm} onCheckedChange={(checked) => setManualConfirm(Boolean(checked))} />
-                <span>
-                  <span className="block font-medium">Confirmar dosis fuera de orden</span>
-                  <span className="text-muted-foreground">Permite continuar si falta una dosis previa en el sistema.</span>
-                </span>
-              </label>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Vacuna</Label>
+              <Select
+                value={selectedVaccineId}
+                onValueChange={(value) => {
+                  setSelectedVaccineId(value)
+                  setSelectedDoseId(getDosesForVaccine(value)[0]?.id || "")
+                }}
+              >
+                <SelectTrigger className="h-12 bg-background">
+                  <SelectValue placeholder="Seleccionar vacuna" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableVaccines.map((scheme) => (
+                    <SelectItem key={scheme.id} value={scheme.id}>
+                      {scheme.name} - {scheme.species}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
-              <Label>Observaciones</Label>
-              <Textarea className="bg-background" placeholder="Lote, laboratorio, reaccion, indicaciones o notas clinicas..." />
+              <Label>Dosis aplicada</Label>
+              <Select value={effectiveDoseId} onValueChange={setSelectedDoseId}>
+                <SelectTrigger className="h-12 bg-background">
+                  <SelectValue placeholder="Seleccionar dosis" />
+                </SelectTrigger>
+                <SelectContent>
+                  {selectedDoses.map((dose) => (
+                    <SelectItem key={dose.id} value={dose.id}>
+                      {dose.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            <ValidationPanel duplicate={duplicateDose} outOfOrder={outOfOrder} canSave={canSave} />
+            <Field label="Fecha de aplicacion" value={appliedAt} onChange={setAppliedAt} placeholder="AAAA-MM-DD" />
+            <Field label="Aplicada por" placeholder="Veterinario/responsable" />
+          </div>
 
-            {selectedVaccine && selectedDose && (
-              <Card className="border-primary/25 bg-background">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Calendar className="h-5 w-5 text-primary" />
-                    Calculo automatico del esquema
-                  </CardTitle>
-                  <CardDescription>Basado en la configuracion de dosis de {selectedVaccine.name}.</CardDescription>
-                </CardHeader>
-                <CardContent className="grid gap-3 md:grid-cols-3">
-                  <Info label="Dosis guardada" value={selectedDose.name} />
-                  <Info label="Origen" value={origin === "carga_historica" ? "Carga historica" : "Aplicada hoy"} />
-                  <Info
-                    label="Proxima dosis"
-                    value={nextDose ? `${nextDose.dose.name} - ${formatDate(nextDose.estimatedAt)}` : "Esquema completo"}
-                  />
-                  <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 md:col-span-3">
-                    <div className="flex items-center gap-2 font-medium text-primary">
-                      <Bell className="h-4 w-4" />
-                      Recordatorio preparado
-                    </div>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {nextDose
-                        ? `Cliente: ${client.nombre}. Mascota: ${pet.nombre}. Vacuna: ${selectedVaccine.name}. Dosis: ${nextDose.dose.name}. Fecha estimada: ${formatDate(nextDose.estimatedAt)}.`
-                        : "No se genera recordatorio porque no hay proxima dosis configurada."}
-                    </p>
+          <div className="grid gap-3 rounded-lg border bg-background p-4 md:grid-cols-2">
+            <label className="flex items-start gap-3 text-sm">
+              <Checkbox
+                checked={origin === "carga_historica"}
+                onCheckedChange={(checked) => setOrigin(checked ? "carga_historica" : "aplicada_hoy")}
+              />
+              <span>
+                <span className="block font-medium">Cargar como registro historico</span>
+                <span className="text-muted-foreground">Usar si la dosis ya estaba aplicada anteriormente.</span>
+              </span>
+            </label>
+            <label className="flex items-start gap-3 text-sm">
+              <Checkbox checked={manualConfirm} onCheckedChange={(checked) => setManualConfirm(Boolean(checked))} />
+              <span>
+                <span className="block font-medium">Confirmar dosis fuera de orden</span>
+                <span className="text-muted-foreground">Permite continuar si falta una dosis previa en el sistema.</span>
+              </span>
+            </label>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Observaciones</Label>
+            <Textarea className="bg-background" placeholder="Lote, laboratorio, reaccion, indicaciones o notas clinicas..." />
+          </div>
+
+          <ValidationPanel duplicate={duplicateDose} outOfOrder={outOfOrder} canSave={canSave} />
+
+          {selectedVaccine && selectedDose && (
+            <Card className="border-primary/25 bg-background">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Calendar className="h-5 w-5 text-primary" />
+                  Calculo automatico del esquema
+                </CardTitle>
+                <CardDescription>Basado en la configuracion de dosis de {selectedVaccine.name}.</CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-3 md:grid-cols-3">
+                <Info label="Dosis guardada" value={selectedDose.name} />
+                <Info label="Origen" value={origin === "carga_historica" ? "Carga historica" : "Aplicada hoy"} />
+                <Info
+                  label="Proxima dosis"
+                  value={nextDose ? `${nextDose.dose.name} - ${formatDate(nextDose.estimatedAt)}` : "Esquema completo"}
+                />
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 md:col-span-3">
+                  <div className="flex items-center gap-2 font-medium text-primary">
+                    <Bell className="h-4 w-4" />
+                    Recordatorio preparado
                   </div>
-                </CardContent>
-              </Card>
-            )}
-
-            <Button className="h-14 w-full bg-primary text-base font-bold hover:bg-primary/90" disabled={!canSave} asChild={canSave}>
-              {canSave ? <Link href="/">Guardar vacuna y volver al inicio</Link> : <span>Completar validaciones para guardar</span>}
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {mode === "pendientes" && (
-        <div className="space-y-5">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ClipboardList className="h-5 w-5 text-primary" />
-                Vacunas pendientes de {pet.nombre}
-              </CardTitle>
-              <CardDescription>Dosis calculadas desde los esquemas configurables y aplicaciones registradas.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {schedule.length > 0 ? (
-                <div className="grid gap-3 lg:grid-cols-2">
-                  {schedule.map((item) => {
-                    const scheme = vaccineSchemes.find((vaccine) => vaccine.id === item.vaccineId)
-                    const dose = vaccineDoses.find((vaccineDose) => vaccineDose.id === item.doseId)
-                    const reminder = buildReminderForSchedule(item)
-
-                    return (
-                      <article key={item.id} className={`rounded-lg border p-4 ${item.status === "vencida" ? "border-destructive/40 bg-destructive/5" : "bg-card"}`}>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="font-semibold">{scheme?.name}</h3>
-                          <Badge className={scheduleStatusStyles[item.status]}>{item.status}</Badge>
-                          <Badge variant="outline">{dose?.name}</Badge>
-                        </div>
-                        <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-                          <Info label="Fecha estimada" value={formatDate(item.estimatedAt)} />
-                          <Info label="Recordatorio" value={reminder.status === "preparado" ? "Preparado" : reminder.status} />
-                        </div>
-                      </article>
-                    )
-                  })}
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {nextDose
+                      ? `Cliente: ${client.nombre}. Mascota: ${pet.nombre}. Vacuna: ${selectedVaccine.name}. Dosis: ${nextDose.dose.name}. Fecha estimada: ${formatDate(nextDose.estimatedAt)}.`
+                      : "No se genera recordatorio porque no hay proxima dosis configurada."}
+                  </p>
                 </div>
-              ) : (
-                <EmptyState text="No hay proximas dosis calculadas para esta mascota." />
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
-          <VaccinationHistory petId={pet.id} />
-        </div>
-      )}
+          {canSave ? (
+            <Button className="h-14 w-full bg-primary text-base font-bold hover:bg-primary/90" asChild>
+              <Link href="/">Guardar vacuna y volver al inicio</Link>
+            </Button>
+          ) : (
+            <Button className="h-14 w-full text-base font-bold" disabled>
+              Completar validaciones para guardar
+            </Button>
+          )}
+        </CardContent>
+      </Card>
 
-      {mode === "esquemas" && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5 text-primary" />
-              Configurar esquemas de vacunacion
-            </CardTitle>
-            <CardDescription>
-              Semilla demo editable a futuro: vacunas por especie, dosis, intervalos y refuerzos recurrentes.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            <div className="rounded-xl border border-primary/25 bg-primary/5 p-4">
-              <div className="grid gap-4 lg:grid-cols-2">
-                <Field label="Nombre de vacuna" placeholder="Ej: Vacuna X" />
-                <Field label="Especie / tipo animal" placeholder="Perro, gato u otro" />
-                <Field label="Cantidad de dosis" placeholder="Ej: 2" />
-                <Field label="Estado del esquema" placeholder="Activo / Inactivo" />
-              </div>
-              <div className="mt-4 space-y-2">
-                <Label>Observaciones</Label>
-                <Textarea className="bg-background" placeholder="Indicaciones generales del esquema..." />
-              </div>
-              <Button className="mt-4 h-14 rounded-xl bg-primary px-6 text-base font-bold shadow-md shadow-primary/15 hover:bg-primary/90">
-                <Plus className="mr-2 h-4 w-4" />
-                Crear esquema
-              </Button>
-            </div>
-
-            <div className="grid gap-3 lg:grid-cols-2">
-              {vaccineSchemes.map((scheme) => {
-                const doses = getDosesForVaccine(scheme.id)
-                return (
-                  <article key={scheme.id} className="rounded-lg border bg-card p-4">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-semibold">{scheme.name}</h3>
-                      <Badge variant="outline">{scheme.species}</Badge>
-                      <Badge className={scheme.active ? "bg-success text-success-foreground" : "bg-muted text-muted-foreground"}>
-                        {scheme.active ? "Activo" : "Inactivo"}
-                      </Badge>
-                    </div>
-                    <p className="mt-2 text-sm text-muted-foreground">{scheme.description}</p>
-                    <div className="mt-3 space-y-2">
-                      {doses.map((dose) => (
-                        <div key={dose.id} className="rounded-md bg-muted/35 p-3 text-sm">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-medium">{dose.name}</span>
-                            <Badge variant="outline">Orden {dose.order}</Badge>
-                            {dose.recurrent && <Badge className="bg-primary text-primary-foreground">Recurrente</Badge>}
-                          </div>
-                          <p className="mt-1 text-muted-foreground">
-                            Intervalo: {formatInterval(dose.intervalValue, dose.intervalUnit)}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </article>
-                )
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <VaccinationHistory petId={pet.id} />
     </div>
   )
 }
 
-function ModeButton({
+function PendingVaccines({ onRegister }: { onRegister: () => void }) {
+  const pendingItems = mascotas.flatMap((pet) =>
+    buildPetVaccineSchedule(pet.id).map((item) => ({
+      ...item,
+      pet,
+      client: clientes.find((cliente) => cliente.id === pet.clienteId),
+      scheme: vaccineSchemes.find((vaccine) => vaccine.id === item.vaccineId),
+      dose: vaccineDoses.find((vaccineDose) => vaccineDose.id === item.doseId),
+      reminder: buildReminderForSchedule(item),
+    })),
+  )
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <ClipboardList className="h-5 w-5 text-primary" />
+          Vacunas pendientes
+        </CardTitle>
+        <CardDescription>
+          Pendientes, proximas y vencidas calculadas desde esquemas configurados. Desde aca se puede registrar directamente una dosis.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {pendingItems.length > 0 ? (
+          <div className="grid gap-3 xl:grid-cols-2">
+            {pendingItems.map((item) => (
+              <article
+                key={item.id}
+                className={`rounded-xl border p-4 ${
+                  item.status === "vencida" ? "border-destructive/40 bg-destructive/5" : "bg-card"
+                }`}
+              >
+                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-bold">{item.scheme?.name}</h3>
+                      <Badge className={scheduleStatusStyles[item.status]}>{item.status}</Badge>
+                      <Badge variant="outline">{item.dose?.name}</Badge>
+                    </div>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {item.client?.nombre} - {item.pet.nombre}
+                    </p>
+                  </div>
+                  <Button className="h-12 rounded-xl bg-primary px-5 font-bold hover:bg-primary/90" onClick={onRegister}>
+                    Registrar esta dosis
+                  </Button>
+                </div>
+                <div className="mt-4 grid gap-2 text-sm md:grid-cols-3">
+                  <Info label="Cliente" value={item.client?.nombre || "-"} />
+                  <Info label="Mascota" value={item.pet.nombre} />
+                  <Info label="Fecha estimada" value={formatDate(item.estimatedAt)} />
+                  <Info label="Estado" value={item.status} />
+                  <Info label="Recordatorio" value={item.reminder.status === "preparado" ? "Preparado" : item.reminder.status} />
+                  <Info label="Origen" value="Calendario demo" />
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <EmptyState text="No hay vacunas pendientes calculadas con los datos demo actuales." />
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function VaccineSchemes() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Settings className="h-5 w-5 text-primary" />
+          Esquemas de vacunacion
+        </CardTitle>
+        <CardDescription>
+          Configuracion del sistema: no depende de cliente ni mascota. Define vacunas, dosis, intervalos y refuerzos.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        <div className="rounded-xl border border-primary/25 bg-primary/5 p-4">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Field label="Nombre de vacuna" placeholder="Ej: Vacuna X" />
+            <Field label="Especie / tipo animal" placeholder="Perro, gato u otro" />
+            <Field label="Cantidad de dosis" placeholder="Ej: 2" />
+            <Field label="Estado del esquema" placeholder="Activo / Inactivo" />
+          </div>
+          <div className="mt-4 space-y-2">
+            <Label>Observaciones</Label>
+            <Textarea className="bg-background" placeholder="Indicaciones generales del esquema..." />
+          </div>
+          <Button className="mt-4 h-14 rounded-xl bg-primary px-6 text-base font-bold shadow-md shadow-primary/15 hover:bg-primary/90">
+            <Plus className="mr-2 h-4 w-4" />
+            Crear esquema de vacunacion
+          </Button>
+        </div>
+
+        <div className="grid gap-3 lg:grid-cols-2">
+          {vaccineSchemes.map((scheme) => {
+            const doses = getDosesForVaccine(scheme.id)
+            return (
+              <article key={scheme.id} className="rounded-lg border bg-card p-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="font-semibold">{scheme.name}</h3>
+                  <Badge variant="outline">{scheme.species}</Badge>
+                  <Badge className={scheme.active ? "bg-success text-success-foreground" : "bg-muted text-muted-foreground"}>
+                    {scheme.active ? "Activo" : "Inactivo"}
+                  </Badge>
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">{scheme.description}</p>
+                <div className="mt-3 space-y-2">
+                  {doses.map((dose) => (
+                    <div key={dose.id} className="rounded-md bg-muted/35 p-3 text-sm">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium">{dose.name}</span>
+                        <Badge variant="outline">Orden {dose.order}</Badge>
+                        {dose.recurrent && <Badge className="bg-primary text-primary-foreground">Recurrente</Badge>}
+                      </div>
+                      <p className="mt-1 text-muted-foreground">
+                        Intervalo: {formatInterval(dose.intervalValue, dose.intervalUnit)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </article>
+            )
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function ActionCard({
   active,
   icon: Icon,
   title,
   description,
+  buttonLabel,
   onClick,
 }: {
   active: boolean
-  icon: typeof Syringe
+  icon: LucideIcon
   title: string
   description: string
+  buttonLabel: string
   onClick: () => void
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-xl border p-4 text-left transition-colors ${
-        active ? "border-primary/40 bg-primary text-primary-foreground shadow-md shadow-primary/15" : "bg-card hover:border-primary/40 hover:bg-primary/5"
-      }`}
-    >
-      <div className="flex items-start gap-3">
-        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${active ? "bg-white/15" : "bg-primary/10 text-primary"}`}>
-          <Icon className="h-5 w-5" />
+    <Card className={`transition-all ${active ? "border-primary/50 bg-primary/5 shadow-md shadow-primary/10" : "hover:border-primary/40"}`}>
+      <CardContent className="flex h-full flex-col gap-5 p-5">
+        <div className="flex items-start gap-4">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+            <Icon className="h-7 w-7" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold leading-tight">{title}</h2>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
+          </div>
         </div>
-        <div>
-          <p className="font-bold">{title}</p>
-          <p className={`mt-1 text-sm ${active ? "text-primary-foreground/80" : "text-muted-foreground"}`}>{description}</p>
-        </div>
-      </div>
-    </button>
+        <Button className="mt-auto h-14 rounded-xl bg-primary text-base font-bold hover:bg-primary/90" onClick={onClick}>
+          {buttonLabel}
+        </Button>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -397,7 +472,9 @@ function PatientSummary({ client, pet }: { client: { nombre: string }; pet: { no
   return (
     <div className="rounded-lg border bg-background p-3 text-sm">
       <p className="font-semibold">{client.nombre}</p>
-      <p className="text-muted-foreground">{pet.nombre} - {pet.especie} - {pet.raza}</p>
+      <p className="text-muted-foreground">
+        {pet.nombre} - {pet.especie} - {pet.raza}
+      </p>
     </div>
   )
 }

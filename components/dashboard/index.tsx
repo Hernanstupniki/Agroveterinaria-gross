@@ -30,14 +30,14 @@ const primaryActions = [
   },
   {
     title: "Vacunas",
-    description: "Aplicar vacuna, revisar pendientes y preparar recordatorio.",
+    description: "Registrar, ver pendientes o configurar esquemas.",
     href: "/vacunas",
     icon: Syringe,
     className: "border-primary/20 bg-card hover:border-primary/50 hover:bg-primary/5",
   },
   {
     title: "Tratamientos",
-    description: "Cargar tratamiento clinico y controles de seguimiento.",
+    description: "Registrar, revisar activos o configurar protocolos.",
     href: "/tratamientos",
     icon: Pill,
     className: "border-primary/20 bg-card hover:border-primary/50 hover:bg-primary/5",

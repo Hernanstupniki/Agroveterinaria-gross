@@ -1,157 +1,392 @@
 "use client"
 
 import Link from "next/link"
-import { Calendar, CheckCircle, Pill, Plus, Stethoscope } from "lucide-react"
+import { useMemo, useState } from "react"
+import type { LucideIcon } from "lucide-react"
+import { Calendar, CheckCircle, ClipboardList, Pause, Pill, Plus, Settings, Stethoscope } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { ClinicalActionFlow } from "@/components/clinical/action-flow"
-import { controlesPendientes, tratamientosActivos } from "@/lib/mock-data"
+import { clientes, mascotas } from "@/lib/mock-data"
+import {
+  activeTreatmentsSeed,
+  calculateNextTreatmentControl,
+  formatControlFrequency,
+  treatmentProtocols,
+  type TreatmentStatus,
+} from "@/lib/treatment-workflow"
 
-const estadoColors: Record<string, string> = {
-  Activo: "bg-success text-success-foreground",
-  Finalizado: "bg-muted text-muted-foreground",
-  Suspendido: "bg-warning text-warning-foreground",
-  "Requiere control": "bg-destructive text-destructive-foreground",
+type TreatmentMode = "registrar" | "activos" | "protocolos" | null
+
+const statusStyles: Record<TreatmentStatus, string> = {
+  activo: "bg-success text-success-foreground",
+  pausado: "bg-warning text-warning-foreground",
+  finalizado: "bg-muted text-muted-foreground",
+}
+
+function formatDate(date?: string | null) {
+  if (!date) return "-"
+  const [year, month, day] = date.split("-")
+  return `${day}/${month}/${year}`
 }
 
 export function TratamientosPage() {
+  const [mode, setMode] = useState<TreatmentMode>(null)
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 rounded-2xl border border-primary/20 bg-primary/5 p-5 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-2 rounded-full bg-primary px-3 py-1 text-sm font-bold text-primary-foreground">
+            <Pill className="h-4 w-4" />
+            Tratamientos
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold tracking-normal">Que queres hacer con tratamientos?</h1>
+            <p className="mt-1 max-w-2xl text-muted-foreground">
+              Registro diario, seguimiento de activos y protocolos del sistema quedan separados para que el uso sea directo.
+            </p>
+          </div>
+        </div>
+        {mode && (
+          <Button variant="outline" className="h-12 rounded-xl" onClick={() => setMode(null)}>
+            Ver acciones de Tratamientos
+          </Button>
+        )}
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <ActionCard
+          active={mode === "registrar"}
+          icon={Pill}
+          title="Registrar tratamiento"
+          description="Seleccionar cliente, mascota, protocolo, fecha de inicio y controles."
+          buttonLabel="Registrar tratamiento"
+          onClick={() => setMode("registrar")}
+        />
+        <ActionCard
+          active={mode === "activos"}
+          icon={ClipboardList}
+          title="Tratamientos activos"
+          description="Ver procesos en curso, proximo control y acciones de seguimiento."
+          buttonLabel="Ver activos"
+          onClick={() => setMode("activos")}
+        />
+        <ActionCard
+          active={mode === "protocolos"}
+          icon={Settings}
+          title="Protocolos de tratamiento"
+          description="Configurar tratamientos comunes, frecuencia de control y recordatorios."
+          buttonLabel="Abrir protocolos"
+          onClick={() => setMode("protocolos")}
+        />
+      </div>
+
+      {mode === "registrar" && <TreatmentRegistrationFlow />}
+      {mode === "activos" && <ActiveTreatments />}
+      {mode === "protocolos" && <TreatmentProtocols />}
+    </div>
+  )
+}
+
+function TreatmentRegistrationFlow() {
   return (
     <ClinicalActionFlow
-      title="Tratamientos"
-      description="Elegir cliente y mascota para cargar un tratamiento clinico como proceso con seguimiento."
-      actionLabel="Cargar tratamiento"
+      title="Registrar tratamiento"
+      description="Primero elegi cliente y mascota; despues carga protocolo, inicio, observaciones y controles."
+      actionLabel="Registrar tratamiento"
       icon={Pill}
     >
-      {({ client, pet }) => {
-        const treatments = tratamientosActivos.filter((tratamiento) => tratamiento.mascotaId === pet.id)
-        const controls = controlesPendientes.filter((control) => control.mascotaId === pet.id)
-
-        return (
-          <div className="space-y-5">
-            <Card className="border-primary/30 bg-primary/5 shadow-sm">
-              <CardHeader className="text-center">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                  <Plus className="h-7 w-7" />
-                </div>
-                <CardTitle className="text-2xl">Nuevo tratamiento</CardTitle>
-                <CardDescription>
-                  El tratamiento queda preparado para historia clinica, actividad del dia y seguimiento activo.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="mx-auto grid w-full max-w-5xl gap-4">
-                <div className="rounded-lg border bg-background p-3 text-sm">
-                  <p className="font-semibold">{client.nombre}</p>
-                  <p className="text-muted-foreground">{pet.nombre} - {pet.especie}</p>
-                </div>
-
-                <div className="grid gap-4 lg:grid-cols-2">
-                  <Field label="Nombre del tratamiento" placeholder="Ej: Leishmaniasis" />
-                  <Field label="Diagnostico / motivo" placeholder="Diagnostico clinico" />
-                  <Field label="Fecha de inicio" placeholder="AAAA-MM-DD" />
-                  <Field label="Proximo control" placeholder="AAAA-MM-DD" />
-                  <Field label="Medicacion / indicacion" placeholder="Medicamento o pauta" />
-                  <Field label="Responsable" placeholder="Dr./Dra." />
-                </div>
-                <div className="space-y-2">
-                  <Label>Observaciones y seguimiento</Label>
-                  <Textarea placeholder="Evolucion, controles, signos a vigilar, recordatorios o proximas acciones..." />
-                </div>
-
-                <Button className="h-14 w-full bg-primary text-base font-bold hover:bg-primary/90" asChild>
-                  <Link href="/">Guardar tratamiento y volver al inicio</Link>
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Stethoscope className="h-5 w-5 text-primary" />
-                    Seguimiento clinico de {pet.nombre}
-                  </CardTitle>
-                  <CardDescription>
-                    Tratamientos, controles y proximas acciones vinculadas a la historia clinica.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {treatments.length > 0 ? (
-                    treatments.map((tratamiento) => (
-                      <article key={tratamiento.id} className="rounded-lg border bg-card p-4">
-                        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                          <div>
-                            <div className="flex flex-wrap items-center gap-2">
-                              <h3 className="font-semibold">{tratamiento.diagnostico}</h3>
-                              <Badge className={estadoColors[tratamiento.estado] || "bg-muted"}>
-                                {tratamiento.estado}
-                              </Badge>
-                            </div>
-                            <p className="mt-1 text-sm text-muted-foreground">
-                              {tratamiento.medicamento} - {tratamiento.dosis} - {tratamiento.frecuencia}
-                            </p>
-                          </div>
-                          <Badge variant="outline">Control {tratamiento.proximoControl}</Badge>
-                        </div>
-
-                        <div className="mt-3 grid gap-2 text-sm md:grid-cols-3">
-                          <Info label="Inicio" value={tratamiento.fechaInicio} />
-                          <Info label="Fin" value={tratamiento.fechaFinalizacion || "Indefinido"} />
-                          <Info label="Indicaciones" value={tratamiento.indicaciones} />
-                        </div>
-
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <Button className="h-11 bg-primary font-semibold hover:bg-primary/90">
-                            <Plus className="mr-2 h-4 w-4" />
-                            Agregar control
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            <CheckCircle className="mr-2 h-4 w-4" />
-                            Finalizar
-                          </Button>
-                        </div>
-                      </article>
-                    ))
-                  ) : (
-                    <div className="rounded-lg border border-dashed p-6 text-center text-muted-foreground">
-                      {pet.nombre} no tiene tratamientos activos cargados.
-                    </div>
-                  )}
-
-                  {controls.length > 0 && (
-                    <div className="rounded-lg border border-warning/30 bg-warning/10 p-4">
-                      <h3 className="flex items-center gap-2 font-semibold">
-                        <Calendar className="h-4 w-4 text-warning" />
-                        Controles pendientes
-                      </h3>
-                      <div className="mt-3 space-y-2">
-                        {controls.map((control) => (
-                          <div key={control.id} className="rounded-md bg-background/80 p-3 text-sm">
-                            <p className="font-medium">{control.tipo}</p>
-                            <p className="text-muted-foreground">
-                              {control.fechaSugerida} - {control.profesional} - Prioridad {control.prioridad}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-            </Card>
-          </div>
-        )
-      }}
+      {({ client, pet }) => <TreatmentRegistrationForm key={pet.id} client={client} pet={pet} />}
     </ClinicalActionFlow>
   )
 }
 
-function Field({ label, placeholder }: { label: string; placeholder: string }) {
+function TreatmentRegistrationForm({
+  client,
+  pet,
+}: {
+  client: { id: number; nombre: string }
+  pet: { id: number; nombre: string; especie: string }
+}) {
+  const firstProtocolId = treatmentProtocols[0]?.id || ""
+  const [selectedProtocolId, setSelectedProtocolId] = useState(firstProtocolId)
+  const [startedAt, setStartedAt] = useState("2026-06-01")
+  const selectedProtocol = treatmentProtocols.find((protocol) => protocol.id === selectedProtocolId)
+  const nextControl = useMemo(
+    () => calculateNextTreatmentControl(startedAt, selectedProtocolId),
+    [startedAt, selectedProtocolId],
+  )
+  const canSave = Boolean(client.id && pet.id && selectedProtocol && startedAt)
+
+  return (
+    <Card className="border-primary/30 bg-primary/5 shadow-sm">
+      <CardHeader className="text-center">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+          <Plus className="h-7 w-7" />
+        </div>
+        <CardTitle className="text-2xl">Registrar tratamiento</CardTitle>
+        <CardDescription>
+          El tratamiento queda preparado para historia clinica, actividad del dia y seguimiento activo.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="mx-auto grid w-full max-w-5xl gap-5">
+        <div className="rounded-lg border bg-background p-3 text-sm">
+          <p className="font-semibold">{client.nombre}</p>
+          <p className="text-muted-foreground">
+            {pet.nombre} - {pet.especie}
+          </p>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="space-y-2">
+            <Label>Tratamiento / protocolo</Label>
+            <Select value={selectedProtocolId} onValueChange={setSelectedProtocolId}>
+              <SelectTrigger className="h-12 bg-background">
+                <SelectValue placeholder="Seleccionar protocolo" />
+              </SelectTrigger>
+              <SelectContent>
+                {treatmentProtocols.map((protocol) => (
+                  <SelectItem key={protocol.id} value={protocol.id}>
+                    {protocol.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Field label="Fecha de inicio" value={startedAt} onChange={setStartedAt} placeholder="AAAA-MM-DD" />
+          <Field label="Diagnostico / motivo" placeholder="Diagnostico clinico" />
+          <Field label="Responsable" placeholder="Dr./Dra." />
+        </div>
+
+        {selectedProtocol && (
+          <Card className="border-primary/25 bg-background">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Calendar className="h-5 w-5 text-primary" />
+                Seguimiento preparado
+              </CardTitle>
+              <CardDescription>Basado en el protocolo {selectedProtocol.name}.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-3 md:grid-cols-3">
+              <Info label="Duracion estimada" value={selectedProtocol.estimatedDuration} />
+              <Info label="Frecuencia de control" value={formatControlFrequency(selectedProtocol.controlFrequencyValue, selectedProtocol.controlFrequencyUnit)} />
+              <Info label="Proximo control" value={formatDate(nextControl)} />
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 md:col-span-3">
+                <p className="font-medium text-primary">Historia clinica y seguimiento activo</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Al guardar, el registro queda preparado para la historia clinica de {pet.nombre}, actividad del dia y controles futuros.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        <div className="space-y-2">
+          <Label>Observaciones y seguimiento</Label>
+          <Textarea
+            className="bg-background"
+            placeholder="Evolucion, indicaciones, signos a vigilar, controles o proximas acciones..."
+          />
+        </div>
+
+        {canSave ? (
+          <Button className="h-14 w-full bg-primary text-base font-bold hover:bg-primary/90" asChild>
+            <Link href="/">Guardar tratamiento y volver al inicio</Link>
+          </Button>
+        ) : (
+          <Button className="h-14 w-full text-base font-bold" disabled>
+            Completar datos para guardar
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function ActiveTreatments() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Stethoscope className="h-5 w-5 text-primary" />
+          Tratamientos activos
+        </CardTitle>
+        <CardDescription>
+          Procesos clinicos en curso por cliente y mascota, con acciones directas de seguimiento.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-3 xl:grid-cols-2">
+          {activeTreatmentsSeed.map((treatment) => {
+            const client = clientes.find((item) => item.id === treatment.clientId)
+            const pet = mascotas.find((item) => item.id === treatment.petId)
+            const protocol = treatmentProtocols.find((item) => item.id === treatment.protocolId)
+
+            return (
+              <article key={treatment.id} className="rounded-xl border bg-card p-4">
+                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-bold">{treatment.name}</h3>
+                      <Badge className={statusStyles[treatment.status]}>{treatment.status}</Badge>
+                      {protocol && <Badge variant="outline">{protocol.name}</Badge>}
+                    </div>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {client?.nombre} - {pet?.nombre}
+                    </p>
+                  </div>
+                  <Badge variant="outline">Control {formatDate(treatment.nextControlAt)}</Badge>
+                </div>
+
+                <div className="mt-4 grid gap-2 text-sm md:grid-cols-3">
+                  <Info label="Cliente" value={client?.nombre || "-"} />
+                  <Info label="Mascota" value={pet?.nombre || "-"} />
+                  <Info label="Inicio" value={formatDate(treatment.startedAt)} />
+                  <Info label="Estado" value={treatment.status} />
+                  <Info label="Proximo control" value={formatDate(treatment.nextControlAt)} />
+                  <Info label="Observaciones" value={treatment.observations} />
+                </div>
+
+                <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                  <Button className="h-12 rounded-xl bg-primary font-bold hover:bg-primary/90">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Actualizar avance
+                  </Button>
+                  <Button className="h-12 rounded-xl bg-primary font-bold hover:bg-primary/90">
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    Finalizar
+                  </Button>
+                  <Button className="h-12 rounded-xl bg-primary font-bold hover:bg-primary/90">
+                    <Pause className="mr-2 h-4 w-4" />
+                    Pausar
+                  </Button>
+                </div>
+              </article>
+            )
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function TreatmentProtocols() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Settings className="h-5 w-5 text-primary" />
+          Protocolos de tratamiento
+        </CardTitle>
+        <CardDescription>
+          Configuracion del sistema: no depende de cliente ni mascota. Define tratamientos comunes y controles sugeridos.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        <div className="rounded-xl border border-primary/25 bg-primary/5 p-4">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Field label="Nombre del protocolo" placeholder="Ej: Leishmaniasis" />
+            <Field label="Duracion estimada" placeholder="Ej: 60 dias / segun evolucion" />
+            <Field label="Frecuencia de controles" placeholder="Ej: cada 2 semanas" />
+            <Field label="Recordatorios" placeholder="Ej: preparar aviso 48 hs antes" />
+          </div>
+          <div className="mt-4 space-y-2">
+            <Label>Indicaciones</Label>
+            <Textarea className="bg-background" placeholder="Indicaciones clinicas, controles, estudios o criterios de avance..." />
+          </div>
+          <Button className="mt-4 h-14 rounded-xl bg-primary px-6 text-base font-bold shadow-md shadow-primary/15 hover:bg-primary/90">
+            <Plus className="mr-2 h-4 w-4" />
+            Crear protocolo de tratamiento
+          </Button>
+        </div>
+
+        <div className="grid gap-3 lg:grid-cols-2">
+          {treatmentProtocols.map((protocol) => (
+            <article key={protocol.id} className="rounded-lg border bg-card p-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="font-semibold">{protocol.name}</h3>
+                <Badge className={protocol.active ? "bg-success text-success-foreground" : "bg-muted text-muted-foreground"}>
+                  {protocol.active ? "Activo" : "Inactivo"}
+                </Badge>
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">{protocol.description}</p>
+              <div className="mt-3 grid gap-2 text-sm md:grid-cols-2">
+                <Info label="Duracion" value={protocol.estimatedDuration} />
+                <Info label="Controles" value={formatControlFrequency(protocol.controlFrequencyValue, protocol.controlFrequencyUnit)} />
+                <Info label="Recordatorios" value={protocol.reminders} />
+                <Info label="Estados" value={protocol.possibleStates.join(", ")} />
+              </div>
+              <p className="mt-3 rounded-md bg-muted/35 p-3 text-sm text-muted-foreground">{protocol.indications}</p>
+            </article>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function ActionCard({
+  active,
+  icon: Icon,
+  title,
+  description,
+  buttonLabel,
+  onClick,
+}: {
+  active: boolean
+  icon: LucideIcon
+  title: string
+  description: string
+  buttonLabel: string
+  onClick: () => void
+}) {
+  return (
+    <Card className={`transition-all ${active ? "border-primary/50 bg-primary/5 shadow-md shadow-primary/10" : "hover:border-primary/40"}`}>
+      <CardContent className="flex h-full flex-col gap-5 p-5">
+        <div className="flex items-start gap-4">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+            <Icon className="h-7 w-7" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold leading-tight">{title}</h2>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
+          </div>
+        </div>
+        <Button className="mt-auto h-14 rounded-xl bg-primary text-base font-bold hover:bg-primary/90" onClick={onClick}>
+          {buttonLabel}
+        </Button>
+      </CardContent>
+    </Card>
+  )
+}
+
+function Field({
+  label,
+  placeholder,
+  value,
+  onChange,
+}: {
+  label: string
+  placeholder: string
+  value?: string
+  onChange?: (value: string) => void
+}) {
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
-      <Input placeholder={placeholder} />
+      <Input className="bg-background" value={value} onChange={(event) => onChange?.(event.target.value)} placeholder={placeholder} />
     </div>
   )
 }
