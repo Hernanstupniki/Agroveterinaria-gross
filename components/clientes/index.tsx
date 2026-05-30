@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import {
+  ClipboardList,
   FileHeart,
   Mail,
   MapPin,
@@ -202,21 +203,27 @@ export function ClientesPage() {
                           Ver ficha
                         </Link>
                       </Button>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-4 gap-2">
                         <Button variant="outline" className="h-11 rounded-xl text-sm font-semibold leading-tight" asChild>
-                          <Link href={`/vacunas/registrar?clienteId=${selectedCliente.id}&mascotaId=${mascota.id}`}>
+                          <Link href={`/historial-clinico?clienteId=${selectedCliente.id}&mascotaId=${mascota.id}`}>
+                            <ClipboardList className="mr-1.5 h-4 w-4" />
+                            Historia clinica
+                          </Link>
+                        </Button>
+                        <Button variant="outline" className="h-11 rounded-xl text-sm font-semibold leading-tight" asChild>
+                          <Link href={`/vacunas?clienteId=${selectedCliente.id}&mascotaId=${mascota.id}`}>
                             <Syringe className="mr-1.5 h-4 w-4" />
                             Vacunas
                           </Link>
                         </Button>
                         <Button variant="outline" className="h-11 rounded-xl text-sm font-semibold leading-tight" asChild>
-                          <Link href={`/tratamientos/registrar?clienteId=${selectedCliente.id}&mascotaId=${mascota.id}`}>
+                          <Link href={`/tratamientos?clienteId=${selectedCliente.id}&mascotaId=${mascota.id}`}>
                             <Pill className="mr-1.5 h-4 w-4" />
-                            Tratam.
+                            Tratamientos
                           </Link>
                         </Button>
                         <Button variant="outline" className="h-11 rounded-xl text-sm font-semibold leading-tight" asChild>
-                          <Link href={`/cirugias/agendar?clienteId=${selectedCliente.id}&mascotaId=${mascota.id}`}>
+                          <Link href={`/cirugias?clienteId=${selectedCliente.id}&mascotaId=${mascota.id}`}>
                             <Scissors className="mr-1.5 h-4 w-4" />
                             Cirugías
                           </Link>
