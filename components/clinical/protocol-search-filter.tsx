@@ -110,13 +110,14 @@ function resolveApplicabilityTexts(protocol: ProtocolApplicability) {
   return { animalNames, breedNames, stageNames }
 }
 
-export function filterProtocols<T extends ProtocolApplicability>(
+export function filterProtocols<T extends ProtocolApplicability & { active?: boolean }>(
   protocols: T[],
   filter: ProtocolSearchFilterState,
 ): T[] {
   return protocols.filter((protocol) => {
-    if (filter.status === "active" && !protocol.active) return false
-    if (filter.status === "inactive" && protocol.active) return false
+    const protocolActive = protocol.active !== false
+    if (filter.status === "active" && !protocolActive) return false
+    if (filter.status === "inactive" && protocolActive) return false
 
     if (filter.animalTypeId !== "all") {
       if (!protocol.appliesToAllAnimalTypes && !protocol.animalTypeIds.includes(filter.animalTypeId)) return false

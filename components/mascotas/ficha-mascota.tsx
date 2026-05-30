@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import {
   Activity,
@@ -36,6 +37,7 @@ import {
   vacunasRegistradas,
 } from "@/lib/mock-data"
 import { buildMockClinicalHistory } from "@/lib/clinical-history-workflow"
+import { readStoredClinicalHistoryEvents, type ClinicalHistoryEvent } from "@/lib/clinical-history-mock"
 import {
   buildVaccineDisplayList,
   formatOverdueText,
@@ -177,6 +179,11 @@ function getReminderBucket(status: string, scheduledDate?: string | null): Remin
 export function FichaMascota({ mascotaId }: FichaMascotaProps) {
   const mascota = mascotas.find((item) => item.id === mascotaId) || mascotas[0]
   const cliente = clientes.find((item) => item.id === mascota.clienteId)
+  const [storedClinicalEvents, setStoredClinicalEvents] = useState<ClinicalHistoryEvent[]>([])
+
+  useEffect(() => {
+    setStoredClinicalEvents(readStoredClinicalHistoryEvents().filter((event) => event.petId === mascota.id))
+  }, [mascota.id])
 
   const vacunasMascota = vacunasRegistradas.filter((item) => item.mascotaId === mascota.id)
   const planVacunasMascota = buildVaccineDisplayList(mascota.id)
@@ -250,6 +257,20 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
       ])
   const timelineEventos: TimelineEvent[] = [
     ...baseTimelineEventos,
+    ...storedClinicalEvents.map((event) => ({
+      id: event.id,
+      fecha: event.date,
+      tipo: event.eventType,
+      veterinario: event.veterinarian,
+      motivo: event.title,
+      sintomas: event.symptoms,
+      diagnostico: event.diagnosis || event.status,
+      tratamiento: event.treatment,
+      peso: event.weight,
+      proximoControl: event.nextControlDate,
+      observaciones: event.notes,
+      archivo: event.attachmentName,
+    })),
     ...mockClinicalHistory.map((event) => ({
       id: event.id,
       fecha: event.date,
@@ -348,21 +369,22 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
 
   const clinicalNextSteps: ClinicalNextStep[] = [
     ...planVacunasMascota
-      .filter((vacuna) => vacuna.estado !== "Aplicada")
+      .filter((vacuna) => vacuna.status !== "aplicada")
       .map((vacuna) => {
-        const date = vacuna.proximaFecha || vacuna.fechaRecomendada
-        const priority = getUrgencyPriority(date, vacuna.estado)
+        const date = vacuna.estimatedAt
+        const isOverdue = vacuna.status === "vencida"
+        const priority = getUrgencyPriority(date, isOverdue ? "Vencida" : undefined)
         return {
           id: `vacuna-${vacuna.id}`,
-          label: vacuna.estado === "Vencida" ? "Vencido" : "Vacuna",
-          title: vacuna.vacuna,
+          label: isOverdue ? "Vencido" : "Vacuna",
+          title: vacuna.vaccineName,
           detail:
-            vacuna.estado === "Vencida"
+            isOverdue
               ? "Requiere contacto y registro de aplicación"
-              : vacuna.observaciones,
+              : vacuna.observations || vacuna.actionLabel,
           date,
           tone: getUrgencyTone(priority),
-          primaryAction: vacuna.estado === "Vencida" ? "Registrar como realizado" : "Programar",
+          primaryAction: isOverdue ? "Registrar como realizado" : vacuna.actionLabel,
           href: `/vacunas/registrar?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}`,
         }
       }),
@@ -399,7 +421,7 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
   })
 
   const quickActions = [
-    { label: "Consulta", icon: FileHeart, href: "/historial" },
+    { label: "Consulta", icon: FileHeart, href: "/historial-clinico" },
     { label: "Vacuna", icon: Syringe, href: `/vacunas/registrar?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}` },
     { label: "Tratamiento", icon: Pill, href: `/tratamientos/registrar?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}` },
     { label: "Cirugía", icon: Scissors, href: `/cirugias/agendar?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}` },
@@ -421,7 +443,7 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
               </Button>
               <div className="flex flex-wrap gap-2">
                 <Button className="h-12 rounded-xl bg-white px-5 text-base font-bold text-primary shadow-sm hover:bg-white/90" asChild>
-                  <Link href="/historial">
+                  <Link href="/historial-clinico">
                     <Plus className="mr-2 h-5 w-5" />
                     Nueva atención
                   </Link>
