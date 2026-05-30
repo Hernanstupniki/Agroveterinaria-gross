@@ -35,24 +35,21 @@ import { durationPresets, reminderPresets } from "@/lib/clinical-presets"
 import { clientes, mascotas } from "@/lib/mock-data"
 import {
   buildPetVaccinationHistory,
-  buildPetVaccineSchedule,
-  buildReminderForSchedule,
-  calculateNextDose,
+  buildVaccineDisplayList,
   formatInterval,
+  formatOverdueText,
   getDoseIntervalPreset,
   getDosesForVaccine,
   getSchemeReminderPreset,
+  getVaccineDisplayGroups,
+  getVaccineGroupLabel,
+  getVaccineStatusBadgeStyle,
   getVaccinesForPet,
+  type VaccineDisplayItem,
+  type VaccineDisplayStatus,
   vaccineDoses,
   vaccineSchemes,
 } from "@/lib/vaccine-workflow"
-
-const scheduleStatusStyles: Record<string, string> = {
-  pendiente: "bg-primary text-primary-foreground",
-  vencida: "bg-destructive text-destructive-foreground",
-  aplicada: "bg-success text-success-foreground",
-  cancelada: "bg-muted text-muted-foreground",
-}
 
 function formatDate(date?: string | null) {
   if (!date) return "-"
@@ -309,16 +306,23 @@ function VaccineRegistrationForm({
 }
 
 export function PendingVaccines() {
-  const pendingItems = mascotas.flatMap((pet) =>
-    buildPetVaccineSchedule(pet.id).map((item) => ({
+  const allItems = mascotas.flatMap((pet) =>
+    buildVaccineDisplayList(pet.id).map((item) => ({
       ...item,
       pet,
       client: clientes.find((cliente) => cliente.id === pet.clienteId),
-      scheme: vaccineSchemes.find((vaccine) => vaccine.id === item.vaccineId),
-      dose: vaccineDoses.find((vaccineDose) => vaccineDose.id === item.doseId),
-      reminder: buildReminderForSchedule(item),
     })),
   )
+
+  const pendingItems = allItems.filter((item) => item.status !== "aplicada")
+
+  const statusLabelMap: Record<VaccineDisplayStatus, string> = {
+    aplicada: "Aplicada",
+    proxima: "Proxima",
+    pendiente: "Pendiente",
+    vencida: "Vencida",
+    historial_desconocido: "Historial desconocido",
+  }
 
   return (
     <Card>
@@ -328,46 +332,81 @@ export function PendingVaccines() {
           Vacunas pendientes
         </CardTitle>
         <CardDescription>
-          Pendientes, proximas y vencidas calculadas desde esquemas configurados. Desde aca se puede registrar directamente una dosis.
+          Vencidas, pendientes, proximas e historial desconocido calculadas desde esquemas y registros. Desde aca se puede registrar directamente.
         </CardDescription>
       </CardHeader>
       <CardContent>
         {pendingItems.length > 0 ? (
-          <div className="grid gap-3 xl:grid-cols-2">
-            {pendingItems.map((item) => (
-              <article
-                key={item.id}
-                className={`rounded-xl border p-4 ${
-                  item.status === "vencida" ? "border-destructive/40 bg-destructive/5" : "bg-card"
-                }`}
-              >
-                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                  <div>
+          <div className="space-y-6">
+            {getVaccineDisplayGroups()
+              .filter((status) => status !== "aplicada")
+              .map((status) => {
+                const itemsByStatus = pendingItems.filter((item) => item.status === status)
+                if (itemsByStatus.length === 0) return null
+                return (
+                  <div key={status} className="space-y-3">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-bold">{item.scheme?.name}</h3>
-                      <Badge className={scheduleStatusStyles[item.status]}>{item.status}</Badge>
-                      <Badge variant="outline">{item.dose?.name}</Badge>
+                      <h3 className="text-sm font-semibold text-muted-foreground">{getVaccineGroupLabel(status)}</h3>
+                      <Badge variant="outline">{itemsByStatus.length}</Badge>
                     </div>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {item.client?.nombre} - {item.pet.nombre}
-                    </p>
+                    <div className="grid gap-3 xl:grid-cols-2">
+                      {itemsByStatus.map((item) => {
+                        const style = getVaccineStatusBadgeStyle(item.status)
+                        const overdueText = formatOverdueText(item.overdueDays)
+                        return (
+                          <article key={item.id} className={`rounded-xl border p-4 ${style.card}`}>
+                            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                              <div>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <h3 className="font-bold">{item.vaccineName}</h3>
+                                  <Badge className={style.badge}>{statusLabelMap[item.status]}</Badge>
+                                  {item.doseName && <Badge variant="outline">{item.doseName}</Badge>}
+                                </div>
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                  {item.client?.nombre} - {item.pet.nombre}
+                                </p>
+                                {overdueText && (
+                                  <p className="mt-1 text-sm font-semibold text-destructive">{overdueText}</p>
+                                )}
+                                {item.blockedByPreviousDose && (
+                                  <p className="mt-1 text-sm font-medium text-warning">Dosis anterior no registrada.</p>
+                                )}
+                              </div>
+                              <div className="flex shrink-0 flex-wrap gap-2">
+                                {item.canRegister ? (
+                                  <Button className="h-12 rounded-xl bg-primary px-5 font-bold hover:bg-primary/90" asChild>
+                                    <Link href={`/vacunas/registrar?clienteId=${item.client?.id || ""}&mascotaId=${item.pet.id}`}>
+                                      {item.actionLabel}
+                                    </Link>
+                                  </Button>
+                                ) : (
+                                  <Button className="h-12 rounded-xl bg-primary px-5 font-bold hover:bg-primary/90" asChild>
+                                    <Link href={`/vacunas/registrar?clienteId=${item.client?.id || ""}&mascotaId=${item.pet.id}`}>
+                                      {item.actionLabel}
+                                    </Link>
+                                  </Button>
+                                )}
+                                {item.secondaryActionLabel && (
+                                  <Button variant="outline" className="h-12 rounded-xl">
+                                    {item.secondaryActionLabel}
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                            <div className="mt-4 grid gap-2 text-sm md:grid-cols-3">
+                              <Info label="Cliente" value={item.client?.nombre || "-"} />
+                              <Info label="Mascota" value={item.pet.nombre} />
+                              {item.estimatedAt && <Info label="Fecha esperada" value={formatDate(item.estimatedAt)} />}
+                              {item.appliedAt && <Info label="Aplicada" value={formatDate(item.appliedAt)} />}
+                              {item.reminderDate && <Info label="Recordatorio" value={formatDate(item.reminderDate)} />}
+                            </div>
+                          </article>
+                        )
+                      })}
+                    </div>
                   </div>
-                  <Button className="h-12 rounded-xl bg-primary px-5 font-bold hover:bg-primary/90" asChild>
-                    <Link href={`/vacunas/registrar?clienteId=${item.client?.id || ""}&mascotaId=${item.pet.id}`}>
-                      Registrar esta dosis
-                    </Link>
-                  </Button>
-                </div>
-                <div className="mt-4 grid gap-2 text-sm md:grid-cols-3">
-                  <Info label="Cliente" value={item.client?.nombre || "-"} />
-                  <Info label="Mascota" value={item.pet.nombre} />
-                  <Info label="Fecha estimada" value={formatDate(item.estimatedAt)} />
-                  <Info label="Estado" value={item.status} />
-                  <Info label="Recordatorio" value={item.reminder.reminderDate ? formatDate(item.reminder.reminderDate) : item.reminder.status} />
-                  <Info label="Origen" value="Calendario demo" />
-                </div>
-              </article>
-            ))}
+                )
+              })}
           </div>
         ) : (
           <EmptyState text="No hay vacunas pendientes calculadas con los datos demo actuales." />

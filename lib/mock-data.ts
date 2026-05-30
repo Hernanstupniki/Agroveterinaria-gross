@@ -785,8 +785,7 @@ export const vacunasClinicas = [
     observaciones: "Aplicación anual registrada sin reacciones adversas.",
     recordatorioProgramado: true,
     proximoRecordatorio: "2027-03-05",
-    mensajePreview: "Hola, te recordamos que a Luna le corresponde la vacuna Antirrábica el día 12/03/2027. Si querés, podés responder este mensaje para coordinar un turno en Agroveterinaria Gross.",
-  },
+    },
   {
     id: "vc-2",
     mascota: "Luna",
@@ -801,7 +800,6 @@ export const vacunasClinicas = [
     observaciones: "Refuerzo anual completo.",
     recordatorioProgramado: true,
     proximoRecordatorio: "2027-02-13",
-    mensajePreview: "Hola, te recordamos que a Luna le corresponde la vacuna Quíntuple el día 20/02/2027. Si querés, podés responder este mensaje para coordinar un turno en Agroveterinaria Gross.",
   },
   {
     id: "vc-3",
@@ -817,7 +815,6 @@ export const vacunasClinicas = [
     observaciones: "Control trimestral recomendado por peso y rutina.",
     recordatorioProgramado: false,
     proximoRecordatorio: "2026-06-28",
-    mensajePreview: "Hola, te recordamos que a Luna le corresponde la desparasitación el día 05/07/2026. Si querés, podés responder este mensaje para coordinar un turno en Agroveterinaria Gross.",
   },
   {
     id: "vc-4",
@@ -833,7 +830,6 @@ export const vacunasClinicas = [
     observaciones: "Recomendada por exposición a guardería y paseos grupales.",
     recordatorioProgramado: true,
     proximoRecordatorio: "2026-06-10",
-    mensajePreview: "Hola, te recordamos que a Luna le corresponde la vacuna Bordetella el día 15/06/2026. Si querés, podés responder este mensaje para coordinar un turno en Agroveterinaria Gross.",
   },
   {
     id: "vc-5",
@@ -849,7 +845,6 @@ export const vacunasClinicas = [
     observaciones: "Pendiente de confirmar agenda con la familia.",
     recordatorioProgramado: false,
     proximoRecordatorio: "2027-02-13",
-    mensajePreview: "Hola, te recordamos que a Luna le corresponde el refuerzo anual el día 20/02/2027. Si querés, podés responder este mensaje para coordinar un turno en Agroveterinaria Gross.",
   },
   {
     id: "vc-6",
@@ -865,7 +860,6 @@ export const vacunasClinicas = [
     observaciones: "Debe contactarse al dueño para coordinar aplicación.",
     recordatorioProgramado: false,
     proximoRecordatorio: "2026-05-27",
-    mensajePreview: "Hola, te recordamos que a Luna le corresponde la vacuna Giardia desde el día 10/05/2026. Si querés, podés responder este mensaje para coordinar un turno en Agroveterinaria Gross.",
   },
   {
     id: "vc-7",
@@ -881,7 +875,6 @@ export const vacunasClinicas = [
     observaciones: "Paciente con vacuna anual vencida. Priorizar contacto.",
     recordatorioProgramado: true,
     proximoRecordatorio: "2026-05-28",
-    mensajePreview: "Hola, te recordamos que a Rocky le corresponde la vacuna Antirrábica desde el día 05/01/2026. Si querés, podés responder este mensaje para coordinar un turno en Agroveterinaria Gross.",
   },
   {
     id: "vc-8",
@@ -897,7 +890,6 @@ export const vacunasClinicas = [
     observaciones: "Sugerida para reducir riesgo respiratorio.",
     recordatorioProgramado: false,
     proximoRecordatorio: "2026-06-15",
-    mensajePreview: "Hola, te recordamos que a Rocky le corresponde la vacuna Bordetella el día 20/06/2026. Si querés, podés responder este mensaje para coordinar un turno en Agroveterinaria Gross.",
   },
   {
     id: "vc-9",
@@ -913,7 +905,6 @@ export const vacunasClinicas = [
     observaciones: "Aplicación anual felina.",
     recordatorioProgramado: true,
     proximoRecordatorio: "2027-02-23",
-    mensajePreview: "Hola, te recordamos que a Simón le corresponde la vacuna Triple felina el día 02/03/2027. Si querés, podés responder este mensaje para coordinar un turno en Agroveterinaria Gross.",
   },
   {
     id: "vc-10",
@@ -929,7 +920,6 @@ export const vacunasClinicas = [
     observaciones: "Aprovechar próximo control de otitis.",
     recordatorioProgramado: false,
     proximoRecordatorio: "2026-06-03",
-    mensajePreview: "Hola, te recordamos que a Milo le corresponde la vacuna Séxtuple el día 08/06/2026. Si querés, podés responder este mensaje para coordinar un turno en Agroveterinaria Gross.",
   },
 ]
 

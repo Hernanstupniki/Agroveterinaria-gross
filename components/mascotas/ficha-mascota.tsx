@@ -33,10 +33,18 @@ import {
   mascotas,
   recordatoriosProgramados,
   tratamientosActivos,
-  vacunasClinicas,
   vacunasRegistradas,
 } from "@/lib/mock-data"
 import { buildMockClinicalHistory } from "@/lib/clinical-history-workflow"
+import {
+  buildVaccineDisplayList,
+  formatOverdueText,
+  getVaccineDisplayGroups,
+  getVaccineGroupLabel,
+  getVaccineStatusBadgeStyle,
+  type VaccineDisplayItem,
+  type VaccineDisplayStatus,
+} from "@/lib/vaccine-workflow"
 
 const MOCK_TODAY = new Date("2026-05-30T00:00:00")
 
@@ -68,37 +76,11 @@ const tipoEventoColors: Record<string, string> = {
   Recordatorio: "border-secondary/40 bg-secondary text-secondary-foreground",
 }
 
-const vacunaEstadoStyles: Record<string, { badge: string; card: string; icon: string }> = {
-  Aplicada: {
-    badge: "bg-success text-success-foreground",
-    card: "border-success/25 bg-success/5",
-    icon: "bg-success/10 text-success",
-  },
-  Próxima: {
-    badge: "bg-primary text-primary-foreground",
-    card: "border-primary/25 bg-primary/5",
-    icon: "bg-primary/10 text-primary",
-  },
-  Pendiente: {
-    badge: "bg-secondary text-secondary-foreground",
-    card: "border-secondary/50 bg-secondary/10",
-    icon: "bg-secondary/20 text-secondary-foreground",
-  },
-  Vencida: {
-    badge: "bg-destructive text-destructive-foreground",
-    card: "border-destructive/40 bg-destructive/10",
-    icon: "bg-destructive/10 text-destructive",
-  },
-}
+const vacunaGroups = getVaccineDisplayGroups()
 
-const vacunaGroups = ["Vencida", "Pendiente", "Próxima", "Aplicada"]
-
-const vacunaGroupLabels: Record<string, string> = {
-  Vencida: "Vacunas vencidas",
-  Pendiente: "Vacunas pendientes",
-  Próxima: "Próximas vacunas",
-  Aplicada: "Vacunas aplicadas",
-}
+const vacunaGroupLabels = Object.fromEntries(
+  vacunaGroups.map((status) => [status, getVaccineGroupLabel(status)])
+) as Record<VaccineDisplayStatus, string>
 
 type ReminderBucket = "vencidos" | "proximos" | "pendientes" | "completados"
 
@@ -197,7 +179,7 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
   const cliente = clientes.find((item) => item.id === mascota.clienteId)
 
   const vacunasMascota = vacunasRegistradas.filter((item) => item.mascotaId === mascota.id)
-  const planVacunasMascota = vacunasClinicas.filter((item) => item.mascotaId === mascota.id)
+  const planVacunasMascota = buildVaccineDisplayList(mascota.id)
   const tratamientosMascota = tratamientosActivos.filter((item) => item.mascotaId === mascota.id)
   const tratamientosActivosMascota = tratamientosMascota.filter((item) => item.estado === "Activo")
   const estudiosMascota = estudiosArchivos.filter((item) => item.mascotaId === mascota.id)
@@ -210,7 +192,7 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
     (item) => item.estado === "Programada" || item.estado === "Confirmada",
   )
   const cirugiasRealizadas = cirugiasMascota.filter((item) => item.estado === "Realizada")
-  const vacunasVencidasMascota = planVacunasMascota.filter((item) => item.estado === "Vencida")
+  const vacunasVencidasMascota = planVacunasMascota.filter((item) => item.status === "vencida")
   const recordatoriosMascota = recordatoriosProgramados.filter((item) => item.mascota === mascota.nombre)
   const recordatoriosConBucket = recordatoriosMascota.map((item) => ({
     ...item,
@@ -344,7 +326,7 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
     ...vacunasVencidasMascota.map((vacuna) => ({
       id: `vacuna-vencida-${vacuna.id}`,
       titulo: "Vacuna vencida",
-      detalle: `${vacuna.vacuna} desde ${formatDate(vacuna.proximaFecha || vacuna.fechaRecomendada)}`,
+      detalle: `${vacuna.vaccineName}${vacuna.overdueDays ? ` - ${formatOverdueText(vacuna.overdueDays)}` : ""}`,
       icon: Syringe,
       className: "border-destructive/25 bg-destructive/10 text-destructive",
     })),
@@ -678,7 +660,7 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
                     <Syringe className="h-5 w-5 text-primary" />
                     Vacunas
                   </CardTitle>
-                  <CardDescription>Prioridad: vencidas, pendientes, próximas y aplicadas.</CardDescription>
+                  <CardDescription>Prioridad: vencidas, pendientes, proximas, aplicadas e historial desconocido.</CardDescription>
                 </div>
                 <Button className="h-12 rounded-xl bg-primary px-5 text-center font-bold leading-tight hover:bg-primary/90" asChild>
                   <Link href={`/vacunas/registrar?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}`}>
@@ -691,24 +673,19 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
             <CardContent className="space-y-6 pt-5">
               {planVacunasMascota.length > 0 ? (
                 vacunaGroups.map((estado) => {
-                  const vacunasPorEstado = planVacunasMascota.filter((vacuna) => vacuna.estado === estado)
+                  const vacunasPorEstado = planVacunasMascota.filter((vacuna) => vacuna.status === estado)
+                  if (vacunasPorEstado.length === 0) return null
                   return (
                     <div key={estado} className="space-y-3">
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="text-sm font-semibold text-muted-foreground">{vacunaGroupLabels[estado]}</h3>
                         <Badge variant="outline">{vacunasPorEstado.length}</Badge>
                       </div>
-                      {vacunasPorEstado.length > 0 ? (
-                        <div className="grid gap-3 xl:grid-cols-2">
-                          {vacunasPorEstado.map((vacuna) => (
-                            <VaccinePlanItem key={vacuna.id} vacuna={vacuna} clienteId={cliente?.id} mascotaId={mascota.id} />
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
-                          Sin {vacunaGroupLabels[estado].toLowerCase()}.
-                        </div>
-                      )}
+                      <div className="grid gap-3 xl:grid-cols-2">
+                        {vacunasPorEstado.map((vacuna) => (
+                          <VaccineDisplayCard key={vacuna.id} item={vacuna} clienteId={cliente?.id} mascotaId={mascota.id} />
+                        ))}
+                      </div>
                     </div>
                   )
                 })
@@ -1127,19 +1104,26 @@ function TreatmentActiveCard({
   )
 }
 
-function VaccinePlanItem({
-  vacuna,
+function VaccineDisplayCard({
+  item,
   clienteId,
   mascotaId,
 }: {
-  vacuna: (typeof vacunasClinicas)[number]
+  item: VaccineDisplayItem
   clienteId?: number
   mascotaId: number
 }) {
-  const style = vacunaEstadoStyles[vacuna.estado]
-  const isApplied = vacuna.estado === "Aplicada"
-  const actionLabel = vacuna.estado === "Vencida" ? "Registrar aplicación" : isApplied ? "Ver detalle" : "Programar"
+  const style = getVaccineStatusBadgeStyle(item.status)
   const actionHref = `/vacunas/registrar?clienteId=${clienteId || ""}&mascotaId=${mascotaId}`
+  const overdueText = formatOverdueText(item.overdueDays)
+
+  const statusLabelMap: Record<VaccineDisplayStatus, string> = {
+    aplicada: "Aplicada",
+    proxima: "Proxima",
+    pendiente: "Pendiente",
+    vencida: "Vencida",
+    historial_desconocido: "Historial desconocido",
+  }
 
   return (
     <article className={`rounded-xl border p-4 ${style.card}`}>
@@ -1149,33 +1133,44 @@ function VaccinePlanItem({
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-bold">{vacuna.vacuna}</h3>
-            <Badge className={style.badge}>{vacuna.estado}</Badge>
-            {vacuna.recordatorioProgramado && (
-              <Badge variant="outline" className="border-primary/40 text-primary">
-                Recordatorio programado
-              </Badge>
-            )}
+            <h3 className="font-bold">{item.vaccineName}</h3>
+            <Badge className={style.badge}>{statusLabelMap[item.status]}</Badge>
+            {item.doseName && <Badge variant="outline">{item.doseName}</Badge>}
           </div>
-          <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{vacuna.observaciones}</p>
+          {overdueText && (
+            <p className="mt-1 text-sm font-semibold text-destructive">{overdueText}</p>
+          )}
+          {item.blockedByPreviousDose && (
+            <p className="mt-1 text-sm font-medium text-warning">Dosis anterior no registrada. Registre primero la dosis correspondiente.</p>
+          )}
+          <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{item.observations}</p>
         </div>
       </div>
 
       <div className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
-        <CompactDetail label="Dosis" value="Según esquema" />
-        <CompactDetail label="Aplicada" value={formatDate(vacuna.fechaAplicada)} />
-        <CompactDetail label="Próxima fecha" value={formatDate(vacuna.proximaFecha || vacuna.fechaRecomendada)} />
-        <CompactDetail label="Veterinario" value={vacuna.veterinario || "A definir"} />
-        <CompactDetail label="Recordatorio" value={formatDate(vacuna.proximoRecordatorio)} />
+        {item.appliedAt && <CompactDetail label="Aplicada" value={formatDate(item.appliedAt)} />}
+        {item.estimatedAt && <CompactDetail label="Fecha esperada" value={formatDate(item.estimatedAt)} />}
+        {item.status === "historial_desconocido" && <CompactDetail label="Estado" value="Sin registros previos" />}
+        {item.reminderDate && <CompactDetail label="Recordatorio" value={formatDate(item.reminderDate)} />}
       </div>
 
       <div className="mt-4 flex flex-wrap justify-end gap-2">
-        <Button className="h-11 rounded-xl bg-primary px-4 font-bold hover:bg-primary/90" asChild>
-          <Link href={actionHref}>{actionLabel}</Link>
-        </Button>
-        {!isApplied && (
+        {item.canRegister ? (
+          <Button className="h-11 rounded-xl bg-primary px-4 font-bold hover:bg-primary/90" asChild>
+            <Link href={actionHref}>{item.actionLabel}</Link>
+          </Button>
+        ) : item.status === "aplicada" ? (
           <Button variant="outline" className="h-11 rounded-xl">
             Ver detalle
+          </Button>
+        ) : (
+          <Button className="h-11 rounded-xl bg-primary px-4 font-bold hover:bg-primary/90" asChild>
+            <Link href={actionHref}>{item.actionLabel}</Link>
+          </Button>
+        )}
+        {item.secondaryActionLabel && (
+          <Button variant="outline" className="h-11 rounded-xl">
+            {item.secondaryActionLabel}
           </Button>
         )}
       </div>

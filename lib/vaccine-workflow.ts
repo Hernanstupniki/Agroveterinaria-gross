@@ -7,6 +7,13 @@ export type VaccinationOrigin = "aplicada_hoy" | "carga_historica"
 export type VaccineScheduleStatus = "pendiente" | "aplicada" | "vencida" | "cancelada"
 export type ReminderStatus = "preparado" | "programado" | "enviado" | "sin_recordatorio"
 
+export type VaccineDisplayStatus =
+  | "aplicada"
+  | "proxima"
+  | "pendiente"
+  | "vencida"
+  | "historial_desconocido"
+
 export interface VaccineScheme extends ProtocolApplicability {
   id: string
   name: string
@@ -60,6 +67,28 @@ export interface VaccineReminder {
   estimatedAt: string
   reminderDate?: string | null
   status: ReminderStatus
+}
+
+export interface VaccineDisplayItem {
+  id: string
+  petId: number
+  clientId: number
+  vaccineId: string
+  vaccineName: string
+  doseId: string
+  doseName: string
+  doseOrder: number
+  status: VaccineDisplayStatus
+  appliedAt: string | null
+  estimatedAt: string | null
+  overdueDays: number | null
+  blockedByPreviousDose: boolean
+  canRegister: boolean
+  actionLabel: string
+  secondaryActionLabel: string | null
+  reminderDate: string | null
+  reminderStatus: string
+  observations: string
 }
 
 export const vaccineSchemes: VaccineScheme[] = [
@@ -198,9 +227,20 @@ export const petVaccinationsSeed: PetVaccination[] = [
     clientId: 1,
     vaccineId: "vac-demo-sextuple-perro",
     doseId: "dose-sextuple-1",
-    appliedAt: "2026-06-01",
+    appliedAt: "2026-05-01",
     appliedBy: "Dr. Garcia",
-    observations: "Registro demo: calcula Dosis 2 para 15/06/2026.",
+    observations: "Dosis 1 aplicada. Dosis 2 esperada el 15/05/2026.",
+    origin: "carga_historica",
+  },
+  {
+    id: "pv-demo-luna-antirrabica",
+    petId: 1,
+    clientId: 1,
+    vaccineId: "vac-demo-antirrabica-perro",
+    doseId: "dose-antirrabica-anual",
+    appliedAt: "2026-03-12",
+    appliedBy: "Dr. Garcia",
+    observations: "Aplicacion anual registrada sin reacciones adversas.",
     origin: "carga_historica",
   },
   {
@@ -226,6 +266,8 @@ export const petVaccinationsSeed: PetVaccination[] = [
     origin: "carga_historica",
   },
 ]
+
+export const MOCK_VACCINE_TODAY = "2026-05-30"
 
 export function getDosesForVaccine(vaccineId: string) {
   return vaccineDoses.filter((dose) => dose.vaccineId === vaccineId).sort((a, b) => a.order - b.order)
@@ -274,6 +316,238 @@ export function calculateNextDose(vaccineId: string, doseId: string, appliedAt: 
   }
 }
 
+function diffDays(dateA: string, dateB: string): number {
+  const a = new Date(`${dateA}T00:00:00`)
+  const b = new Date(`${dateB}T00:00:00`)
+  return Math.ceil((a.getTime() - b.getTime()) / 86_400_000)
+}
+
+export function buildVaccineDisplayList(petId: number, today = MOCK_VACCINE_TODAY): VaccineDisplayItem[] {
+  const petRecords = petVaccinationsSeed.filter((r) => r.petId === petId)
+  const pet = { id: petId }
+  const items: VaccineDisplayItem[] = []
+  let itemId = 0
+
+  const schemesForPet = vaccineSchemes.filter((scheme) => {
+    if (!scheme.active) return false
+    const petRecord = petRecords.find((r) => r.vaccineId === scheme.id)
+    return !!petRecord || true
+  })
+
+  for (const scheme of schemesForPet) {
+    const doses = getDosesForVaccine(scheme.id)
+    const recordsForScheme = petRecords.filter((r) => r.vaccineId === scheme.id)
+
+    if (recordsForScheme.length === 0) {
+      const firstDose = doses.find((d) => d.order === 1)
+      if (firstDose) {
+        itemId++
+        items.push({
+          id: `vdi-${itemId}`,
+          petId,
+          clientId: 0,
+          vaccineId: scheme.id,
+          vaccineName: scheme.name,
+          doseId: firstDose.id,
+          doseName: firstDose.name,
+          doseOrder: firstDose.order,
+          status: "historial_desconocido",
+          appliedAt: null,
+          estimatedAt: null,
+          overdueDays: null,
+          blockedByPreviousDose: false,
+          canRegister: true,
+          actionLabel: "Registrar primera aplicacion",
+          secondaryActionLabel: "Cargar historial",
+          reminderDate: null,
+          reminderStatus: "sin_recordatorio",
+          observations: `No hay registros de ${scheme.name} para esta mascota.`,
+        })
+      }
+      continue
+    }
+
+    for (const record of recordsForScheme) {
+      const dose = doses.find((d) => d.id === record.doseId)
+      itemId++
+      items.push({
+        id: `vdi-applied-${record.id}`,
+        petId: record.petId,
+        clientId: record.clientId,
+        vaccineId: scheme.id,
+        vaccineName: scheme.name,
+        doseId: record.doseId,
+        doseName: dose?.name || record.doseId,
+        doseOrder: dose?.order || 0,
+        status: "aplicada",
+        appliedAt: record.appliedAt,
+        estimatedAt: null,
+        overdueDays: null,
+        blockedByPreviousDose: false,
+        canRegister: false,
+        actionLabel: "Ver detalle",
+        secondaryActionLabel: null,
+        reminderDate: null,
+        reminderStatus: "sin_recordatorio",
+        observations: record.observations,
+      })
+
+      const nextResult = calculateNextDose(scheme.id, record.doseId, record.appliedAt)
+      if (nextResult && nextResult.dose) {
+        const nextDose = nextResult.dose
+        const estimatedAt = nextResult.estimatedAt
+        const daysUntil = diffDays(estimatedAt, today)
+        const reminderDate = nextResult.reminder.reminderDate
+
+        const previousDoses = doses.filter((d) => d.order < nextDose.order && d.order > 0)
+        const previousDoseApplied = previousDoses.length > 0
+          ? previousDoses.every((pd) => recordsForScheme.some((r) => r.doseId === pd.id))
+          : true
+
+        let status: VaccineDisplayStatus
+        let actionLabel: string
+        let secondaryActionLabel: string | null
+        let overdueDays: number | null = null
+        let canRegister: boolean
+
+        if (daysUntil < 0) {
+          status = "vencida"
+          overdueDays = Math.abs(daysUntil)
+          actionLabel = "Registrar aplicacion"
+          secondaryActionLabel = "Reprogramar"
+          canRegister = true
+        } else if (daysUntil <= 3) {
+          status = "pendiente"
+          actionLabel = "Registrar aplicacion"
+          secondaryActionLabel = "Reprogramar"
+          canRegister = true
+        } else {
+          status = "proxima"
+          actionLabel = "Programar"
+          secondaryActionLabel = null
+          canRegister = false
+        }
+
+        const blockedByPreviousDose = !previousDoseApplied && nextDose.order > 1 && !nextDose.recurrent
+
+        if (blockedByPreviousDose) {
+          canRegister = false
+          actionLabel = `Registrar Dosis ${nextDose.order - 1} primero`
+          secondaryActionLabel = null
+        }
+
+        itemId++
+        items.push({
+          id: `vdi-next-${record.id}-${nextDose.id}`,
+          petId: record.petId,
+          clientId: record.clientId,
+          vaccineId: scheme.id,
+          vaccineName: scheme.name,
+          doseId: nextDose.id,
+          doseName: nextDose.name,
+          doseOrder: nextDose.order,
+          status,
+          appliedAt: null,
+          estimatedAt,
+          overdueDays,
+          blockedByPreviousDose,
+          canRegister,
+          actionLabel,
+          secondaryActionLabel,
+          reminderDate,
+          reminderStatus: "preparado",
+          observations: nextDose.observations,
+        })
+      }
+    }
+  }
+
+  return items.sort((a, b) => {
+    const orderMap: Record<VaccineDisplayStatus, number> = {
+      vencida: 0,
+      pendiente: 1,
+      proxima: 2,
+      aplicada: 3,
+      historial_desconocido: 4,
+    }
+    const statusDiff = orderMap[a.status] - orderMap[b.status]
+    if (statusDiff !== 0) return statusDiff
+    const aDate = a.estimatedAt || a.appliedAt || "9999-12-31"
+    const bDate = b.estimatedAt || b.appliedAt || "9999-12-31"
+    return aDate.localeCompare(bDate)
+  })
+}
+
+export function formatOverdueText(days: number | null): string {
+  if (days === null) return ""
+  if (days === 1) return "Vencida hace 1 dia"
+  if (days < 30) return `Vencida hace ${days} dias`
+  const months = Math.floor(days / 30)
+  if (months === 1) return "Vencida hace 1 mes"
+  return `Vencida hace ${months} meses`
+}
+
+export function getVaccineStatusBadgeStyle(status: VaccineDisplayStatus): { badge: string; card: string; icon: string } {
+  switch (status) {
+    case "aplicada":
+      return {
+        badge: "bg-success text-success-foreground",
+        card: "border-success/25 bg-success/5",
+        icon: "bg-success/10 text-success",
+      }
+    case "proxima":
+      return {
+        badge: "bg-primary text-primary-foreground",
+        card: "border-primary/25 bg-primary/5",
+        icon: "bg-primary/10 text-primary",
+      }
+    case "pendiente":
+      return {
+        badge: "bg-secondary text-secondary-foreground",
+        card: "border-secondary/50 bg-secondary/10",
+        icon: "bg-secondary/20 text-secondary-foreground",
+      }
+    case "vencida":
+      return {
+        badge: "bg-destructive text-destructive-foreground",
+        card: "border-destructive/40 bg-destructive/10",
+        icon: "bg-destructive/10 text-destructive",
+      }
+    case "historial_desconocido":
+      return {
+        badge: "bg-muted text-muted-foreground",
+        card: "border-muted bg-muted/20",
+        icon: "bg-muted/30 text-muted-foreground",
+      }
+  }
+}
+
+export function getVaccineGroupOrder(status: VaccineDisplayStatus): number {
+  const order: Record<VaccineDisplayStatus, number> = {
+    vencida: 0,
+    pendiente: 1,
+    proxima: 2,
+    aplicada: 3,
+    historial_desconocido: 4,
+  }
+  return order[status]
+}
+
+export function getVaccineGroupLabel(status: VaccineDisplayStatus): string {
+  const labels: Record<VaccineDisplayStatus, string> = {
+    vencida: "Vacunas vencidas",
+    pendiente: "Vacunas pendientes",
+    proxima: "Proximas vacunas",
+    aplicada: "Vacunas aplicadas",
+    historial_desconocido: "Historial desconocido",
+  }
+  return labels[status]
+}
+
+export function getVaccineDisplayGroups(): VaccineDisplayStatus[] {
+  return ["vencida", "pendiente", "proxima", "aplicada", "historial_desconocido"]
+}
+
 export function buildPetVaccinationHistory(petId: number) {
   return petVaccinationsSeed
     .filter((record) => record.petId === petId)
@@ -286,7 +560,7 @@ export function buildPetVaccinationHistory(petId: number) {
     .sort((a, b) => b.appliedAt.localeCompare(a.appliedAt))
 }
 
-export function buildPetVaccineSchedule(petId: number, today = "2026-05-29"): PetVaccineSchedule[] {
+export function buildPetVaccineSchedule(petId: number, today = MOCK_VACCINE_TODAY): PetVaccineSchedule[] {
   const schedule: PetVaccineSchedule[] = []
 
   for (const record of buildPetVaccinationHistory(petId)) {
