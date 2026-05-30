@@ -6,8 +6,9 @@ import {
   surgeryDurationPresets,
   surgeryFollowUpDurationPresets,
 } from "./clinical-presets"
+import { getPetTaxonomy, sortProtocolsByCompatibility, type LifeStageId, type ProtocolApplicability } from "./animal-taxonomy"
 
-export interface SurgeryProtocol {
+export interface SurgeryProtocol extends ProtocolApplicability {
   id: string
   name: string
   procedureDurationPresetId: string
@@ -32,6 +33,12 @@ export const surgeryProtocols: SurgeryProtocol[] = [
     requirements: "Peso actualizado, evaluacion clinica y consentimiento firmado.",
     postInstructions: "Control de herida, analgesia y retiro de puntos si corresponde.",
     active: true,
+    animalTypeIds: ["perro", "gato"],
+    breedIds: [],
+    lifeStages: ["adult"],
+    appliesToAllAnimalTypes: false,
+    appliesToAllBreeds: true,
+    appliesToAllLifeStages: false,
   },
   {
     id: "surgery-demo-limpieza-dental",
@@ -44,6 +51,12 @@ export const surgeryProtocols: SurgeryProtocol[] = [
     requirements: "Consentimiento, ayuno y registro de piezas comprometidas.",
     postInstructions: "Control de dolor, dieta blanda y reevaluacion oral.",
     active: true,
+    animalTypeIds: ["perro", "gato"],
+    breedIds: [],
+    lifeStages: ["adult", "senior"],
+    appliesToAllAnimalTypes: false,
+    appliesToAllBreeds: true,
+    appliesToAllLifeStages: false,
   },
   {
     id: "surgery-demo-extraccion",
@@ -56,6 +69,12 @@ export const surgeryProtocols: SurgeryProtocol[] = [
     requirements: "Definir pieza o tejido, riesgo y medicacion indicada.",
     postInstructions: "Seguimiento de cicatrizacion y signos de alarma.",
     active: true,
+    animalTypeIds: ["perro", "gato", "vaca", "caballo"],
+    breedIds: [],
+    lifeStages: ["adult", "senior"],
+    appliesToAllAnimalTypes: false,
+    appliesToAllBreeds: true,
+    appliesToAllLifeStages: false,
   },
   {
     id: "surgery-demo-menor",
@@ -68,6 +87,12 @@ export const surgeryProtocols: SurgeryProtocol[] = [
     requirements: "Registrar zona, tecnica y materiales.",
     postInstructions: "Control local y recordatorio de revision.",
     active: true,
+    animalTypeIds: [],
+    breedIds: [],
+    lifeStages: ["all"],
+    appliesToAllAnimalTypes: true,
+    appliesToAllBreeds: true,
+    appliesToAllLifeStages: true,
   },
   {
     id: "surgery-demo-general",
@@ -80,11 +105,21 @@ export const surgeryProtocols: SurgeryProtocol[] = [
     requirements: "Agenda confirmada, consentimiento y responsable asignado.",
     postInstructions: "Seguimiento segun evolucion y controles programados.",
     active: true,
+    animalTypeIds: [],
+    breedIds: [],
+    lifeStages: ["all"],
+    appliesToAllAnimalTypes: true,
+    appliesToAllBreeds: true,
+    appliesToAllLifeStages: true,
   },
 ]
 
 export function getSurgeryProtocol(protocolId: string) {
   return surgeryProtocols.find((protocol) => protocol.id === protocolId)
+}
+
+export function getSurgeryProtocolsForPet(pet: { especie: string; raza?: string; edad?: string; animalTypeId?: string; breedId?: string | null; lifeStage?: LifeStageId }) {
+  return sortProtocolsByCompatibility(surgeryProtocols.filter((protocol) => protocol.active), getPetTaxonomy(pet))
 }
 
 export function getSurgeryProcedureDurationPreset(protocol: SurgeryProtocol) {

@@ -29,6 +29,8 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { ClinicalActionFlow } from "@/components/clinical/action-flow"
+import { ApplicabilityBadges, CompatibilityNotice, PetTaxonomySummary, TaxonomyApplicabilityEditor } from "@/components/clinical/taxonomy-controls"
+import { getPetTaxonomy, protocolMatchesPet } from "@/lib/animal-taxonomy"
 import { controlFrequencyPresets, reminderPresets, surgeryDurationPresets, surgeryFollowUpDurationPresets } from "@/lib/clinical-presets"
 import { cirugias, clientes, mascotas, profesionales } from "@/lib/mock-data"
 import {
@@ -36,6 +38,7 @@ import {
   getSurgeryFollowUpDurationPreset,
   getSurgeryFrequencyPreset,
   getSurgeryProcedureDurationPreset,
+  getSurgeryProtocolsForPet,
   getSurgeryReminderPreset,
   inferSurgeryProtocol,
   surgeryProtocols,
@@ -237,6 +240,9 @@ export function PendingSurgeries() {
 }
 
 export function SurgeryProtocols() {
+  const [editingProtocolId, setEditingProtocolId] = useState<string | null>(null)
+  const editingProtocol = surgeryProtocols.find((protocol) => protocol.id === editingProtocolId)
+
   return (
     <Card>
       <CardHeader>
@@ -248,13 +254,21 @@ export function SurgeryProtocols() {
       </CardHeader>
       <CardContent className="space-y-5">
         <div className="rounded-xl border border-primary/25 bg-primary/5 p-4">
+          {editingProtocol && (
+            <div className="mb-4 rounded-lg border border-primary/30 bg-background p-3 text-sm">
+              Editando protocolo mock: <span className="font-semibold">{editingProtocol.name}</span>.
+            </div>
+          )}
           <div className="grid gap-4 lg:grid-cols-2">
-            <Field label="Nombre del procedimiento" placeholder="Ej: Castración" />
+            <Field label="Nombre del procedimiento" placeholder="Ej: Castración" value={editingProtocol?.name} />
             <PresetSelect label="Duracion del procedimiento" items={surgeryDurationPresets} />
             <PresetSelect label="Seguimiento postoperatorio" items={surgeryFollowUpDurationPresets} />
             <PresetSelect label="Frecuencia de controles" items={controlFrequencyPresets} />
             <PresetSelect label="Recordatorio" items={reminderPresets} />
             <Field label="Requisitos previos" placeholder="Ayuno, estudios, consentimiento..." />
+          </div>
+          <div className="mt-4">
+            <TaxonomyApplicabilityEditor initial={editingProtocol} />
           </div>
           <div className="mt-4 space-y-2">
             <Label>Indicaciones y observaciones</Label>
@@ -262,8 +276,13 @@ export function SurgeryProtocols() {
           </div>
           <Button className="mt-4 inline-flex h-14 items-center justify-center rounded-xl bg-primary px-6 text-center text-base font-bold leading-tight shadow-md shadow-primary/15 hover:bg-primary/90">
             <Plus className="mr-2 h-4 w-4" />
-            Crear protocolo de cirugía
+            {editingProtocol ? "Guardar cambios del protocolo" : "Crear protocolo de cirugía"}
           </Button>
+          {editingProtocol && (
+            <Button variant="outline" className="ml-2 mt-4 h-14 rounded-xl px-6 text-base font-bold" onClick={() => setEditingProtocolId(null)}>
+              Cancelar edición
+            </Button>
+          )}
         </div>
 
         <div className="grid gap-3 lg:grid-cols-2">
@@ -275,6 +294,7 @@ export function SurgeryProtocols() {
                   {protocol.active ? "Activo" : "Inactivo"}
                 </Badge>
               </div>
+              <ApplicabilityBadges protocol={protocol} />
               <div className="mt-3 grid gap-2 text-sm md:grid-cols-2">
             <Info label="Duración" value={getSurgeryProcedureDurationPreset(protocol).label} />
                 <Info label="Seguimiento" value={getSurgeryFollowUpDurationPreset(protocol).label} />
@@ -282,6 +302,14 @@ export function SurgeryProtocols() {
                 <Info label="Recordatorio" value={getSurgeryReminderPreset(protocol).label} />
                 <Info label="Requisitos" value={protocol.requirements} />
                 <Info label="Postoperatorio" value={protocol.postInstructions} />
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button className="h-11 rounded-xl bg-primary px-4 font-bold hover:bg-primary/90" onClick={() => setEditingProtocolId(protocol.id)}>
+                  Editar protocolo
+                </Button>
+                <Button variant="outline" className="h-11 rounded-xl px-4 font-bold">
+                  Desactivar
+                </Button>
               </div>
             </article>
           ))}
@@ -296,11 +324,14 @@ function ScheduleSurgeryForm({
   pet,
 }: {
   client: { nombre: string }
-  pet: { nombre: string; especie: string }
+  pet: { nombre: string; especie: string; raza?: string; edad?: string; animalTypeId?: string; breedId?: string | null; lifeStage?: any }
 }) {
   const veterinarios = profesionales.filter((profesional) => profesional.rol === "Veterinario")
-  const [selectedProtocolId, setSelectedProtocolId] = useState(surgeryProtocols[0]?.id || "")
-  const [procedureDurationId, setProcedureDurationId] = useState(surgeryProtocols[0]?.procedureDurationPresetId || "1-hour")
+  const petTaxonomy = useMemo(() => getPetTaxonomy(pet), [pet])
+  const availableProtocols = useMemo(() => getSurgeryProtocolsForPet(pet), [pet])
+  const compatibleCount = availableProtocols.filter((protocol) => protocolMatchesPet(protocol, petTaxonomy)).length
+  const [selectedProtocolId, setSelectedProtocolId] = useState(availableProtocols[0]?.id || "")
+  const [procedureDurationId, setProcedureDurationId] = useState(availableProtocols[0]?.procedureDurationPresetId || "1-hour")
   const [scheduledDate, setScheduledDate] = useState("2026-06-01")
   const selectedProtocol = surgeryProtocols.find((protocol) => protocol.id === selectedProtocolId)
   const followUps = useMemo(
@@ -324,6 +355,12 @@ function ScheduleSurgeryForm({
             {pet.nombre} - {pet.especie}
           </p>
         </div>
+        <PetTaxonomySummary pet={pet} />
+        {compatibleCount === 0 && (
+          <div className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-sm text-warning">
+            No hay protocolos quirúrgicos compatibles para esta mascota. Podés crear uno desde Protocolos de cirugía o elegir uno no compatible como demo.
+          </div>
+        )}
 
         <div className="grid gap-4 lg:grid-cols-2">
           <PresetSelect
@@ -334,7 +371,10 @@ function ScheduleSurgeryForm({
               const protocol = surgeryProtocols.find((item) => item.id === value)
               setProcedureDurationId(protocol?.procedureDurationPresetId || "1-hour")
             }}
-            items={surgeryProtocols.map((protocol) => ({ id: protocol.id, label: protocol.name }))}
+            items={availableProtocols.map((protocol) => ({
+              id: protocol.id,
+              label: `${protocol.name} - ${protocolMatchesPet(protocol, petTaxonomy) ? "compatible" : "no compatible"}`,
+            }))}
           />
           <Field label="Veterinario" placeholder={veterinarios.map((veterinario) => veterinario.nombre).join(" / ")} />
           <Field label="Fecha" placeholder="AAAA-MM-DD" value={scheduledDate} onChange={setScheduledDate} />
@@ -347,6 +387,7 @@ function ScheduleSurgeryForm({
           />
           <Field label="Riesgo" placeholder="Bajo / Moderado / Alto" />
         </div>
+        <CompatibilityNotice protocol={selectedProtocol} pet={pet} />
         <div className="space-y-2">
           <Label>Notas preoperatorias</Label>
           <Textarea placeholder="Ayuno, estudios requeridos, consentimiento, observaciones..." />
@@ -427,7 +468,13 @@ function Field({
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
-      <Input className="bg-background" placeholder={placeholder} value={value} onChange={(event) => onChange?.(event.target.value)} />
+      <Input
+        className="bg-background"
+        placeholder={placeholder}
+        value={onChange ? value || "" : undefined}
+        defaultValue={!onChange ? value : undefined}
+        onChange={(event) => onChange?.(event.target.value)}
+      />
     </div>
   )
 }

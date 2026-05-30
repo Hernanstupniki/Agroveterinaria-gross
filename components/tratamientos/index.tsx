@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { ClinicalActionFlow } from "@/components/clinical/action-flow"
+import { ApplicabilityBadges, CompatibilityNotice, PetTaxonomySummary, TaxonomyApplicabilityEditor } from "@/components/clinical/taxonomy-controls"
+import { getPetTaxonomy, protocolMatchesPet } from "@/lib/animal-taxonomy"
 import { controlFrequencyPresets, durationPresets, reminderPresets } from "@/lib/clinical-presets"
 import { clientes, mascotas } from "@/lib/mock-data"
 import {
@@ -29,6 +31,7 @@ import {
   generateTreatmentControls,
   getTreatmentDurationPreset,
   getTreatmentFrequencyPreset,
+  getTreatmentProtocolsForPet,
   getTreatmentReminderPreset,
   treatmentProtocols,
   type TreatmentStatus,
@@ -110,9 +113,12 @@ function TreatmentRegistrationForm({
   pet,
 }: {
   client: { id: number; nombre: string }
-  pet: { id: number; nombre: string; especie: string }
+  pet: { id: number; nombre: string; especie: string; raza?: string; edad?: string; animalTypeId?: string; breedId?: string | null; lifeStage?: any }
 }) {
-  const firstProtocolId = treatmentProtocols[0]?.id || ""
+  const petTaxonomy = useMemo(() => getPetTaxonomy(pet), [pet])
+  const availableProtocols = useMemo(() => getTreatmentProtocolsForPet(pet), [pet])
+  const compatibleCount = availableProtocols.filter((protocol) => protocolMatchesPet(protocol, petTaxonomy)).length
+  const firstProtocolId = availableProtocols[0]?.id || ""
   const [selectedProtocolId, setSelectedProtocolId] = useState(firstProtocolId)
   const [startedAt, setStartedAt] = useState("2026-06-01")
   const selectedProtocol = treatmentProtocols.find((protocol) => protocol.id === selectedProtocolId)
@@ -148,6 +154,12 @@ function TreatmentRegistrationForm({
             {pet.nombre} - {pet.especie}
           </p>
         </div>
+        <PetTaxonomySummary pet={pet} />
+        {compatibleCount === 0 && (
+          <div className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-sm text-warning">
+            No hay protocolos compatibles para esta mascota. Podés crear uno desde Protocolos de tratamiento o elegir uno no compatible como demo.
+          </div>
+        )}
 
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="space-y-2">
@@ -157,9 +169,9 @@ function TreatmentRegistrationForm({
                 <SelectValue placeholder="Seleccionar protocolo" />
               </SelectTrigger>
               <SelectContent>
-                {treatmentProtocols.map((protocol) => (
+                {availableProtocols.map((protocol) => (
                   <SelectItem key={protocol.id} value={protocol.id}>
-                    {protocol.name}
+                    {protocol.name} - {protocolMatchesPet(protocol, petTaxonomy) ? "compatible" : "no compatible"}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -169,6 +181,23 @@ function TreatmentRegistrationForm({
           <Field label="Diagnostico / motivo" placeholder="Diagnostico clinico" />
           <Field label="Responsable" placeholder="Dr./Dra." />
         </div>
+        <CompatibilityNotice protocol={selectedProtocol} pet={pet} />
+
+        <Card className="border-primary/25 bg-background">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Pill className="h-5 w-5 text-primary" />
+              Medicacion indicada
+            </CardTitle>
+            <CardDescription>Detalle de medicacion, dosis y cada cuanto se administra.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 lg:grid-cols-4">
+            <Field label="Medicamento" placeholder="Ej: Miltefosina" />
+            <Field label="Dosis" placeholder="Ej: 2 mg/kg" />
+            <Field label="Cada cuanto" placeholder="Ej: cada 24 hs" />
+            <Field label="Duracion / indicacion" placeholder="Ej: 28 dias o segun control" />
+          </CardContent>
+        </Card>
 
         {selectedProtocol && (
           <Card className="border-primary/25 bg-background">
@@ -303,6 +332,9 @@ export function ActiveTreatments() {
 }
 
 export function TreatmentProtocols() {
+  const [editingProtocolId, setEditingProtocolId] = useState<string | null>(null)
+  const editingProtocol = treatmentProtocols.find((protocol) => protocol.id === editingProtocolId)
+
   return (
     <Card>
       <CardHeader>
@@ -316,11 +348,19 @@ export function TreatmentProtocols() {
       </CardHeader>
       <CardContent className="space-y-5">
         <div className="rounded-xl border border-primary/25 bg-primary/5 p-4">
+          {editingProtocol && (
+            <div className="mb-4 rounded-lg border border-primary/30 bg-background p-3 text-sm">
+              Editando protocolo mock: <span className="font-semibold">{editingProtocol.name}</span>.
+            </div>
+          )}
           <div className="grid gap-4 lg:grid-cols-2">
-            <Field label="Nombre del protocolo" placeholder="Ej: Leishmaniasis" />
+            <Field label="Nombre del protocolo" placeholder="Ej: Leishmaniasis" value={editingProtocol?.name} />
             <PresetSelect label="Duracion estimada" placeholder="Seleccionar duracion" items={durationPresets} />
             <PresetSelect label="Frecuencia de controles" placeholder="Seleccionar frecuencia" items={controlFrequencyPresets} />
             <PresetSelect label="Recordatorio" placeholder="Seleccionar recordatorio" items={reminderPresets} />
+          </div>
+          <div className="mt-4">
+            <TaxonomyApplicabilityEditor initial={editingProtocol} />
           </div>
           <div className="mt-4 space-y-2">
             <Label>Indicaciones</Label>
@@ -328,8 +368,13 @@ export function TreatmentProtocols() {
           </div>
           <Button className="mt-4 h-14 rounded-xl bg-primary px-6 text-base font-bold shadow-md shadow-primary/15 hover:bg-primary/90">
             <Plus className="mr-2 h-4 w-4" />
-            Crear protocolo de tratamiento
+            {editingProtocol ? "Guardar cambios del protocolo" : "Crear protocolo de tratamiento"}
           </Button>
+          {editingProtocol && (
+            <Button variant="outline" className="ml-2 mt-4 h-14 rounded-xl px-6 text-base font-bold" onClick={() => setEditingProtocolId(null)}>
+              Cancelar edición
+            </Button>
+          )}
         </div>
 
         <div className="grid gap-3 lg:grid-cols-2">
@@ -342,6 +387,7 @@ export function TreatmentProtocols() {
                 </Badge>
               </div>
               <p className="mt-2 text-sm text-muted-foreground">{protocol.description}</p>
+              <ApplicabilityBadges protocol={protocol} />
               <div className="mt-3 grid gap-2 text-sm md:grid-cols-2">
                 <Info label="Duracion" value={getTreatmentDurationPreset(protocol).label} />
                 <Info label="Controles" value={getTreatmentFrequencyPreset(protocol).label} />
@@ -349,6 +395,14 @@ export function TreatmentProtocols() {
                 <Info label="Estados" value={protocol.possibleStates.join(", ")} />
               </div>
               <p className="mt-3 rounded-md bg-muted/35 p-3 text-sm text-muted-foreground">{protocol.indications}</p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button className="h-11 rounded-xl bg-primary px-4 font-bold hover:bg-primary/90" onClick={() => setEditingProtocolId(protocol.id)}>
+                  Editar protocolo
+                </Button>
+                <Button variant="outline" className="h-11 rounded-xl px-4 font-bold">
+                  Desactivar
+                </Button>
+              </div>
             </article>
           ))}
         </div>
@@ -406,7 +460,13 @@ function Field({
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
-      <Input className="bg-background" value={value} onChange={(event) => onChange?.(event.target.value)} placeholder={placeholder} />
+      <Input
+        className="bg-background"
+        value={onChange ? value || "" : undefined}
+        defaultValue={!onChange ? value : undefined}
+        onChange={(event) => onChange?.(event.target.value)}
+        placeholder={placeholder}
+      />
     </div>
   )
 }

@@ -1,12 +1,13 @@
 import { addPresetToDate, calculateReminderDate } from "./clinical-mock-logic"
 import { durationPresets, getPreset, reminderPresets, type ClinicalPreset } from "./clinical-presets"
+import { getPetTaxonomy, sortProtocolsByCompatibility, type LifeStageId, type ProtocolApplicability } from "./animal-taxonomy"
 
 export type VaccineSpecies = "Perro" | "Gato" | "Otro"
 export type VaccinationOrigin = "aplicada_hoy" | "carga_historica"
 export type VaccineScheduleStatus = "pendiente" | "aplicada" | "vencida" | "cancelada"
 export type ReminderStatus = "preparado" | "programado" | "enviado" | "sin_recordatorio"
 
-export interface VaccineScheme {
+export interface VaccineScheme extends ProtocolApplicability {
   id: string
   name: string
   species: VaccineSpecies
@@ -70,6 +71,12 @@ export const vaccineSchemes: VaccineScheme[] = [
     active: true,
     observations: "Usar como semilla de configuracion, no como dato clinico real.",
     reminderOffsetPresetId: "1-week-before",
+    animalTypeIds: ["perro"],
+    breedIds: [],
+    lifeStages: ["adult"],
+    appliesToAllAnimalTypes: false,
+    appliesToAllBreeds: true,
+    appliesToAllLifeStages: false,
   },
   {
     id: "vac-demo-sextuple-perro",
@@ -79,6 +86,12 @@ export const vaccineSchemes: VaccineScheme[] = [
     active: true,
     observations: "Configurable por especie y dosis.",
     reminderOffsetPresetId: "3-days-before",
+    animalTypeIds: ["perro"],
+    breedIds: [],
+    lifeStages: ["puppy", "adult"],
+    appliesToAllAnimalTypes: false,
+    appliesToAllBreeds: true,
+    appliesToAllLifeStages: false,
   },
   {
     id: "vac-demo-triple-felina",
@@ -88,6 +101,12 @@ export const vaccineSchemes: VaccineScheme[] = [
     active: true,
     observations: "Semilla de ejemplo para gatos.",
     reminderOffsetPresetId: "1-week-before",
+    animalTypeIds: ["gato"],
+    breedIds: [],
+    lifeStages: ["adult"],
+    appliesToAllAnimalTypes: false,
+    appliesToAllBreeds: true,
+    appliesToAllLifeStages: false,
   },
   {
     id: "vac-demo-leishmaniasis",
@@ -97,6 +116,12 @@ export const vaccineSchemes: VaccineScheme[] = [
     active: true,
     observations: "Ejemplo de flujo con intervalos configurables.",
     reminderOffsetPresetId: "3-days-before",
+    animalTypeIds: ["perro"],
+    breedIds: [],
+    lifeStages: ["adult"],
+    appliesToAllAnimalTypes: false,
+    appliesToAllBreeds: true,
+    appliesToAllLifeStages: false,
   },
 ]
 
@@ -208,6 +233,10 @@ export function getDosesForVaccine(vaccineId: string) {
 
 export function getActiveVaccinesForSpecies(species: string) {
   return vaccineSchemes.filter((scheme) => scheme.active && (scheme.species === species || scheme.species === "Otro"))
+}
+
+export function getVaccinesForPet(pet: { especie: string; raza?: string; edad?: string; animalTypeId?: string; breedId?: string | null; lifeStage?: LifeStageId }) {
+  return sortProtocolsByCompatibility(vaccineSchemes.filter((scheme) => scheme.active), getPetTaxonomy(pet))
 }
 
 export function getDoseIntervalPreset(dose: VaccineDose) {

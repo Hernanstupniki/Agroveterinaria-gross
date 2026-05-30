@@ -1,10 +1,11 @@
 import { addPresetToDate, generateControls, generateLifetimeControls, type GeneratedControl } from "./clinical-mock-logic"
 import { controlFrequencyPresets, durationPresets, getPreset, reminderPresets } from "./clinical-presets"
+import { getPetTaxonomy, sortProtocolsByCompatibility, type LifeStageId, type ProtocolApplicability } from "./animal-taxonomy"
 
 export type TreatmentStatus = "activo" | "pausado" | "finalizado" | "cancelado"
 export type TreatmentDurationType = "fixed" | "lifetime"
 
-export interface TreatmentProtocol {
+export interface TreatmentProtocol extends ProtocolApplicability {
   id: string
   name: string
   description: string
@@ -42,6 +43,12 @@ export const treatmentProtocols: TreatmentProtocol[] = [
     observations: "No tiene fecha final automatica; se finaliza manualmente.",
     active: true,
     possibleStates: ["activo", "pausado", "finalizado", "cancelado"],
+    animalTypeIds: ["perro"],
+    breedIds: [],
+    lifeStages: ["adult", "senior"],
+    appliesToAllAnimalTypes: false,
+    appliesToAllBreeds: true,
+    appliesToAllLifeStages: false,
   },
   {
     id: "protocol-demo-otitis",
@@ -55,6 +62,12 @@ export const treatmentProtocols: TreatmentProtocol[] = [
     observations: "Ejemplo de tratamiento fijo con recordatorios.",
     active: true,
     possibleStates: ["activo", "pausado", "finalizado", "cancelado"],
+    animalTypeIds: ["perro"],
+    breedIds: [],
+    lifeStages: ["adult", "senior"],
+    appliesToAllAnimalTypes: false,
+    appliesToAllBreeds: true,
+    appliesToAllLifeStages: false,
   },
   {
     id: "protocol-demo-renal",
@@ -68,6 +81,12 @@ export const treatmentProtocols: TreatmentProtocol[] = [
     observations: "Seguimiento continuo con ventana mock de 6 meses.",
     active: true,
     possibleStates: ["activo", "pausado", "finalizado", "cancelado"],
+    animalTypeIds: ["gato", "perro"],
+    breedIds: [],
+    lifeStages: ["senior", "adult"],
+    appliesToAllAnimalTypes: false,
+    appliesToAllBreeds: true,
+    appliesToAllLifeStages: false,
   },
 ]
 
@@ -106,6 +125,10 @@ export const activeTreatmentsSeed: ActiveTreatment[] = [
 
 export function getTreatmentProtocol(protocolId: string) {
   return treatmentProtocols.find((protocol) => protocol.id === protocolId)
+}
+
+export function getTreatmentProtocolsForPet(pet: { especie: string; raza?: string; edad?: string; animalTypeId?: string; breedId?: string | null; lifeStage?: LifeStageId }) {
+  return sortProtocolsByCompatibility(treatmentProtocols.filter((protocol) => protocol.active), getPetTaxonomy(pet))
 }
 
 export function getTreatmentDurationPreset(protocol: TreatmentProtocol) {

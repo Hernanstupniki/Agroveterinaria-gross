@@ -196,25 +196,25 @@ export function ClientesPage() {
                     </div>
 
                     <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                      <Button className="h-12 justify-center rounded-xl bg-primary px-4 font-bold hover:bg-primary/90" asChild>
+                      <Button className="h-12 justify-center rounded-xl bg-primary px-3 text-center font-bold leading-tight hover:bg-primary/90" asChild>
                         <Link href={`/mascotas/${mascota.id}`}>
                           <FileHeart className="mr-2 h-4 w-4" />
                           Ficha
                         </Link>
                       </Button>
-                      <Button className="h-12 justify-center rounded-xl bg-primary px-4 font-bold hover:bg-primary/90" asChild>
+                      <Button className="h-12 justify-center rounded-xl bg-primary px-3 text-center font-bold leading-tight hover:bg-primary/90" asChild>
                         <Link href={`/vacunas/registrar?clienteId=${selectedCliente.id}&mascotaId=${mascota.id}`}>
                           <Syringe className="mr-2 h-4 w-4" />
                           Vacunas
                         </Link>
                       </Button>
-                      <Button className="h-12 justify-center rounded-xl bg-primary px-4 font-bold hover:bg-primary/90" asChild>
+                      <Button className="h-12 justify-center rounded-xl bg-primary px-3 text-center font-bold leading-tight hover:bg-primary/90" asChild>
                         <Link href={`/tratamientos/registrar?clienteId=${selectedCliente.id}&mascotaId=${mascota.id}`}>
                           <Pill className="mr-2 h-4 w-4" />
                           Tratamientos
                         </Link>
                       </Button>
-                      <Button className="h-12 justify-center rounded-xl bg-primary px-4 font-bold hover:bg-primary/90" asChild>
+                      <Button className="h-12 justify-center rounded-xl bg-primary px-3 text-center font-bold leading-tight hover:bg-primary/90" asChild>
                         <Link href={`/cirugias/agendar?clienteId=${selectedCliente.id}&mascotaId=${mascota.id}`}>
                           <Scissors className="mr-2 h-4 w-4" />
                           Cirugías

@@ -230,7 +230,9 @@ export function ClinicalActionFlow({
                   Cambiar mascota
                 </Button>
                 <Button variant="outline" size="sm" className="h-11 rounded-xl px-4 text-center font-semibold leading-tight" asChild>
-                  <Link href={`/mascotas/${selectedPet.id}`}>Abrir ficha clinica</Link>
+                  <Link href={`/mascotas/${selectedPet.id}`} target="_blank" rel="noopener noreferrer">
+                    Abrir ficha clinica
+                  </Link>
                 </Button>
               </div>
             </CardContent>

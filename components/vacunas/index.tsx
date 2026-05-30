@@ -29,6 +29,8 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { ClinicalActionFlow } from "@/components/clinical/action-flow"
+import { ApplicabilityBadges, CompatibilityNotice, PetTaxonomySummary, TaxonomyApplicabilityEditor } from "@/components/clinical/taxonomy-controls"
+import { getPetTaxonomy, protocolMatchesPet } from "@/lib/animal-taxonomy"
 import { durationPresets, reminderPresets } from "@/lib/clinical-presets"
 import { clientes, mascotas } from "@/lib/mock-data"
 import {
@@ -37,10 +39,10 @@ import {
   buildReminderForSchedule,
   calculateNextDose,
   formatInterval,
-  getActiveVaccinesForSpecies,
   getDoseIntervalPreset,
   getDosesForVaccine,
   getSchemeReminderPreset,
+  getVaccinesForPet,
   vaccineDoses,
   vaccineSchemes,
 } from "@/lib/vaccine-workflow"
@@ -121,10 +123,11 @@ function VaccineRegistrationForm({
   pet,
 }: {
   client: { id: number; nombre: string }
-  pet: { id: number; nombre: string; especie: string; raza: string }
+  pet: { id: number; nombre: string; especie: string; raza: string; edad?: string; animalTypeId?: string; breedId?: string | null; lifeStage?: any }
 }) {
-  const speciesVaccines = useMemo(() => getActiveVaccinesForSpecies(pet.especie), [pet.especie])
-  const availableVaccines = speciesVaccines.length > 0 ? speciesVaccines : vaccineSchemes.filter((scheme) => scheme.active)
+  const petTaxonomy = useMemo(() => getPetTaxonomy(pet), [pet])
+  const availableVaccines = useMemo(() => getVaccinesForPet(pet), [pet])
+  const compatibleCount = availableVaccines.filter((scheme) => protocolMatchesPet(scheme, petTaxonomy)).length
   const firstVaccineId = availableVaccines[0]?.id || ""
   const [selectedVaccineId, setSelectedVaccineId] = useState(firstVaccineId)
   const selectedDoses = getDosesForVaccine(selectedVaccineId)
@@ -168,6 +171,12 @@ function VaccineRegistrationForm({
         </CardHeader>
         <CardContent className="mx-auto grid w-full max-w-5xl gap-5">
           <PatientSummary client={client} pet={pet} />
+          <PetTaxonomySummary pet={pet} />
+          {compatibleCount === 0 && (
+            <div className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-sm text-warning">
+              No hay esquemas compatibles para esta mascota. Podés crear uno desde Esquemas de vacunación o elegir uno no compatible como demo.
+            </div>
+          )}
 
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="space-y-2">
@@ -185,7 +194,7 @@ function VaccineRegistrationForm({
                 <SelectContent>
                   {availableVaccines.map((scheme) => (
                     <SelectItem key={scheme.id} value={scheme.id}>
-                      {scheme.name} - {scheme.species}
+                      {scheme.name} - {protocolMatchesPet(scheme, petTaxonomy) ? "compatible" : "no compatible"}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -238,6 +247,7 @@ function VaccineRegistrationForm({
           </div>
 
           <ValidationPanel duplicate={duplicateDose} outOfOrder={outOfOrder} canSave={canSave} />
+          <CompatibilityNotice protocol={selectedVaccine} pet={pet} />
 
           {selectedVaccine && selectedDose && (
             <Card className="border-primary/25 bg-background">
@@ -361,6 +371,14 @@ export function PendingVaccines() {
 }
 
 export function VaccineSchemes() {
+  const [editingSchemeId, setEditingSchemeId] = useState<string | null>(null)
+  const editingScheme = vaccineSchemes.find((scheme) => scheme.id === editingSchemeId)
+  const [doseRows, setDoseRows] = useState([
+    { id: "dose-form-1", name: "Dosis 1", intervalPresetId: "1-day", recurrent: false },
+    { id: "dose-form-2", name: "Dosis 2", intervalPresetId: "2-weeks", recurrent: false },
+    { id: "dose-form-3", name: "Dosis 3", intervalPresetId: "6-weeks", recurrent: false },
+  ])
+
   return (
     <Card>
       <CardHeader>
@@ -374,18 +392,13 @@ export function VaccineSchemes() {
       </CardHeader>
       <CardContent className="space-y-5">
         <div className="rounded-xl border border-primary/25 bg-primary/5 p-4">
+          {editingScheme && (
+            <div className="mb-4 rounded-lg border border-primary/30 bg-background p-3 text-sm">
+              Editando esquema mock: <span className="font-semibold">{editingScheme.name}</span>. Los cambios quedan como demo visual de esta sesión.
+            </div>
+          )}
           <div className="grid gap-4 lg:grid-cols-2">
-            <Field label="Nombre de vacuna" placeholder="Ej: Vacuna X" />
-            <PresetSelect
-              label="Especie / tipo animal"
-              placeholder="Seleccionar especie"
-              items={["Perro", "Gato", "Otro"].map((label) => ({ id: label, label }))}
-            />
-            <PresetSelect
-              label="Intervalo entre dosis"
-              placeholder="Seleccionar intervalo"
-              items={durationPresets.filter((preset) => preset.unit !== "lifetime")}
-            />
+            <Field label="Nombre de vacuna" placeholder="Ej: Vacuna X" value={editingScheme?.name} />
             <PresetSelect
               label="Recordatorio"
               placeholder="Seleccionar recordatorio"
@@ -400,14 +413,70 @@ export function VaccineSchemes() {
               ]}
             />
           </div>
+          <div className="mt-4">
+            <TaxonomyApplicabilityEditor initial={editingScheme} />
+          </div>
+          <div className="mt-4 rounded-xl border bg-background p-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="font-semibold">Dosis e intervalos particulares</h3>
+                <p className="text-sm text-muted-foreground">Cada dosis puede tener su propio intervalo: por ejemplo Dosis 2 a 2 semanas y Dosis 3 a 6 semanas.</p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-10 rounded-xl font-bold"
+                onClick={() =>
+                  setDoseRows((rows) => [
+                    ...rows,
+                    { id: `dose-form-${rows.length + 1}`, name: `Dosis ${rows.length + 1}`, intervalPresetId: "2-weeks", recurrent: false },
+                  ])
+                }
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Agregar dosis
+              </Button>
+            </div>
+            <div className="mt-3 space-y-3">
+              {doseRows.map((row, index) => (
+                <div key={row.id} className="grid gap-3 rounded-lg bg-muted/30 p-3 md:grid-cols-[1fr_220px_auto]">
+                  <Field
+                    label={`Nombre dosis ${index + 1}`}
+                    placeholder="Ej: Dosis 2"
+                    value={row.name}
+                    onChange={(value) => setDoseRows((rows) => rows.map((item) => (item.id === row.id ? { ...item, name: value } : item)))}
+                  />
+                  <PresetSelect
+                    label="Intervalo"
+                    placeholder="Seleccionar intervalo"
+                    value={row.intervalPresetId}
+                    onValueChange={(value) => setDoseRows((rows) => rows.map((item) => (item.id === row.id ? { ...item, intervalPresetId: value } : item)))}
+                    items={durationPresets.filter((preset) => preset.unit !== "lifetime")}
+                  />
+                  <label className="flex items-center gap-2 pt-7 text-sm">
+                    <Checkbox
+                      checked={row.recurrent}
+                      onCheckedChange={(checked) => setDoseRows((rows) => rows.map((item) => (item.id === row.id ? { ...item, recurrent: Boolean(checked) } : item)))}
+                    />
+                    Recurrente
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
           <div className="mt-4 space-y-2">
             <Label>Observaciones</Label>
             <Textarea className="bg-background" placeholder="Indicaciones generales del esquema..." />
           </div>
           <Button className="mt-4 h-14 rounded-xl bg-primary px-6 text-base font-bold shadow-md shadow-primary/15 hover:bg-primary/90">
             <Plus className="mr-2 h-4 w-4" />
-            Crear esquema de vacunacion
+            {editingScheme ? "Guardar cambios del esquema" : "Crear esquema de vacunacion"}
           </Button>
+          {editingScheme && (
+            <Button variant="outline" className="ml-2 mt-4 h-14 rounded-xl px-6 text-base font-bold" onClick={() => setEditingSchemeId(null)}>
+              Cancelar edición
+            </Button>
+          )}
         </div>
 
         <div className="grid gap-3 lg:grid-cols-2">
@@ -424,6 +493,7 @@ export function VaccineSchemes() {
                   </Badge>
                 </div>
                 <p className="mt-2 text-sm text-muted-foreground">{scheme.description}</p>
+                <ApplicabilityBadges protocol={scheme} />
                 <div className="mt-3 grid gap-2 text-sm md:grid-cols-2">
                   <Info label="Recordatorio" value={reminderPreset.label} />
                   <Info label="Observaciones" value={scheme.observations} />
@@ -441,6 +511,27 @@ export function VaccineSchemes() {
                       </p>
                     </div>
                   ))}
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button
+                    className="h-11 rounded-xl bg-primary px-4 font-bold hover:bg-primary/90"
+                    onClick={() => {
+                      setEditingSchemeId(scheme.id)
+                      setDoseRows(
+                        doses.map((dose) => ({
+                          id: dose.id,
+                          name: dose.name,
+                          intervalPresetId: dose.intervalPresetId,
+                          recurrent: dose.recurrent,
+                        })),
+                      )
+                    }}
+                  >
+                    Editar esquema
+                  </Button>
+                  <Button variant="outline" className="h-11 rounded-xl px-4 font-bold">
+                    Desactivar
+                  </Button>
                 </div>
               </article>
             )
@@ -573,7 +664,13 @@ function Field({
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
-      <Input className="bg-background" value={value} onChange={(event) => onChange?.(event.target.value)} placeholder={placeholder} />
+      <Input
+        className="bg-background"
+        value={onChange ? value || "" : undefined}
+        defaultValue={!onChange ? value : undefined}
+        onChange={(event) => onChange?.(event.target.value)}
+        placeholder={placeholder}
+      />
     </div>
   )
 }
@@ -581,16 +678,20 @@ function Field({
 function PresetSelect({
   label,
   placeholder,
+  value,
+  onValueChange,
   items,
 }: {
   label: string
   placeholder: string
+  value?: string
+  onValueChange?: (value: string) => void
   items: { id: string; label: string }[]
 }) {
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
-      <Select defaultValue={items[0]?.id}>
+      <Select value={value} defaultValue={items[0]?.id} onValueChange={onValueChange}>
         <SelectTrigger className="h-12 bg-background">
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
