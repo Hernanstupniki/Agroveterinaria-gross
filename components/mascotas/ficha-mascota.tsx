@@ -481,46 +481,46 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
 
       <Tabs defaultValue="resumen" className="space-y-6">
         <div className="rounded-xl border bg-card px-4 py-3 shadow-sm">
-          <TabsList className="no-scrollbar flex w-full flex-nowrap gap-2 overflow-x-auto bg-transparent p-0 sm:flex-wrap">
+          <TabsList className="no-scrollbar flex w-full flex-wrap justify-center gap-2 bg-transparent p-0">
             <TabsTrigger
               value="resumen"
-              className="h-11 flex-none rounded-full border border-transparent bg-muted/40 px-4 text-sm font-semibold text-muted-foreground whitespace-nowrap data-[state=active]:border-[#B3007A] data-[state=active]:bg-[#B3007A]/10 data-[state=active]:text-[#B3007A]"
+              className="h-11 rounded-full border border-transparent bg-muted/40 px-4 text-sm font-semibold text-muted-foreground data-[state=active]:border-[#B3007A] data-[state=active]:bg-[#B3007A]/10 data-[state=active]:text-[#B3007A]"
             >
               Resumen
             </TabsTrigger>
             <TabsTrigger
               value="vacunas"
-              className="h-11 flex-none rounded-full border border-transparent bg-muted/40 px-4 text-sm font-semibold text-muted-foreground whitespace-nowrap data-[state=active]:border-[#B3007A] data-[state=active]:bg-[#B3007A]/10 data-[state=active]:text-[#B3007A]"
+              className="h-11 rounded-full border border-transparent bg-muted/40 px-4 text-sm font-semibold text-muted-foreground data-[state=active]:border-[#B3007A] data-[state=active]:bg-[#B3007A]/10 data-[state=active]:text-[#B3007A]"
             >
               Vacunas
             </TabsTrigger>
             <TabsTrigger
               value="tratamientos"
-              className="h-11 flex-none rounded-full border border-transparent bg-muted/40 px-4 text-sm font-semibold text-muted-foreground whitespace-nowrap data-[state=active]:border-[#B3007A] data-[state=active]:bg-[#B3007A]/10 data-[state=active]:text-[#B3007A]"
+              className="h-11 rounded-full border border-transparent bg-muted/40 px-4 text-sm font-semibold text-muted-foreground data-[state=active]:border-[#B3007A] data-[state=active]:bg-[#B3007A]/10 data-[state=active]:text-[#B3007A]"
             >
               Tratamientos
             </TabsTrigger>
             <TabsTrigger
               value="cirugias"
-              className="h-11 flex-none rounded-full border border-transparent bg-muted/40 px-4 text-sm font-semibold text-muted-foreground whitespace-nowrap data-[state=active]:border-[#B3007A] data-[state=active]:bg-[#B3007A]/10 data-[state=active]:text-[#B3007A]"
+              className="h-11 rounded-full border border-transparent bg-muted/40 px-4 text-sm font-semibold text-muted-foreground data-[state=active]:border-[#B3007A] data-[state=active]:bg-[#B3007A]/10 data-[state=active]:text-[#B3007A]"
             >
               Cirugías
             </TabsTrigger>
             <TabsTrigger
               value="estudios"
-              className="h-11 flex-none rounded-full border border-transparent bg-muted/40 px-4 text-sm font-semibold text-muted-foreground whitespace-nowrap data-[state=active]:border-[#B3007A] data-[state=active]:bg-[#B3007A]/10 data-[state=active]:text-[#B3007A]"
+              className="h-11 rounded-full border border-transparent bg-muted/40 px-4 text-sm font-semibold text-muted-foreground data-[state=active]:border-[#B3007A] data-[state=active]:bg-[#B3007A]/10 data-[state=active]:text-[#B3007A]"
             >
               Estudios
             </TabsTrigger>
             <TabsTrigger
               value="historia"
-              className="h-11 flex-none rounded-full border border-transparent bg-muted/40 px-4 text-sm font-semibold text-muted-foreground whitespace-nowrap data-[state=active]:border-[#B3007A] data-[state=active]:bg-[#B3007A]/10 data-[state=active]:text-[#B3007A]"
+              className="h-11 rounded-full border border-transparent bg-muted/40 px-4 text-sm font-semibold text-muted-foreground data-[state=active]:border-[#B3007A] data-[state=active]:bg-[#B3007A]/10 data-[state=active]:text-[#B3007A]"
             >
               Historia clínica
             </TabsTrigger>
             <TabsTrigger
               value="recordatorios"
-              className="h-11 flex-none rounded-full border border-transparent bg-muted/40 px-4 text-sm font-semibold text-muted-foreground whitespace-nowrap data-[state=active]:border-[#B3007A] data-[state=active]:bg-[#B3007A]/10 data-[state=active]:text-[#B3007A]"
+              className="h-11 rounded-full border border-transparent bg-muted/40 px-4 text-sm font-semibold text-muted-foreground data-[state=active]:border-[#B3007A] data-[state=active]:bg-[#B3007A]/10 data-[state=active]:text-[#B3007A]"
             >
               Recordatorios
             </TabsTrigger>
