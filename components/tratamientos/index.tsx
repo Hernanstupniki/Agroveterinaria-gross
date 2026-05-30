@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { ClinicalActionFlow } from "@/components/clinical/action-flow"
+import { ProtocolSearchFilter, defaultFilterState, filterProtocols, type ProtocolSearchFilterState } from "@/components/clinical/protocol-search-filter"
 import { ApplicabilityBadges, CompatibilityNotice, PetTaxonomySummary, TaxonomyApplicabilityEditor } from "@/components/clinical/taxonomy-controls"
 import { getPetTaxonomy, protocolMatchesPet } from "@/lib/animal-taxonomy"
 import { controlFrequencyPresets, durationPresets, reminderPresets } from "@/lib/clinical-presets"
@@ -343,6 +344,9 @@ export function TreatmentProtocols() {
 }
 
 export function TreatmentProtocolsList() {
+  const [filter, setFilter] = useState<ProtocolSearchFilterState>(defaultFilterState())
+  const filtered = useMemo(() => filterProtocols(treatmentProtocols, filter), [filter])
+
   return (
     <Card>
       <CardHeader>
@@ -364,33 +368,48 @@ export function TreatmentProtocolsList() {
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="grid gap-3 lg:grid-cols-2">
-          {treatmentProtocols.map((protocol) => (
-            <article key={protocol.id} className="rounded-lg border bg-card p-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="font-semibold">{protocol.name}</h3>
-                <Badge className={protocol.active ? "bg-success text-success-foreground" : "bg-muted text-muted-foreground"}>
-                  {protocol.active ? "Activo" : "Inactivo"}
-                </Badge>
-              </div>
-              <p className="mt-2 text-sm text-muted-foreground">{protocol.description}</p>
-              <ApplicabilityBadges protocol={protocol} />
-              <div className="mt-3 grid gap-2 text-sm md:grid-cols-2">
-                <Info label="Duracion" value={getTreatmentDurationPreset(protocol).label} />
-                <Info label="Controles" value={getTreatmentFrequencyPreset(protocol).label} />
-                <Info label="Recordatorios" value={getTreatmentReminderPreset(protocol).label} />
-                <Info label="Estados" value={protocol.possibleStates.join(", ")} />
-              </div>
-              <p className="mt-3 rounded-md bg-muted/35 p-3 text-sm text-muted-foreground">{protocol.indications}</p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Button variant="outline" className="h-11 rounded-xl px-4 font-bold">
-                  Desactivar
-                </Button>
-              </div>
-            </article>
-          ))}
-        </div>
+      <CardContent className="space-y-4">
+        <ProtocolSearchFilter
+          filter={filter}
+          onFilterChange={setFilter}
+          totalCount={treatmentProtocols.length}
+          filteredCount={filtered.length}
+        />
+        {filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <p className="text-lg font-medium text-muted-foreground">No se encontraron protocolos con esos filtros.</p>
+            <Button variant="outline" className="mt-3 h-10 rounded-xl" onClick={() => setFilter(defaultFilterState())}>
+              Limpiar filtros
+            </Button>
+          </div>
+        ) : (
+          <div className="grid gap-3 lg:grid-cols-2">
+            {filtered.map((protocol) => (
+              <article key={protocol.id} className="rounded-lg border bg-card p-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="font-semibold">{protocol.name}</h3>
+                  <Badge className={protocol.active ? "bg-success text-success-foreground" : "bg-muted text-muted-foreground"}>
+                    {protocol.active ? "Activo" : "Inactivo"}
+                  </Badge>
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">{protocol.description}</p>
+                <ApplicabilityBadges protocol={protocol} />
+                <div className="mt-3 grid gap-2 text-sm md:grid-cols-2">
+                  <Info label="Duracion" value={getTreatmentDurationPreset(protocol).label} />
+                  <Info label="Controles" value={getTreatmentFrequencyPreset(protocol).label} />
+                  <Info label="Recordatorios" value={getTreatmentReminderPreset(protocol).label} />
+                  <Info label="Estados" value={protocol.possibleStates.join(", ")} />
+                </div>
+                <p className="mt-3 rounded-md bg-muted/35 p-3 text-sm text-muted-foreground">{protocol.indications}</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button variant="outline" className="h-11 rounded-xl px-4 font-bold">
+                    Desactivar
+                  </Button>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   )

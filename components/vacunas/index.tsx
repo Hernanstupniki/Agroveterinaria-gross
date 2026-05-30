@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { ClinicalActionFlow } from "@/components/clinical/action-flow"
+import { ProtocolSearchFilter, defaultFilterState, filterProtocols, type ProtocolSearchFilterState } from "@/components/clinical/protocol-search-filter"
 import { ApplicabilityBadges, CompatibilityNotice, PetTaxonomySummary, TaxonomyApplicabilityEditor } from "@/components/clinical/taxonomy-controls"
 import { getPetTaxonomy, protocolMatchesPet } from "@/lib/animal-taxonomy"
 import { durationPresets, reminderPresets } from "@/lib/clinical-presets"
@@ -423,6 +424,9 @@ export function VaccineSchemes() {
 }
 
 export function VaccineSchemesList() {
+  const [filter, setFilter] = useState<ProtocolSearchFilterState>(defaultFilterState())
+  const filtered = useMemo(() => filterProtocols(vaccineSchemes, filter), [filter])
+
   return (
     <Card>
       <CardHeader>
@@ -444,49 +448,64 @@ export function VaccineSchemesList() {
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="grid gap-3 lg:grid-cols-2">
-          {vaccineSchemes.map((scheme) => {
-            const doses = getDosesForVaccine(scheme.id)
-            const reminderPreset = getSchemeReminderPreset(scheme)
-            return (
-              <article key={scheme.id} className="rounded-lg border bg-card p-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="font-semibold">{scheme.name}</h3>
-                  <Badge variant="outline">{scheme.species}</Badge>
-                  <Badge className={scheme.active ? "bg-success text-success-foreground" : "bg-muted text-muted-foreground"}>
-                    {scheme.active ? "Activo" : "Inactivo"}
-                  </Badge>
-                </div>
-                <p className="mt-2 text-sm text-muted-foreground">{scheme.description}</p>
-                <ApplicabilityBadges protocol={scheme} />
-                <div className="mt-3 grid gap-2 text-sm md:grid-cols-2">
-                  <Info label="Recordatorio" value={reminderPreset.label} />
-                  <Info label="Observaciones" value={scheme.observations} />
-                </div>
-                <div className="mt-3 space-y-2">
-                  {doses.map((dose) => (
-                    <div key={dose.id} className="rounded-md bg-muted/35 p-3 text-sm">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-medium">{dose.name}</span>
-                        <Badge variant="outline">Orden {dose.order}</Badge>
-                        {dose.recurrent && <Badge className="bg-primary text-primary-foreground">Recurrente</Badge>}
+      <CardContent className="space-y-4">
+        <ProtocolSearchFilter
+          filter={filter}
+          onFilterChange={setFilter}
+          totalCount={vaccineSchemes.length}
+          filteredCount={filtered.length}
+        />
+        {filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <p className="text-lg font-medium text-muted-foreground">No se encontraron protocolos con esos filtros.</p>
+            <Button variant="outline" className="mt-3 h-10 rounded-xl" onClick={() => setFilter(defaultFilterState())}>
+              Limpiar filtros
+            </Button>
+          </div>
+        ) : (
+          <div className="grid gap-3 lg:grid-cols-2">
+            {filtered.map((scheme) => {
+              const doses = getDosesForVaccine(scheme.id)
+              const reminderPreset = getSchemeReminderPreset(scheme)
+              return (
+                <article key={scheme.id} className="rounded-lg border bg-card p-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-semibold">{scheme.name}</h3>
+                    <Badge variant="outline">{scheme.species}</Badge>
+                    <Badge className={scheme.active ? "bg-success text-success-foreground" : "bg-muted text-muted-foreground"}>
+                      {scheme.active ? "Activo" : "Inactivo"}
+                    </Badge>
+                  </div>
+                  <p className="mt-2 text-sm text-muted-foreground">{scheme.description}</p>
+                  <ApplicabilityBadges protocol={scheme} />
+                  <div className="mt-3 grid gap-2 text-sm md:grid-cols-2">
+                    <Info label="Recordatorio" value={reminderPreset.label} />
+                    <Info label="Observaciones" value={scheme.observations} />
+                  </div>
+                  <div className="mt-3 space-y-2">
+                    {doses.map((dose) => (
+                      <div key={dose.id} className="rounded-md bg-muted/35 p-3 text-sm">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-medium">{dose.name}</span>
+                          <Badge variant="outline">Orden {dose.order}</Badge>
+                          {dose.recurrent && <Badge className="bg-primary text-primary-foreground">Recurrente</Badge>}
+                        </div>
+                        <p className="mt-1 text-muted-foreground">
+                          Intervalo: {formatInterval(getDoseIntervalPreset(dose))}
+                        </p>
                       </div>
-                      <p className="mt-1 text-muted-foreground">
-                        Intervalo: {formatInterval(getDoseIntervalPreset(dose))}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <Button variant="outline" className="h-11 rounded-xl px-4 font-bold">
-                    Desactivar
-                  </Button>
-                </div>
-              </article>
-            )
-          })}
-        </div>
+                    ))}
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Button variant="outline" className="h-11 rounded-xl px-4 font-bold">
+                      Desactivar
+                    </Button>
+                  </div>
+                </article>
+              )
+            })}
+          </div>
+        )}
       </CardContent>
     </Card>
   )
