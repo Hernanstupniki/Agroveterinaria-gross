@@ -45,7 +45,7 @@ function SidebarContent({ collapsed, onToggle }: { collapsed: boolean; onToggle?
       </Link>
 
       <nav className="flex-1 overflow-y-auto sidebar-scrollbar px-2 py-4">
-        <ul className="space-y-1">
+        <ul className="space-y-2">
           {menuItems.map((item) => {
             const isActive = item.href === "/" ? pathname === "/" : pathname === item.href || pathname.startsWith(`${item.href}/`)
 
@@ -54,7 +54,7 @@ function SidebarContent({ collapsed, onToggle }: { collapsed: boolean; onToggle?
                 <Link
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                    "flex min-h-[3.25rem] items-center gap-3.5 rounded-lg px-4 py-4 text-base font-medium transition-colors",
                     collapsed && "justify-center px-2",
                     isActive
                       ? "bg-sidebar-accent text-sidebar-accent-foreground"
@@ -62,7 +62,7 @@ function SidebarContent({ collapsed, onToggle }: { collapsed: boolean; onToggle?
                   )}
                   title={collapsed ? item.label : undefined}
                 >
-                  <item.icon className={cn("h-5 w-5 shrink-0", isActive && "text-secondary")} />
+                  <item.icon className={cn("h-6 w-6 shrink-0", isActive && "text-secondary")} />
                   {!collapsed && <span>{item.label}</span>}
                 </Link>
               </li>

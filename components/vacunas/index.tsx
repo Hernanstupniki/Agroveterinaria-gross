@@ -78,7 +78,7 @@ export function VacunasPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-3 xl:grid-cols-4">
         <ActionCard
           icon={Syringe}
           title="Registrar vacuna"
@@ -94,11 +94,18 @@ export function VacunasPage() {
           href="/vacunas/pendientes"
         />
         <ActionCard
-          icon={Settings}
-          title="Esquemas de vacunacion"
-          description="Configurar vacunas, dosis, intervalos y refuerzos por especie."
-          buttonLabel="Abrir esquemas"
+          icon={ClipboardList}
+          title="Ver esquemas creados"
+          description="Consultar los esquemas de vacunacion ya configurados en el sistema."
+          buttonLabel="Ver esquemas"
           href="/vacunas/esquemas"
+        />
+        <ActionCard
+          icon={Settings}
+          title="Crear esquema"
+          description="Configurar un nuevo esquema de vacunacion con dosis, intervalos y refuerzos."
+          buttonLabel="Crear esquema"
+          href="/vacunas/esquemas/crear"
         />
       </div>
     </div>
@@ -371,6 +378,80 @@ export function PendingVaccines() {
 }
 
 export function VaccineSchemes() {
+  return <VaccineSchemesList />
+}
+
+export function VaccineSchemesList() {
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <ClipboardList className="h-5 w-5 text-primary" />
+              Esquemas de vacunacion creados
+            </CardTitle>
+            <CardDescription>
+              Esquemas configurados en el sistema con dosis, intervalos y refuerzos por especie.
+            </CardDescription>
+          </div>
+          <Button className="h-12 rounded-xl bg-primary px-5 font-bold hover:bg-primary/90" asChild>
+            <Link href="/vacunas/esquemas/crear">
+              <Plus className="mr-2 h-4 w-4" />
+              Crear esquema
+            </Link>
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-3 lg:grid-cols-2">
+          {vaccineSchemes.map((scheme) => {
+            const doses = getDosesForVaccine(scheme.id)
+            const reminderPreset = getSchemeReminderPreset(scheme)
+            return (
+              <article key={scheme.id} className="rounded-lg border bg-card p-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="font-semibold">{scheme.name}</h3>
+                  <Badge variant="outline">{scheme.species}</Badge>
+                  <Badge className={scheme.active ? "bg-success text-success-foreground" : "bg-muted text-muted-foreground"}>
+                    {scheme.active ? "Activo" : "Inactivo"}
+                  </Badge>
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">{scheme.description}</p>
+                <ApplicabilityBadges protocol={scheme} />
+                <div className="mt-3 grid gap-2 text-sm md:grid-cols-2">
+                  <Info label="Recordatorio" value={reminderPreset.label} />
+                  <Info label="Observaciones" value={scheme.observations} />
+                </div>
+                <div className="mt-3 space-y-2">
+                  {doses.map((dose) => (
+                    <div key={dose.id} className="rounded-md bg-muted/35 p-3 text-sm">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium">{dose.name}</span>
+                        <Badge variant="outline">Orden {dose.order}</Badge>
+                        {dose.recurrent && <Badge className="bg-primary text-primary-foreground">Recurrente</Badge>}
+                      </div>
+                      <p className="mt-1 text-muted-foreground">
+                        Intervalo: {formatInterval(getDoseIntervalPreset(dose))}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button variant="outline" className="h-11 rounded-xl px-4 font-bold">
+                    Desactivar
+                  </Button>
+                </div>
+              </article>
+            )
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+export function VaccineSchemeCreator() {
   const [editingSchemeId, setEditingSchemeId] = useState<string | null>(null)
   const editingScheme = vaccineSchemes.find((scheme) => scheme.id === editingSchemeId)
   const [doseRows, setDoseRows] = useState([
@@ -384,7 +465,7 @@ export function VaccineSchemes() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Settings className="h-5 w-5 text-primary" />
-          Esquemas de vacunacion
+          Crear esquema de vacunacion
         </CardTitle>
         <CardDescription>
           Configuracion del sistema: no depende de cliente ni mascota. Define vacunas, dosis, intervalos y refuerzos.
@@ -408,7 +489,7 @@ export function VaccineSchemes() {
               label="Estado del esquema"
               placeholder="Seleccionar estado"
               items={[
-                { id: "activo", label: "Activo" },
+                { id: "acto", label: "Activo" },
                 { id: "inactivo", label: "Inactivo" },
               ]}
             />
@@ -477,65 +558,6 @@ export function VaccineSchemes() {
               Cancelar edición
             </Button>
           )}
-        </div>
-
-        <div className="grid gap-3 lg:grid-cols-2">
-          {vaccineSchemes.map((scheme) => {
-            const doses = getDosesForVaccine(scheme.id)
-            const reminderPreset = getSchemeReminderPreset(scheme)
-            return (
-              <article key={scheme.id} className="rounded-lg border bg-card p-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="font-semibold">{scheme.name}</h3>
-                  <Badge variant="outline">{scheme.species}</Badge>
-                  <Badge className={scheme.active ? "bg-success text-success-foreground" : "bg-muted text-muted-foreground"}>
-                    {scheme.active ? "Activo" : "Inactivo"}
-                  </Badge>
-                </div>
-                <p className="mt-2 text-sm text-muted-foreground">{scheme.description}</p>
-                <ApplicabilityBadges protocol={scheme} />
-                <div className="mt-3 grid gap-2 text-sm md:grid-cols-2">
-                  <Info label="Recordatorio" value={reminderPreset.label} />
-                  <Info label="Observaciones" value={scheme.observations} />
-                </div>
-                <div className="mt-3 space-y-2">
-                  {doses.map((dose) => (
-                    <div key={dose.id} className="rounded-md bg-muted/35 p-3 text-sm">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-medium">{dose.name}</span>
-                        <Badge variant="outline">Orden {dose.order}</Badge>
-                        {dose.recurrent && <Badge className="bg-primary text-primary-foreground">Recurrente</Badge>}
-                      </div>
-                      <p className="mt-1 text-muted-foreground">
-                        Intervalo: {formatInterval(getDoseIntervalPreset(dose))}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <Button
-                    className="h-11 rounded-xl bg-primary px-4 font-bold hover:bg-primary/90"
-                    onClick={() => {
-                      setEditingSchemeId(scheme.id)
-                      setDoseRows(
-                        doses.map((dose) => ({
-                          id: dose.id,
-                          name: dose.name,
-                          intervalPresetId: dose.intervalPresetId,
-                          recurrent: dose.recurrent,
-                        })),
-                      )
-                    }}
-                  >
-                    Editar esquema
-                  </Button>
-                  <Button variant="outline" className="h-11 rounded-xl px-4 font-bold">
-                    Desactivar
-                  </Button>
-                </div>
-              </article>
-            )
-          })}
         </div>
       </CardContent>
     </Card>

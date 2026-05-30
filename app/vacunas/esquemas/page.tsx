@@ -1,10 +1,10 @@
 import { AppLayout } from "@/components/layout"
-import { VaccineSchemes } from "@/components/vacunas"
+import { VaccineSchemesList } from "@/components/vacunas"
 
 export default function EsquemasVacunasPage() {
   return (
     <AppLayout>
-      <VaccineSchemes />
+      <VaccineSchemesList />
     </AppLayout>
   )
 }

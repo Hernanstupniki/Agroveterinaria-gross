@@ -1,10 +1,10 @@
 import { AppLayout } from "@/components/layout"
-import { SurgeryProtocols } from "@/components/cirugias"
+import { SurgeryProtocolsList } from "@/components/cirugias"
 
 export default function ProtocolosCirugiaPage() {
   return (
     <AppLayout>
-      <SurgeryProtocols />
+      <SurgeryProtocolsList />
     </AppLayout>
   )
 }

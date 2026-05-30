@@ -84,11 +84,12 @@ export default function CirugiasScreen() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <ActionCard icon={CalendarClock} title="Agendar cirugía" description="Crear el evento quirúrgico antes de registrar la realización." buttonLabel="Agendar cirugía" href="/cirugias/agendar" />
         <ActionCard icon={ClipboardList} title="Cirugías pendientes" description="Ver agendadas, próximas, en preparación o reprogramadas." buttonLabel="Ver pendientes" href="/cirugias/pendientes" />
         <ActionCard icon={ShieldCheck} title="Registrar cirugía agendada" description="Registrar como realizada solo si existe agenda previa." buttonLabel="Registrar cirugía" href="/cirugias/registrar" />
-        <ActionCard icon={Settings} title="Protocolos de cirugía" description="Configurar procedimientos frecuentes y criterios clínicos." buttonLabel="Abrir protocolos" href="/cirugias/esquemas" />
+        <ActionCard icon={ClipboardList} title="Ver protocolos creados" description="Consultar los protocolos quirúrgicos ya configurados en el sistema." buttonLabel="Ver protocolos" href="/cirugias/esquemas" />
+        <ActionCard icon={Settings} title="Crear protocolo" description="Configurar un nuevo procedimiento frecuente y criterios clínicos." buttonLabel="Crear protocolo" href="/cirugias/esquemas/crear" />
       </div>
     </div>
   )
@@ -240,6 +241,62 @@ export function PendingSurgeries() {
 }
 
 export function SurgeryProtocols() {
+  return <SurgeryProtocolsList />
+}
+
+export function SurgeryProtocolsList() {
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <ClipboardList className="h-5 w-5 text-primary" />
+              Protocolos de cirugía creados
+            </CardTitle>
+            <CardDescription>Protocolos quirúrgicos configurados con requisitos y seguimiento postoperatorio.</CardDescription>
+          </div>
+          <Button className="h-12 rounded-xl bg-primary px-5 font-bold hover:bg-primary/90" asChild>
+            <Link href="/cirugias/esquemas/crear">
+              <Plus className="mr-2 h-4 w-4" />
+              Crear protocolo
+            </Link>
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-3 lg:grid-cols-2">
+          {surgeryProtocols.map((protocol) => (
+            <article key={protocol.id} className="rounded-lg border bg-card p-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="font-semibold">{protocol.name}</h3>
+                <Badge className={protocol.active ? "bg-success text-success-foreground" : "bg-muted text-muted-foreground"}>
+                  {protocol.active ? "Activo" : "Inactivo"}
+                </Badge>
+              </div>
+              <ApplicabilityBadges protocol={protocol} />
+              <div className="mt-3 grid gap-2 text-sm md:grid-cols-2">
+                <Info label="Duración" value={getSurgeryProcedureDurationPreset(protocol).label} />
+                <Info label="Seguimiento" value={getSurgeryFollowUpDurationPreset(protocol).label} />
+                <Info label="Controles" value={getSurgeryFrequencyPreset(protocol).label} />
+                <Info label="Recordatorio" value={getSurgeryReminderPreset(protocol).label} />
+                <Info label="Requisitos" value={protocol.requirements} />
+                <Info label="Postoperatorio" value={protocol.postInstructions} />
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button variant="outline" className="h-11 rounded-xl px-4 font-bold">
+                  Desactivar
+                </Button>
+              </div>
+            </article>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+export function SurgeryProtocolCreator() {
   const [editingProtocolId, setEditingProtocolId] = useState<string | null>(null)
   const editingProtocol = surgeryProtocols.find((protocol) => protocol.id === editingProtocolId)
 
@@ -248,7 +305,7 @@ export function SurgeryProtocols() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Settings className="h-5 w-5 text-primary" />
-          Protocolos de cirugía
+          Crear protocolo de cirugía
         </CardTitle>
         <CardDescription>Configuración del sistema para procedimientos frecuentes, requisitos y seguimiento postoperatorio.</CardDescription>
       </CardHeader>
@@ -283,36 +340,6 @@ export function SurgeryProtocols() {
               Cancelar edición
             </Button>
           )}
-        </div>
-
-        <div className="grid gap-3 lg:grid-cols-2">
-          {surgeryProtocols.map((protocol) => (
-            <article key={protocol.id} className="rounded-lg border bg-card p-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="font-semibold">{protocol.name}</h3>
-                <Badge className={protocol.active ? "bg-success text-success-foreground" : "bg-muted text-muted-foreground"}>
-                  {protocol.active ? "Activo" : "Inactivo"}
-                </Badge>
-              </div>
-              <ApplicabilityBadges protocol={protocol} />
-              <div className="mt-3 grid gap-2 text-sm md:grid-cols-2">
-            <Info label="Duración" value={getSurgeryProcedureDurationPreset(protocol).label} />
-                <Info label="Seguimiento" value={getSurgeryFollowUpDurationPreset(protocol).label} />
-                <Info label="Controles" value={getSurgeryFrequencyPreset(protocol).label} />
-                <Info label="Recordatorio" value={getSurgeryReminderPreset(protocol).label} />
-                <Info label="Requisitos" value={protocol.requirements} />
-                <Info label="Postoperatorio" value={protocol.postInstructions} />
-              </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Button className="h-11 rounded-xl bg-primary px-4 font-bold hover:bg-primary/90" onClick={() => setEditingProtocolId(protocol.id)}>
-                  Editar protocolo
-                </Button>
-                <Button variant="outline" className="h-11 rounded-xl px-4 font-bold">
-                  Desactivar
-                </Button>
-              </div>
-            </article>
-          ))}
         </div>
       </CardContent>
     </Card>

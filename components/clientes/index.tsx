@@ -195,31 +195,33 @@ export function ClientesPage() {
                       </div>
                     </div>
 
-                    <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                      <Button className="h-12 justify-center rounded-xl bg-primary px-3 text-center font-bold leading-tight hover:bg-primary/90" asChild>
+                    <div className="mt-4 space-y-2">
+                      <Button className="h-14 w-full rounded-xl bg-primary px-5 text-base font-bold shadow-md shadow-primary/15 hover:bg-primary/90" asChild>
                         <Link href={`/mascotas/${mascota.id}`}>
-                          <FileHeart className="mr-2 h-4 w-4" />
-                          Ficha
+                          <FileHeart className="mr-2 h-5 w-5" />
+                          Ver ficha
                         </Link>
                       </Button>
-                      <Button className="h-12 justify-center rounded-xl bg-primary px-3 text-center font-bold leading-tight hover:bg-primary/90" asChild>
-                        <Link href={`/vacunas/registrar?clienteId=${selectedCliente.id}&mascotaId=${mascota.id}`}>
-                          <Syringe className="mr-2 h-4 w-4" />
-                          Vacunas
-                        </Link>
-                      </Button>
-                      <Button className="h-12 justify-center rounded-xl bg-primary px-3 text-center font-bold leading-tight hover:bg-primary/90" asChild>
-                        <Link href={`/tratamientos/registrar?clienteId=${selectedCliente.id}&mascotaId=${mascota.id}`}>
-                          <Pill className="mr-2 h-4 w-4" />
-                          Tratamientos
-                        </Link>
-                      </Button>
-                      <Button className="h-12 justify-center rounded-xl bg-primary px-3 text-center font-bold leading-tight hover:bg-primary/90" asChild>
-                        <Link href={`/cirugias/agendar?clienteId=${selectedCliente.id}&mascotaId=${mascota.id}`}>
-                          <Scissors className="mr-2 h-4 w-4" />
-                          Cirugías
-                        </Link>
-                      </Button>
+                      <div className="grid grid-cols-3 gap-2">
+                        <Button variant="outline" className="h-11 rounded-xl text-sm font-semibold leading-tight" asChild>
+                          <Link href={`/vacunas/registrar?clienteId=${selectedCliente.id}&mascotaId=${mascota.id}`}>
+                            <Syringe className="mr-1.5 h-4 w-4" />
+                            Vacunas
+                          </Link>
+                        </Button>
+                        <Button variant="outline" className="h-11 rounded-xl text-sm font-semibold leading-tight" asChild>
+                          <Link href={`/tratamientos/registrar?clienteId=${selectedCliente.id}&mascotaId=${mascota.id}`}>
+                            <Pill className="mr-1.5 h-4 w-4" />
+                            Tratam.
+                          </Link>
+                        </Button>
+                        <Button variant="outline" className="h-11 rounded-xl text-sm font-semibold leading-tight" asChild>
+                          <Link href={`/cirugias/agendar?clienteId=${selectedCliente.id}&mascotaId=${mascota.id}`}>
+                            <Scissors className="mr-1.5 h-4 w-4" />
+                            Cirugías
+                          </Link>
+                        </Button>
+                      </div>
                     </div>
                   </article>
                 ))}

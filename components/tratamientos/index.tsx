@@ -68,7 +68,7 @@ export function TratamientosPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-3 xl:grid-cols-4">
         <ActionCard
           icon={Pill}
           title="Registrar tratamiento"
@@ -84,11 +84,18 @@ export function TratamientosPage() {
           href="/tratamientos/activos"
         />
         <ActionCard
-          icon={Settings}
-          title="Protocolos de tratamiento"
-          description="Configurar tratamientos comunes, frecuencia de control y recordatorios."
-          buttonLabel="Abrir protocolos"
+          icon={ClipboardList}
+          title="Ver protocolos creados"
+          description="Consultar los protocolos de tratamiento ya configurados en el sistema."
+          buttonLabel="Ver protocolos"
           href="/tratamientos/protocolos"
+        />
+        <ActionCard
+          icon={Settings}
+          title="Crear protocolo"
+          description="Configurar un nuevo protocolo de tratamiento con frecuencia de control y recordatorios."
+          buttonLabel="Crear protocolo"
+          href="/tratamientos/protocolos/crear"
         />
       </div>
     </div>
@@ -332,6 +339,64 @@ export function ActiveTreatments() {
 }
 
 export function TreatmentProtocols() {
+  return <TreatmentProtocolsList />
+}
+
+export function TreatmentProtocolsList() {
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <ClipboardList className="h-5 w-5 text-primary" />
+              Protocolos de tratamiento creados
+            </CardTitle>
+            <CardDescription>
+              Protocolos configurados en el sistema con frecuencia de control, duracion y recordatorios.
+            </CardDescription>
+          </div>
+          <Button className="h-12 rounded-xl bg-primary px-5 font-bold hover:bg-primary/90" asChild>
+            <Link href="/tratamientos/protocolos/crear">
+              <Plus className="mr-2 h-4 w-4" />
+              Crear protocolo
+            </Link>
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-3 lg:grid-cols-2">
+          {treatmentProtocols.map((protocol) => (
+            <article key={protocol.id} className="rounded-lg border bg-card p-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="font-semibold">{protocol.name}</h3>
+                <Badge className={protocol.active ? "bg-success text-success-foreground" : "bg-muted text-muted-foreground"}>
+                  {protocol.active ? "Activo" : "Inactivo"}
+                </Badge>
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">{protocol.description}</p>
+              <ApplicabilityBadges protocol={protocol} />
+              <div className="mt-3 grid gap-2 text-sm md:grid-cols-2">
+                <Info label="Duracion" value={getTreatmentDurationPreset(protocol).label} />
+                <Info label="Controles" value={getTreatmentFrequencyPreset(protocol).label} />
+                <Info label="Recordatorios" value={getTreatmentReminderPreset(protocol).label} />
+                <Info label="Estados" value={protocol.possibleStates.join(", ")} />
+              </div>
+              <p className="mt-3 rounded-md bg-muted/35 p-3 text-sm text-muted-foreground">{protocol.indications}</p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button variant="outline" className="h-11 rounded-xl px-4 font-bold">
+                  Desactivar
+                </Button>
+              </div>
+            </article>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+export function TreatmentProtocolCreator() {
   const [editingProtocolId, setEditingProtocolId] = useState<string | null>(null)
   const editingProtocol = treatmentProtocols.find((protocol) => protocol.id === editingProtocolId)
 
@@ -340,7 +405,7 @@ export function TreatmentProtocols() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Settings className="h-5 w-5 text-primary" />
-          Protocolos de tratamiento
+          Crear protocolo de tratamiento
         </CardTitle>
         <CardDescription>
           Configuracion del sistema: no depende de cliente ni mascota. Define tratamientos comunes y controles sugeridos.
@@ -375,36 +440,6 @@ export function TreatmentProtocols() {
               Cancelar edición
             </Button>
           )}
-        </div>
-
-        <div className="grid gap-3 lg:grid-cols-2">
-          {treatmentProtocols.map((protocol) => (
-            <article key={protocol.id} className="rounded-lg border bg-card p-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="font-semibold">{protocol.name}</h3>
-                <Badge className={protocol.active ? "bg-success text-success-foreground" : "bg-muted text-muted-foreground"}>
-                  {protocol.active ? "Activo" : "Inactivo"}
-                </Badge>
-              </div>
-              <p className="mt-2 text-sm text-muted-foreground">{protocol.description}</p>
-              <ApplicabilityBadges protocol={protocol} />
-              <div className="mt-3 grid gap-2 text-sm md:grid-cols-2">
-                <Info label="Duracion" value={getTreatmentDurationPreset(protocol).label} />
-                <Info label="Controles" value={getTreatmentFrequencyPreset(protocol).label} />
-                <Info label="Recordatorios" value={getTreatmentReminderPreset(protocol).label} />
-                <Info label="Estados" value={protocol.possibleStates.join(", ")} />
-              </div>
-              <p className="mt-3 rounded-md bg-muted/35 p-3 text-sm text-muted-foreground">{protocol.indications}</p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Button className="h-11 rounded-xl bg-primary px-4 font-bold hover:bg-primary/90" onClick={() => setEditingProtocolId(protocol.id)}>
-                  Editar protocolo
-                </Button>
-                <Button variant="outline" className="h-11 rounded-xl px-4 font-bold">
-                  Desactivar
-                </Button>
-              </div>
-            </article>
-          ))}
         </div>
       </CardContent>
     </Card>

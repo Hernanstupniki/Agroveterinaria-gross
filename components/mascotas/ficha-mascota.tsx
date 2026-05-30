@@ -481,7 +481,7 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
 
       <Tabs defaultValue="resumen" className="space-y-6">
         <div className="rounded-xl border bg-card px-4 py-3 shadow-sm">
-          <TabsList className="flex w-full flex-nowrap gap-2 overflow-x-auto bg-transparent p-0 sm:flex-wrap">
+          <TabsList className="no-scrollbar flex w-full flex-nowrap gap-2 overflow-x-auto bg-transparent p-0 sm:flex-wrap">
             <TabsTrigger
               value="resumen"
               className="h-11 flex-none rounded-full border border-transparent bg-muted/40 px-4 text-sm font-semibold text-muted-foreground whitespace-nowrap data-[state=active]:border-[#B3007A] data-[state=active]:bg-[#B3007A]/10 data-[state=active]:text-[#B3007A]"
