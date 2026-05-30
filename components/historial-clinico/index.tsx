@@ -1,34 +1,10 @@
 "use client"
 
 import { useCallback, useMemo, useState } from "react"
-import Link from "next/link"
-import {
-  Activity,
-  Calendar,
-  ChevronRight,
-  ClipboardList,
-  Clock,
-  Download,
-  FileText,
-  MessageCircle,
-  Pill,
-  Plus,
-  Scissors,
-  Search,
-  Stethoscope,
-  Syringe,
-  X,
-} from "lucide-react"
+import { ClipboardList, Clock, Download, FileText, MessageCircle, Pill, Plus, Scissors, Search, Stethoscope, Syringe, X, Activity, ArrowLeft } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -39,15 +15,13 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { mascotas } from "@/lib/mock-data"
+import { ClinicalActionFlow } from "@/components/clinical/action-flow"
 import {
   addConsultationFromDraft,
   buildClinicalTimeline,
-  getPetWithClient,
   searchClinicalTimeline,
   type ClinicalTimelineEvent,
   type ConsultationDraft,
-  type PetWithClient,
   CLINICAL_HISTORY_EVENT_TYPES,
   VETERINARIANS,
 } from "@/lib/clinical-history-builder"
@@ -87,7 +61,7 @@ function formatDate(dateStr: string) {
   return `${day}/${month}/${year}`
 }
 
-function TimelineItem({
+function ClinicalTimelineItem({
   event,
   isExpanded,
   onToggle,
@@ -122,7 +96,6 @@ function TimelineItem({
           </div>
           <Button variant="outline" className="h-10 rounded-xl" onClick={onToggle}>
             Ver detalle
-            <ChevronRight className={`ml-2 h-4 w-4 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
           </Button>
         </div>
 
@@ -165,11 +138,236 @@ function TimelineDetail({ label, value }: { label: string; value: string }) {
   )
 }
 
+function PatientHeader({ pet, client }: { pet: NonNullable<Parameters<typeof ClinicalActionFlow>[0]["children"]>["pet"]; client: NonNullable<Parameters<typeof ClinicalActionFlow>[0]["children"]>["client"] }) {
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-xl font-bold">{pet.nombre}</h2>
+              <Badge variant="outline">{pet.especie}</Badge>
+              <Badge variant="outline">{pet.raza}</Badge>
+              <Badge className={estadoColors[pet.estadoGeneral] || "bg-muted text-muted-foreground"}>
+                {pet.estadoGeneral}
+              </Badge>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {pet.edad} · {pet.sexo} · {pet.peso} kg · {pet.esterilizado ? "Esterilizado" : "No esterilizado"}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Dueno: {client.nombre} · {client.telefono} · {client.email}
+            </p>
+            {(pet.alergias.length > 0 || pet.antecedentes) && (
+              <p className="mt-1 text-sm text-muted-foreground">
+                {pet.alergias.length > 0 && `Alergias: ${pet.alergias.join(", ")}`}
+                {pet.alergias.length > 0 && pet.antecedentes && " · "}
+                {pet.antecedentes && `Antecedentes: ${pet.antecedentes}`}
+              </p>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+type HistorialMode = "timeline" | "consulta"
+
+function HistorialContent({ client, pet }: { client: NonNullable<Parameters<typeof ClinicalActionFlow>[0]["children"]>["client"]; pet: NonNullable<Parameters<typeof ClinicalActionFlow>[0]["children"]>["pet"] }) {
+  const [mode, setMode] = useState<HistorialMode>("timeline")
+  const [refreshKey, setRefreshKey] = useState(0)
+  const [expandedEvent, setExpandedEvent] = useState<string | number | null>(null)
+
+  const [search, setSearch] = useState("")
+  const [eventType, setEventType] = useState("todos")
+  const [vetName, setVetName] = useState("todos")
+  const [status, setStatus] = useState("todos")
+  const [dateFrom, setDateFrom] = useState("")
+  const [dateTo, setDateTo] = useState("")
+
+  const timeline = useMemo(() => buildClinicalTimeline(pet.id), [pet.id, refreshKey])
+  const filteredTimeline = useMemo(() => {
+    return searchClinicalTimeline(timeline, search, eventType, vetName, status, dateFrom, dateTo)
+  }, [timeline, search, eventType, vetName, status, dateFrom, dateTo])
+
+  const uniqueVets = useMemo(() => {
+    const vets = new Set<string>()
+    timeline.forEach((e) => { if (e.veterinario) vets.add(e.veterinario) })
+    return Array.from(vets).sort()
+  }, [timeline])
+
+  const uniqueStatuses = useMemo(() => {
+    const statuses = new Set<string>()
+    timeline.forEach((e) => { if (e.estado) statuses.add(e.estado) })
+    return Array.from(statuses).sort()
+  }, [timeline])
+
+  const hasActiveFilters = search || eventType !== "todos" || vetName !== "todos" || status !== "todos" || dateFrom || dateTo
+
+  function clearFilters() {
+    setSearch("")
+    setEventType("todos")
+    setVetName("todos")
+    setStatus("todos")
+    setDateFrom("")
+    setDateTo("")
+  }
+
+  const handleConsultationSaved = useCallback(() => {
+    setRefreshKey((k) => k + 1)
+    setMode("timeline")
+  }, [])
+
+  if (mode === "consulta") {
+    return (
+      <div className="space-y-4">
+        <Button variant="outline" className="h-11 rounded-xl px-4 font-bold" onClick={() => setMode("timeline")}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Volver al historial
+        </Button>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Stethoscope className="h-5 w-5 text-primary" />
+              Agregar consulta
+            </CardTitle>
+            <CardDescription>
+              Registrar una nueva consulta clinica para {pet.nombre} ({pet.especie} · {pet.raza}).
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ConsultationForm pet={pet} client={client} onSaved={handleConsultationSaved} />
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      <PatientHeader pet={pet} client={client} />
+
+      <Button
+        className="h-14 w-full rounded-xl bg-primary px-6 text-base font-bold shadow-md shadow-primary/15 hover:bg-primary/90"
+        onClick={() => setMode("consulta")}
+      >
+        <Plus className="mr-2 h-5 w-5" />
+        Agregar consulta
+      </Button>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ClipboardList className="h-5 w-5 text-primary" />
+            Historial de {pet.nombre}
+          </CardTitle>
+          <CardDescription>
+            {filteredTimeline.length === timeline.length
+              ? `${timeline.length} registro${timeline.length !== 1 ? "s" : ""} encontrado${timeline.length !== 1 ? "s" : ""}`
+              : `${filteredTimeline.length} de ${timeline.length} registro${timeline.length !== 1 ? "s" : ""} encontrado${timeline.length !== 1 ? "s" : ""}`}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              className="h-12 rounded-xl pl-10 text-base"
+              placeholder="Buscar por diagnostico, motivo, tratamiento, vacuna, cirugia, estudio, veterinario..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            {search && (
+              <button className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setSearch("")}>
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={eventType} onValueChange={setEventType}>
+              <SelectTrigger className="h-10 w-[160px] rounded-lg">
+                <SelectValue placeholder="Tipo de evento" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos los tipos</SelectItem>
+                {CLINICAL_HISTORY_EVENT_TYPES.map((type) => (
+                  <SelectItem key={type} value={type}>{type}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={vetName} onValueChange={setVetName}>
+              <SelectTrigger className="h-10 w-[160px] rounded-lg">
+                <SelectValue placeholder="Veterinario" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                {uniqueVets.map((v) => (
+                  <SelectItem key={v} value={v}>{v}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger className="h-10 w-[140px] rounded-lg">
+                <SelectValue placeholder="Estado" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                {uniqueStatuses.map((s) => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <div className="flex items-center gap-2">
+              <Input type="date" className="h-10 rounded-lg" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+              <span className="text-sm text-muted-foreground">—</span>
+              <Input type="date" className="h-10 rounded-lg" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+            </div>
+
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" className="h-10 rounded-lg text-muted-foreground" onClick={clearFilters}>
+                <X className="mr-1 h-3 w-3" />
+                Limpiar filtros
+              </Button>
+            )}
+          </div>
+
+          {filteredTimeline.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <p className="text-lg font-medium text-muted-foreground">No se encontraron registros con esos filtros.</p>
+              <Button variant="outline" className="mt-3 h-10 rounded-xl" onClick={clearFilters}>
+                Limpiar filtros
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredTimeline.map((event) => (
+                <ClinicalTimelineItem
+                  key={event.id}
+                  event={event}
+                  isExpanded={expandedEvent === event.id}
+                  onToggle={() => setExpandedEvent(expandedEvent === event.id ? null : event.id)}
+                />
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
 function ConsultationForm({
   pet,
+  client,
   onSaved,
 }: {
-  pet: PetWithClient
+  pet: NonNullable<Parameters<typeof ClinicalActionFlow>[0]["children"]>["pet"]
+  client: NonNullable<Parameters<typeof ClinicalActionFlow>[0]["children"]>["client"]
   onSaved: () => void
 }) {
   const [form, setForm] = useState({
@@ -190,7 +388,7 @@ function ConsultationForm({
   function handleSubmit() {
     if (!form.reason.trim()) return
     const draft: ConsultationDraft = {
-      clientId: pet.clienteId,
+      clientId: client.id,
       petId: pet.id,
       date: form.date,
       veterinarian: form.veterinarian,
@@ -216,26 +414,19 @@ function ConsultationForm({
           {pet.nombre} · {pet.especie} · {pet.raza}
         </p>
         <p className="text-sm text-muted-foreground">
-          Dueno: {pet.dueno} · {pet.clienteTelefono}
+          Dueno: {client.nombre} · {client.telefono}
         </p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <Label>Fecha de consulta</Label>
-          <Input
-            type="date"
-            className="h-11 rounded-xl"
-            value={form.date}
-            onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
-          />
+          <Input type="date" className="h-11 rounded-xl" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} />
         </div>
         <div className="space-y-2">
           <Label>Veterinario</Label>
           <Select value={form.veterinarian} onValueChange={(v) => setForm((f) => ({ ...f, veterinarian: v }))}>
-            <SelectTrigger className="h-11 rounded-xl">
-              <SelectValue />
-            </SelectTrigger>
+            <SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
             <SelectContent>
               {VETERINARIANS.map((v) => (
                 <SelectItem key={v} value={v}>{v}</SelectItem>
@@ -246,9 +437,7 @@ function ConsultationForm({
         <div className="space-y-2">
           <Label>Estado</Label>
           <Select value={form.status} onValueChange={(v) => setForm((f) => ({ ...f, status: v }))}>
-            <SelectTrigger className="h-11 rounded-xl">
-              <SelectValue />
-            </SelectTrigger>
+            <SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="Registrada">Registrada</SelectItem>
               <SelectItem value="En seguimiento">En seguimiento</SelectItem>
@@ -259,88 +448,44 @@ function ConsultationForm({
         </div>
         <div className="space-y-2">
           <Label>Peso (kg)</Label>
-          <Input
-            className="h-11 rounded-xl"
-            placeholder="Ej: 28.5"
-            value={form.weight}
-            onChange={(e) => setForm((f) => ({ ...f, weight: e.target.value }))}
-          />
+          <Input className="h-11 rounded-xl" placeholder="Ej: 28.5" value={form.weight} onChange={(e) => setForm((f) => ({ ...f, weight: e.target.value }))} />
         </div>
       </div>
 
       <div className="space-y-2">
         <Label>Motivo de consulta *</Label>
-        <Input
-          className="h-11 rounded-xl"
-          placeholder="Ej: Control postratamiento, vacunacion, enfermedad..."
-          value={form.reason}
-          onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))}
-        />
+        <Input className="h-11 rounded-xl" placeholder="Ej: Control postratamiento, vacunacion, enfermedad..." value={form.reason} onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))} />
       </div>
 
       <div className="space-y-2">
         <Label>Sintomas</Label>
-        <Textarea
-          className="rounded-xl"
-          rows={2}
-          placeholder="Descripcion de sintomas observados..."
-          value={form.symptoms}
-          onChange={(e) => setForm((f) => ({ ...f, symptoms: e.target.value }))}
-        />
+        <Textarea className="rounded-xl" rows={2} placeholder="Descripcion de sintomas observados..." value={form.symptoms} onChange={(e) => setForm((f) => ({ ...f, symptoms: e.target.value }))} />
       </div>
 
       <div className="space-y-2">
         <Label>Diagnostico</Label>
-        <Textarea
-          className="rounded-xl"
-          rows={2}
-          placeholder="Diagnostico clinico..."
-          value={form.diagnosis}
-          onChange={(e) => setForm((f) => ({ ...f, diagnosis: e.target.value }))}
-        />
+        <Textarea className="rounded-xl" rows={2} placeholder="Diagnostico clinico..." value={form.diagnosis} onChange={(e) => setForm((f) => ({ ...f, diagnosis: e.target.value }))} />
       </div>
 
       <div className="space-y-2">
         <Label>Tratamiento indicado</Label>
-        <Textarea
-          className="rounded-xl"
-          rows={2}
-          placeholder="Medicacion, indicaciones, dieta..."
-          value={form.treatment}
-          onChange={(e) => setForm((f) => ({ ...f, treatment: e.target.value }))}
-        />
+        <Textarea className="rounded-xl" rows={2} placeholder="Medicacion, indicaciones, dieta..." value={form.treatment} onChange={(e) => setForm((f) => ({ ...f, treatment: e.target.value }))} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <Label>Temperatura (°C)</Label>
-          <Input
-            className="h-11 rounded-xl"
-            placeholder="Ej: 38.5"
-            value={form.temperature}
-            onChange={(e) => setForm((f) => ({ ...f, temperature: e.target.value }))}
-          />
+          <Input className="h-11 rounded-xl" placeholder="Ej: 38.5" value={form.temperature} onChange={(e) => setForm((f) => ({ ...f, temperature: e.target.value }))} />
         </div>
         <div className="space-y-2">
           <Label>Proximo control</Label>
-          <Input
-            type="date"
-            className="h-11 rounded-xl"
-            value={form.nextControlDate}
-            onChange={(e) => setForm((f) => ({ ...f, nextControlDate: e.target.value }))}
-          />
+          <Input type="date" className="h-11 rounded-xl" value={form.nextControlDate} onChange={(e) => setForm((f) => ({ ...f, nextControlDate: e.target.value }))} />
         </div>
       </div>
 
       <div className="space-y-2">
         <Label>Observaciones</Label>
-        <Textarea
-          className="rounded-xl"
-          rows={2}
-          placeholder="Notas adicionales..."
-          value={form.notes}
-          onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-        />
+        <Textarea className="rounded-xl" rows={2} placeholder="Notas adicionales..." value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
       </div>
 
       <Button
@@ -356,305 +501,14 @@ function ConsultationForm({
 }
 
 export function HistorialClinico() {
-  const [selectedPetId, setSelectedPetId] = useState<number | null>(null)
-  const [petSearch, setPetSearch] = useState("")
-  const [expandedEvent, setExpandedEvent] = useState<string | number | null>(null)
-  const [showConsultation, setShowConsultation] = useState(false)
-  const [refreshKey, setRefreshKey] = useState(0)
-
-  const [search, setSearch] = useState("")
-  const [eventType, setEventType] = useState("todos")
-  const [vetName, setVetName] = useState("todos")
-  const [status, setStatus] = useState("todos")
-  const [dateFrom, setDateFrom] = useState("")
-  const [dateTo, setDateTo] = useState("")
-
-  const selectedPet = useMemo(() => (selectedPetId ? getPetWithClient(selectedPetId) : null), [selectedPetId])
-
-  const timeline = useMemo(() => {
-    if (!selectedPetId) return []
-    return buildClinicalTimeline(selectedPetId)
-  }, [selectedPetId, refreshKey])
-
-  const filteredTimeline = useMemo(() => {
-    return searchClinicalTimeline(timeline, search, eventType, vetName, status, dateFrom, dateTo)
-  }, [timeline, search, eventType, vetName, status, dateFrom, dateTo])
-
-  const uniqueVets = useMemo(() => {
-    const vets = new Set<string>()
-    timeline.forEach((e) => { if (e.veterinario) vets.add(e.veterinario) })
-    return Array.from(vets).sort()
-  }, [timeline])
-
-  const uniqueStatuses = useMemo(() => {
-    const statuses = new Set<string>()
-    timeline.forEach((e) => { if (e.estado) statuses.add(e.estado) })
-    return Array.from(statuses).sort()
-  }, [timeline])
-
-  const filteredPets = useMemo(() => {
-    if (!petSearch.trim()) return mascotas
-    const q = petSearch.toLowerCase()
-    return mascotas.filter((m) =>
-      m.nombre.toLowerCase().includes(q) ||
-      m.especie.toLowerCase().includes(q) ||
-      m.raza.toLowerCase().includes(q) ||
-      m.dueno.toLowerCase().includes(q)
-    )
-  }, [petSearch])
-
-  const handleRefresh = useCallback(() => {
-    setRefreshKey((k) => k + 1)
-    setShowConsultation(false)
-  }, [])
-
-  const hasActiveFilters = search || eventType !== "todos" || vetName !== "todos" || status !== "todos" || dateFrom || dateTo
-
-  function clearFilters() {
-    setSearch("")
-    setEventType("todos")
-    setVetName("todos")
-    setStatus("todos")
-    setDateFrom("")
-    setDateTo("")
-  }
-
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Historial Clinico</h1>
-          <p className="text-muted-foreground">Consulta y registra eventos clinicos de una mascota.</p>
-        </div>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Search className="h-5 w-5 text-primary" />
-            Seleccionar mascota
-          </CardTitle>
-          <CardDescription>Busca por nombre, especie, raza o dueno para ver su historial clinico.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              className="h-14 rounded-xl pl-12 text-base"
-              placeholder="Buscar mascota, cliente o turno..."
-              value={petSearch}
-              onChange={(e) => setPetSearch(e.target.value)}
-            />
-            {petSearch && (
-              <button className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setPetSearch("")}>
-                <X className="h-5 w-5" />
-              </button>
-            )}
-          </div>
-          <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredPets.map((pet) => (
-              <button
-                key={pet.id}
-                className={`rounded-xl border p-3 text-left transition-all hover:bg-primary/5 ${selectedPetId === pet.id ? "border-primary bg-primary/10 ring-2 ring-primary" : ""}`}
-                onClick={() => { setSelectedPetId(pet.id); setExpandedEvent(null); clearFilters() }}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold">{pet.nombre}</span>
-                  <Badge variant="outline">{pet.especie}</Badge>
-                </div>
-                <p className="mt-1 text-sm text-muted-foreground">{pet.raza} · {pet.edad}</p>
-                <p className="text-sm text-muted-foreground">{pet.dueno}</p>
-              </button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {selectedPet ? (
-        <>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-xl font-bold">{selectedPet.nombre}</h2>
-                    <Badge variant="outline">{selectedPet.especie}</Badge>
-                    <Badge variant="outline">{selectedPet.raza}</Badge>
-                    <Badge className={estadoColors[selectedPet.estadoGeneral] || "bg-muted text-muted-foreground"}>
-                      {selectedPet.estadoGeneral}
-                    </Badge>
-                  </div>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {selectedPet.edad} · {selectedPet.sexo} · {selectedPet.peso} kg · {selectedPet.esterilizado ? "Esterilizado" : "No esterilizado"}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Dueno: {selectedPet.dueno} · {selectedPet.clienteTelefono} · {selectedPet.clienteEmail}
-                  </p>
-                  {(selectedPet.alergias.length > 0 || selectedPet.antecedentes) && (
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {selectedPet.alergias.length > 0 && `Alergias: ${selectedPet.alergias.join(", ")}`}
-                      {selectedPet.alergias.length > 0 && selectedPet.antecedentes && " · "}
-                      {selectedPet.antecedentes && `Antecedentes: ${selectedPet.antecedentes}`}
-                    </p>
-                  )}
-                </div>
-                <Link href={`/mascotas/${selectedPet.id}`}>
-                  <Button variant="outline" className="h-11 rounded-xl px-4 font-bold">
-                    Ver ficha completa
-                  </Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Button
-            className="h-14 w-full rounded-xl bg-primary px-6 text-base font-bold shadow-md shadow-primary/15 hover:bg-primary/90"
-            onClick={() => setShowConsultation(true)}
-          >
-            <Plus className="mr-2 h-5 w-5" />
-            Agregar consulta
-          </Button>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ClipboardList className="h-5 w-5 text-primary" />
-                Historial de {selectedPet.nombre}
-              </CardTitle>
-              <CardDescription>
-                {filteredTimeline.length === timeline.length
-                  ? `${timeline.length} registro${timeline.length !== 1 ? "s" : ""} encontrado${timeline.length !== 1 ? "s" : ""}`
-                  : `${filteredTimeline.length} de ${timeline.length} registro${timeline.length !== 1 ? "s" : ""} encontrado${timeline.length !== 1 ? "s" : ""}`}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  className="h-12 rounded-xl pl-10 text-base"
-                  placeholder="Buscar por diagnostico, motivo, tratamiento, vacuna, cirugia, estudio, veterinario..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-                {search && (
-                  <button className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setSearch("")}>
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <Select value={eventType} onValueChange={setEventType}>
-                  <SelectTrigger className="h-10 w-[160px] rounded-lg">
-                    <SelectValue placeholder="Tipo de evento" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos los tipos</SelectItem>
-                    {CLINICAL_HISTORY_EVENT_TYPES.map((type) => (
-                      <SelectItem key={type} value={type}>{type}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Select value={vetName} onValueChange={setVetName}>
-                  <SelectTrigger className="h-10 w-[160px] rounded-lg">
-                    <SelectValue placeholder="Veterinario" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos</SelectItem>
-                    {uniqueVets.map((v) => (
-                      <SelectItem key={v} value={v}>{v}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Select value={status} onValueChange={setStatus}>
-                  <SelectTrigger className="h-10 w-[140px] rounded-lg">
-                    <SelectValue placeholder="Estado" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos</SelectItem>
-                    {uniqueStatuses.map((s) => (
-                      <SelectItem key={s} value={s}>{s}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="date"
-                    className="h-10 rounded-lg"
-                    value={dateFrom}
-                    onChange={(e) => setDateFrom(e.target.value)}
-                  />
-                  <span className="text-sm text-muted-foreground">—</span>
-                  <Input
-                    type="date"
-                    className="h-10 rounded-lg"
-                    value={dateTo}
-                    onChange={(e) => setDateTo(e.target.value)}
-                  />
-                </div>
-
-                {hasActiveFilters && (
-                  <Button variant="ghost" size="sm" className="h-10 rounded-lg text-muted-foreground" onClick={clearFilters}>
-                    <X className="mr-1 h-3 w-3" />
-                    Limpiar filtros
-                  </Button>
-                )}
-              </div>
-
-              {filteredTimeline.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <p className="text-lg font-medium text-muted-foreground">No se encontraron registros con esos filtros.</p>
-                  <Button variant="outline" className="mt-3 h-10 rounded-xl" onClick={clearFilters}>
-                    Limpiar filtros
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {filteredTimeline.map((event) => (
-                    <TimelineItem
-                      key={event.id}
-                      event={event}
-                      isExpanded={expandedEvent === event.id}
-                      onToggle={() => setExpandedEvent(expandedEvent === event.id ? null : event.id)}
-                    />
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </>
-      ) : (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-20 text-center">
-            <ClipboardList className="mb-4 h-16 w-16 text-muted-foreground/40" />
-            <h3 className="text-xl font-semibold text-muted-foreground">Selecciona una mascota</h3>
-            <p className="mt-2 max-w-md text-muted-foreground">
-              Selecciona una mascota para ver su historial clinico completo. Podes buscar por nombre, especie, raza o dueno.
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      <Dialog open={showConsultation} onOpenChange={setShowConsultation}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Agregar consulta</DialogTitle>
-            <DialogDescription>
-              Registrar una nueva consulta clinica para {selectedPet?.nombre || "la mascota seleccionada"}.
-            </DialogDescription>
-          </DialogHeader>
-          {selectedPet ? (
-            <ConsultationForm pet={selectedPet} onSaved={handleRefresh} />
-          ) : (
-            <div className="py-8 text-center text-muted-foreground">
-              Selecciona una mascota primero para agregar una consulta.
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-    </div>
+    <ClinicalActionFlow
+      title="Historial Clinico"
+      description="Selecciona un cliente y una mascota para consultar y registrar eventos clinicos."
+      actionLabel="Ver historial"
+      icon={ClipboardList}
+    >
+      {({ client, pet }) => <HistorialContent client={client} pet={pet} />}
+    </ClinicalActionFlow>
   )
 }
