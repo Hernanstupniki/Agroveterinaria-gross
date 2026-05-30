@@ -13,6 +13,7 @@ import {
   Plus,
   Settings,
   Syringe,
+  Trash2,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -495,10 +496,47 @@ export function VaccineSchemeCreator() {
   const [editingSchemeId, setEditingSchemeId] = useState<string | null>(null)
   const editingScheme = vaccineSchemes.find((scheme) => scheme.id === editingSchemeId)
   const [doseRows, setDoseRows] = useState([
-    { id: "dose-form-1", name: "Dosis 1", intervalPresetId: "1-day", recurrent: false },
-    { id: "dose-form-2", name: "Dosis 2", intervalPresetId: "2-weeks", recurrent: false },
-    { id: "dose-form-3", name: "Dosis 3", intervalPresetId: "6-weeks", recurrent: false },
+    { id: "dose-form-1", name: "Dosis 1", intervalPresetId: "1-day", recurrent: false, nameEdited: false },
+    { id: "dose-form-2", name: "Dosis 2", intervalPresetId: "2-weeks", recurrent: false, nameEdited: false },
+    { id: "dose-form-3", name: "Dosis 3", intervalPresetId: "6-weeks", recurrent: false, nameEdited: false },
   ])
+
+  function addDose() {
+    setDoseRows((rows) => {
+      const nextOrder = rows.length + 1
+      return [
+        ...rows,
+        { id: `dose-form-${nextOrder}`, name: `Dosis ${nextOrder}`, intervalPresetId: "2-weeks", recurrent: false, nameEdited: false },
+      ]
+    })
+  }
+
+  function removeDose(id: string) {
+    setDoseRows((rows) => {
+      const filtered = rows.filter((r) => r.id !== id)
+      return filtered.map((row, index) => {
+        const defaultName = `Dosis ${index + 1}`
+        const newName = row.nameEdited ? row.name : defaultName
+        return { ...row, name: newName }
+      })
+    })
+  }
+
+  function updateDoseName(id: string, value: string, wasEdited: boolean) {
+    setDoseRows((rows) =>
+      rows.map((item) => (item.id === id ? { ...item, name: value, nameEdited: value !== "" && wasEdited } : item)),
+    )
+  }
+
+  function reorderDoseNames() {
+    setDoseRows((rows) =>
+      rows.map((row, index) => {
+        const defaultName = `Dosis ${index + 1}`
+        const newName = row.nameEdited ? row.name : defaultName
+        return { ...row, name: newName }
+      }),
+    )
+  }
 
   return (
     <Card>
@@ -515,7 +553,7 @@ export function VaccineSchemeCreator() {
         <div className="rounded-xl border border-primary/25 bg-primary/5 p-4">
           {editingScheme && (
             <div className="mb-4 rounded-lg border border-primary/30 bg-background p-3 text-sm">
-              Editando esquema mock: <span className="font-semibold">{editingScheme.name}</span>. Los cambios quedan como demo visual de esta sesión.
+              Editando esquema mock: <span className="font-semibold">{editingScheme.name}</span>. Los cambios quedan como demo visual de esta sesion.
             </div>
           )}
           <div className="grid gap-4 lg:grid-cols-2">
@@ -529,7 +567,7 @@ export function VaccineSchemeCreator() {
               label="Estado del esquema"
               placeholder="Seleccionar estado"
               items={[
-                { id: "acto", label: "Activo" },
+                { id: "activo", label: "Activo" },
                 { id: "inactivo", label: "Inactivo" },
               ]}
             />
@@ -537,54 +575,106 @@ export function VaccineSchemeCreator() {
           <div className="mt-4">
             <TaxonomyApplicabilityEditor initial={editingScheme} />
           </div>
-          <div className="mt-4 rounded-xl border bg-background p-4">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h3 className="font-semibold">Dosis e intervalos particulares</h3>
-                <p className="text-sm text-muted-foreground">Cada dosis puede tener su propio intervalo: por ejemplo Dosis 2 a 2 semanas y Dosis 3 a 6 semanas.</p>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                className="h-10 rounded-xl font-bold"
-                onClick={() =>
-                  setDoseRows((rows) => [
-                    ...rows,
-                    { id: `dose-form-${rows.length + 1}`, name: `Dosis ${rows.length + 1}`, intervalPresetId: "2-weeks", recurrent: false },
-                  ])
-                }
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Agregar dosis
-              </Button>
+
+          <div className="mt-6 rounded-xl border bg-background p-4">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold">Dosis e intervalos del esquema</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Agrega las dosis del esquema. Cada dosis puede tener su propio intervalo. Si una dosis se repite en el tiempo, marcala como refuerzo recurrente.
+              </p>
             </div>
-            <div className="mt-3 space-y-3">
-              {doseRows.map((row, index) => (
-                <div key={row.id} className="grid gap-3 rounded-lg bg-muted/30 p-3 md:grid-cols-[1fr_220px_auto]">
-                  <Field
-                    label={`Nombre dosis ${index + 1}`}
-                    placeholder="Ej: Dosis 2"
-                    value={row.name}
-                    onChange={(value) => setDoseRows((rows) => rows.map((item) => (item.id === row.id ? { ...item, name: value } : item)))}
-                  />
-                  <PresetSelect
-                    label="Intervalo"
-                    placeholder="Seleccionar intervalo"
-                    value={row.intervalPresetId}
-                    onValueChange={(value) => setDoseRows((rows) => rows.map((item) => (item.id === row.id ? { ...item, intervalPresetId: value } : item)))}
-                    items={durationPresets.filter((preset) => preset.unit !== "lifetime")}
-                  />
-                  <label className="flex items-center gap-2 pt-7 text-sm">
-                    <Checkbox
-                      checked={row.recurrent}
-                      onCheckedChange={(checked) => setDoseRows((rows) => rows.map((item) => (item.id === row.id ? { ...item, recurrent: Boolean(checked) } : item)))}
-                    />
-                    Recurrente
-                  </label>
-                </div>
-              ))}
+
+            <div className="space-y-3">
+              {doseRows.map((row, index) => {
+                const isFirst = index === 0
+                const defaultName = `Dosis ${index + 1}`
+                return (
+                  <div key={row.id} className="rounded-xl border bg-card p-4 shadow-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
+                          {index + 1}
+                        </div>
+                        <h4 className="font-semibold">{row.nameEdited ? row.name : defaultName}</h4>
+                      </div>
+                      {doseRows.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 shrink-0 p-0 text-muted-foreground hover:text-destructive"
+                          onClick={() => {
+                            removeDose(row.id)
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                      <Field
+                        label="Nombre"
+                        placeholder={defaultName}
+                        value={row.nameEdited ? row.name : ""}
+                        onChange={(value) => updateDoseName(row.id, value, true)}
+                      />
+                      <PresetSelect
+                        label={isFirst ? "Intervalo desde la aplicacion" : `Intervalo desde ${index === 1 ? "Dosis 1" : `Dosis ${index}`}`}
+                        placeholder="Seleccionar intervalo"
+                        value={row.intervalPresetId}
+                        onValueChange={(value) =>
+                          setDoseRows((rows) => rows.map((item) => (item.id === row.id ? { ...item, intervalPresetId: value } : item)))
+                        }
+                        items={durationPresets.filter((preset) => preset.unit !== "lifetime")}
+                      />
+                    </div>
+
+                    <div className="mt-3 rounded-lg border bg-muted/30 p-3">
+                      <label className="flex items-start gap-3 text-sm">
+                        <Checkbox
+                          checked={row.recurrent}
+                          onCheckedChange={(checked) =>
+                            setDoseRows((rows) => rows.map((item) => (item.id === row.id ? { ...item, recurrent: Boolean(checked) } : item)))
+                          }
+                        />
+                        <div>
+                          <span className="font-medium">Es refuerzo recurrente</span>
+                          <p className="mt-0.5 text-muted-foreground">
+                            Usalo para refuerzos que se repiten en el tiempo, por ejemplo una vacuna anual.
+                          </p>
+                          {row.recurrent && (
+                            <div className="mt-2">
+                              <PresetSelect
+                                label="Repetir cada"
+                                placeholder="Seleccionar intervalo de repeticion"
+                                value={row.intervalPresetId}
+                                onValueChange={(value) =>
+                                  setDoseRows((rows) => rows.map((item) => (item.id === row.id ? { ...item, intervalPresetId: value } : item)))
+                                }
+                                items={durationPresets.filter((preset) => preset.unit === "months" || preset.unit === "years")}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-4 h-11 w-full rounded-xl border-dashed font-bold"
+              onClick={addDose}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Agregar dosis
+            </Button>
           </div>
+
           <div className="mt-4 space-y-2">
             <Label>Observaciones</Label>
             <Textarea className="bg-background" placeholder="Indicaciones generales del esquema..." />
@@ -595,7 +685,7 @@ export function VaccineSchemeCreator() {
           </Button>
           {editingScheme && (
             <Button variant="outline" className="ml-2 mt-4 h-14 rounded-xl px-6 text-base font-bold" onClick={() => setEditingSchemeId(null)}>
-              Cancelar edición
+              Cancelar edicion
             </Button>
           )}
         </div>
