@@ -68,9 +68,9 @@ export function ClientesPage() {
       <div className="flex justify-center">
         <NewClientDialog
           trigger={
-            <Button className="h-20 w-full max-w-xl rounded-xl bg-primary px-8 text-xl font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 sm:text-2xl">
-              <UserPlus className="mr-3 h-7 w-7" />
-              Nuevo cliente
+            <Button className="min-h-16 w-full max-w-md rounded-xl bg-primary px-6 py-4 text-lg font-bold leading-tight shadow-md shadow-primary/20 hover:bg-primary/90 sm:text-xl">
+              <UserPlus className="mr-3 h-6 w-6 shrink-0" />
+              Agregar cliente
             </Button>
           }
         />
