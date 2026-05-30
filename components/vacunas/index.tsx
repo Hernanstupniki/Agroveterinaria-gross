@@ -36,6 +36,7 @@ import { clientes, mascotas } from "@/lib/mock-data"
 import {
   buildPetVaccinationHistory,
   buildVaccineDisplayList,
+  calculateNextDose,
   formatInterval,
   formatOverdueText,
   getDoseIntervalPreset,
