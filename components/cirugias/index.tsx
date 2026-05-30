@@ -41,6 +41,9 @@ import {
   FileText,
 } from "lucide-react"
 import { cirugias, mascotas, profesionales } from "@/lib/mock-data"
+import { StatusBadge } from "@/components/shared/status-badge"
+import { EmptyState } from "@/components/shared/empty-state"
+import { KpiStrip, type KpiItem } from "@/components/shared/kpi-strip"
 
 const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: React.ReactNode }> = {
   "Programada": { label: "Programada", variant: "secondary", icon: <Calendar className="h-3 w-3" /> },
@@ -77,20 +80,27 @@ export default function CirugiasScreen() {
   const enCursoCount = cirugias.filter((c) => c.estado === "En curso").length
   const completadasCount = cirugias.filter((c) => c.estado === "Completada").length
 
+  const kpis: KpiItem[] = [
+    { label: "Programadas", value: programadasCount, icon: Calendar },
+    { label: "En curso", value: enCursoCount, icon: Timer, tone: "warning" },
+    { label: "Completadas", value: completadasCount, icon: CheckCircle2, tone: "success" },
+    { label: "Total", value: cirugias.length, icon: Stethoscope },
+  ]
+
   return (
-    <div className="space-y-6">
+    <div className="animate-section-in mx-auto max-w-[1600px] space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Cirugías</h1>
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Cirugías</h1>
           <p className="text-muted-foreground">
-            Gestión de procedimientos quirúrgicos
+            Programá cirugías, requisitos prequirúrgicos y seguí su estado.
           </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-primary hover:bg-primary/90">
-              <Plus className="mr-2 h-4 w-4" />
-              Programar Cirugía
+            <Button className="h-12 gap-2 rounded-xl px-5 text-base font-semibold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98]">
+              <Plus className="h-5 w-5" />
+              Agendar cirugía
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
@@ -180,64 +190,8 @@ export default function CirugiasScreen() {
         </Dialog>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="rounded-full bg-blue-100 p-3">
-                <Calendar className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Programadas</p>
-                <p className="text-2xl font-bold">{programadasCount}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="rounded-full bg-primary/10 p-3">
-                <Timer className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">En Curso</p>
-                <p className="text-2xl font-bold">{enCursoCount}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="rounded-full bg-green-100 p-3">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Completadas</p>
-                <p className="text-2xl font-bold">{completadasCount}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="rounded-full bg-orange-100 p-3">
-                <Stethoscope className="h-5 w-5 text-orange-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total</p>
-                <p className="text-2xl font-bold">{cirugias.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Filters */}
-      <Card>
+      <Card className="rounded-2xl">
         <CardContent className="pt-6">
           <div className="flex flex-col gap-4 sm:flex-row">
             <div className="relative flex-1">
@@ -267,11 +221,18 @@ export default function CirugiasScreen() {
       </Card>
 
       {/* Surgery Table */}
-      <Card>
+      <Card className="rounded-2xl">
         <CardHeader>
-          <CardTitle>Lista de Cirugías</CardTitle>
+          <CardTitle>Lista de cirugías</CardTitle>
         </CardHeader>
         <CardContent>
+          {filteredCirugias.length === 0 ? (
+            <EmptyState
+              icon={Calendar}
+              title="No hay cirugías para estos filtros"
+              description="Ajustá la búsqueda o agendá una nueva cirugía."
+            />
+          ) : (
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -321,10 +282,7 @@ export default function CirugiasScreen() {
                         </span>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={status.variant} className="gap-1">
-                          {status.icon}
-                          {status.label}
-                        </Badge>
+                        <StatusBadge status={status.label} />
                       </TableCell>
                       <TableCell className="text-right">
                         <Button variant="ghost" size="sm">
@@ -337,8 +295,15 @@ export default function CirugiasScreen() {
               </TableBody>
             </Table>
           </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* Secondary metrics — last */}
+      <div className="space-y-3 border-t border-border/70 pt-6">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Resumen</h2>
+        <KpiStrip items={kpis} className="lg:grid-cols-4 xl:grid-cols-4" />
+      </div>
     </div>
   )
 }

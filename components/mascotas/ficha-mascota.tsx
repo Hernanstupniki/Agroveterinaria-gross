@@ -38,6 +38,7 @@ import {
   tratamientosActivos,
   vacunasClinicas,
   vacunasRegistradas,
+  type HistorialEventoLegacy,
 } from "@/lib/mock-data"
 
 const estadoColors: Record<string, string> = {
@@ -124,7 +125,7 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
   const cirugiasProgramadas = cirugiasMascota.filter(
     (item) => item.estado === "Programada" || item.estado === "Confirmada" || item.estado === "Pendiente confirmación",
   )
-  const timelineEventos = (mascota.id === 1
+  const timelineEventos: HistorialEventoLegacy[] = (mascota.id === 1
     ? historialLuna
     : [
         ...vacunasMascota.map((vacuna) => ({
@@ -150,7 +151,7 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
           id: `tratamiento-${tratamiento.id}`,
           fecha: tratamiento.fechaInicio,
           tipo: "Tratamiento",
-          veterinario: tratamiento.veterinario,
+          veterinario: "Equipo clínico",
           motivo: tratamiento.diagnostico,
           tratamiento: `${tratamiento.medicamento} · ${tratamiento.dosis} · ${tratamiento.frecuencia}`,
           proximoControl: tratamiento.proximoControl,

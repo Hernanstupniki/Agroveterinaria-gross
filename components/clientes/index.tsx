@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import {
   Search,
@@ -50,11 +50,29 @@ import { clientes, mascotas } from "@/lib/mock-data"
 import { SectionHeader } from "@/components/shared/section-header"
 import { LargePrimaryAction } from "@/components/shared/large-primary-action"
 import { EmptyState } from "@/components/shared/empty-state"
+import { QuickCreateClientDialog } from "@/components/shared/quick-create-client-dialog"
+import { QuickCreatePetDialog } from "@/components/shared/quick-create-pet-dialog"
 import { UserPlus } from "lucide-react"
 
 export function ClientesPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCliente, setSelectedCliente] = useState<typeof clientes[0] | null>(null)
+  const [clientDialogOpen, setClientDialogOpen] = useState(false)
+  const [petDialogOpen, setPetDialogOpen] = useState(false)
+  const [petInitialCliente, setPetInitialCliente] = useState<number | null>(null)
+
+  // Auto-open the new-client flow when arriving from Principal (?nuevo=1).
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    if (new URLSearchParams(window.location.search).get("nuevo") === "1") {
+      setClientDialogOpen(true)
+    }
+  }, [])
+
+  const openPetFor = (clienteId: number | null) => {
+    setPetInitialCliente(clienteId)
+    setPetDialogOpen(true)
+  }
 
   const filteredClientes = clientes.filter(
     (cliente) =>
@@ -72,7 +90,7 @@ export function ClientesPage() {
       <SectionHeader
         title="Clientes"
         description="Gestión de clientes y dueños de mascotas."
-        action={<LargePrimaryAction label="Nuevo cliente" icon={UserPlus} />}
+        action={<LargePrimaryAction label="Nuevo cliente" icon={UserPlus} onClick={() => setClientDialogOpen(true)} />}
       />
 
       {/* Search */}
@@ -102,7 +120,7 @@ export function ClientesPage() {
               icon={UserPlus}
               title="No se encontraron clientes"
               description="Probá con otro término de búsqueda o registrá un nuevo cliente."
-              action={<LargePrimaryAction label="Nuevo cliente" icon={UserPlus} />}
+              action={<LargePrimaryAction label="Nuevo cliente" icon={UserPlus} onClick={() => setClientDialogOpen(true)} />}
             />
           ) : (
           <div className="rounded-md border">
@@ -242,7 +260,7 @@ export function ClientesPage() {
                               <MessageCircle className="mr-2 h-4 w-4" />
                               Enviar WhatsApp
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => openPetFor(cliente.id)}>
                               <PawPrint className="mr-2 h-4 w-4" />
                               Agregar mascota
                             </DropdownMenuItem>
@@ -263,6 +281,18 @@ export function ClientesPage() {
           )}
         </CardContent>
       </Card>
+
+      <QuickCreateClientDialog
+        open={clientDialogOpen}
+        onOpenChange={setClientDialogOpen}
+        onCreatePet={() => openPetFor(null)}
+      />
+      <QuickCreatePetDialog
+        open={petDialogOpen}
+        onOpenChange={setPetDialogOpen}
+        initialClienteId={petInitialCliente}
+        onCreateClient={() => setClientDialogOpen(true)}
+      />
     </div>
   )
 }

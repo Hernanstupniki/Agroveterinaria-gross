@@ -39,6 +39,9 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { mascotas, historialLuna } from "@/lib/mock-data"
+import { SectionHeader } from "@/components/shared/section-header"
+import { LargePrimaryAction } from "@/components/shared/large-primary-action"
+import { EmptyState } from "@/components/shared/empty-state"
 
 const tipoEventoIcons: Record<string, typeof Activity> = {
   "Consulta": Stethoscope,
@@ -60,11 +63,11 @@ export function HistorialPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedMascota, setSelectedMascota] = useState<string>("1")
   const [tipoFilter, setTipoFilter] = useState<string>("todos")
-  const [expandedItems, setExpandedItems] = useState<number[]>([1])
+  const [expandedItems, setExpandedItems] = useState<(number | string)[]>([1])
 
   const mascotaSeleccionada = mascotas.find(m => m.id === parseInt(selectedMascota))
 
-  const toggleExpanded = (id: number) => {
+  const toggleExpanded = (id: number | string) => {
     setExpandedItems(prev =>
       prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
     )
@@ -72,30 +75,22 @@ export function HistorialPage() {
 
   const filteredHistorial = historialLuna.filter(evento => {
     const matchesTipo = tipoFilter === "todos" || evento.tipo === tipoFilter
-    const matchesSearch = searchTerm === "" || 
-      evento.motivo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (evento.diagnostico?.toLowerCase().includes(searchTerm.toLowerCase()))
+    const matchesSearch = searchTerm === "" ||
+      (evento.motivo?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
+      (evento.diagnostico?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
     return matchesTipo && matchesSearch
   })
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Historial Clínico</h1>
-          <p className="text-muted-foreground">
-            Registro completo de consultas y eventos médicos
-          </p>
-        </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Nueva Consulta
-        </Button>
-      </div>
+    <div className="animate-section-in mx-auto max-w-[1600px] space-y-6">
+      <SectionHeader
+        title="Historia Clínica"
+        description="Registro completo de consultas y eventos médicos del paciente."
+        action={<LargePrimaryAction label="Nueva consulta" icon={Plus} href="/historial?nueva-consulta=1" />}
+      />
 
       {/* Filters */}
-      <Card>
+      <Card className="rounded-2xl">
         <CardContent className="pt-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center">
             <Select value={selectedMascota} onValueChange={setSelectedMascota}>
@@ -177,11 +172,19 @@ export function HistorialPage() {
           <CardDescription>{filteredHistorial.length} registros encontrados</CardDescription>
         </CardHeader>
         <CardContent>
+          {filteredHistorial.length === 0 ? (
+            <EmptyState
+              icon={Activity}
+              title="Sin eventos para esa búsqueda"
+              description="Cambiá el paciente, el tipo de evento o registrá una nueva consulta."
+              action={<LargePrimaryAction label="Nueva consulta" icon={Plus} href="/historial?nueva-consulta=1" />}
+            />
+          ) : (
           <ScrollArea className="h-[600px] pr-4">
             <div className="relative">
               {/* Timeline line */}
               <div className="absolute left-4 top-0 bottom-0 w-px bg-border" />
-              
+
               <div className="space-y-4">
                 {filteredHistorial.map((evento) => {
                   const Icon = tipoEventoIcons[evento.tipo] || Activity
@@ -346,6 +349,7 @@ export function HistorialPage() {
               </div>
             </div>
           </ScrollArea>
+          )}
         </CardContent>
       </Card>
     </div>

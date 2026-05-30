@@ -46,6 +46,11 @@ import {
   Pill,
 } from "lucide-react"
 import { recordatoriosProgramados, mascotas, clientes } from "@/lib/mock-data"
+import { SectionHeader } from "@/components/shared/section-header"
+import { StatusBadge } from "@/components/shared/status-badge"
+import { EmptyState } from "@/components/shared/empty-state"
+import { KpiStrip, type KpiItem } from "@/components/shared/kpi-strip"
+import { CheckCircle, XCircle } from "lucide-react"
 
 const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: React.ReactNode }> = {
   Pendiente: { label: "Pendiente", variant: "secondary", icon: <Clock className="h-3 w-3" /> },
@@ -110,20 +115,24 @@ export default function RecordatoriosScreen() {
   const sentCount = recordatoriosProgramados.filter((r) => r.estado === "Enviado").length
   const scheduledCount = recordatoriosProgramados.filter((r) => r.estado === "Programado").length
 
+  const kpis: KpiItem[] = [
+    { label: "Pendientes", value: pendingCount, icon: Clock, tone: "warning" },
+    { label: "Enviados", value: sentCount, icon: CheckCircle2, tone: "success" },
+    { label: "Programados", value: scheduledCount, icon: Calendar },
+    { label: "Total", value: recordatoriosProgramados.length, icon: MessageSquare },
+  ]
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Recordatorios WhatsApp</h1>
-          <p className="text-muted-foreground">
-            Gestión de mensajes y recordatorios automáticos
-          </p>
-        </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+    <div className="animate-section-in mx-auto max-w-[1600px] space-y-6">
+      <SectionHeader
+        title="Recordatorios WhatsApp"
+        description="Vacunas, controles, cirugías y tratamientos. Listo para conectar con Evolution API cuando exista backend."
+        action={
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-[#25D366] hover:bg-[#128C7E] text-white">
-              <MessageSquare className="mr-2 h-4 w-4" />
-              Nuevo Recordatorio
+            <Button className="h-12 gap-2 rounded-xl bg-[#25D366] px-5 text-base font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#128C7E] hover:shadow-md active:scale-[0.98]">
+              <MessageSquare className="h-5 w-5" />
+              Nuevo recordatorio
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
@@ -229,63 +238,8 @@ export default function RecordatoriosScreen() {
             </div>
           </DialogContent>
         </Dialog>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="rounded-full bg-yellow-100 p-3">
-                <Clock className="h-5 w-5 text-yellow-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Pendientes</p>
-                <p className="text-2xl font-bold">{pendingCount}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="rounded-full bg-[#25D366]/20 p-3">
-                <CheckCircle2 className="h-5 w-5 text-[#25D366]" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Enviados</p>
-                <p className="text-2xl font-bold">{sentCount}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="rounded-full bg-blue-100 p-3">
-                <Calendar className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Programados</p>
-                <p className="text-2xl font-bold">{scheduledCount}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="rounded-full bg-primary/10 p-3">
-                <MessageSquare className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total</p>
-                <p className="text-2xl font-bold">{recordatoriosProgramados.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+        }
+      />
 
       <Tabs defaultValue="mensajes" className="space-y-4">
         <TabsList>
@@ -338,11 +292,18 @@ export default function RecordatoriosScreen() {
           </Card>
 
           {/* Messages Table */}
-          <Card>
+          <Card className="rounded-2xl">
             <CardHeader>
-              <CardTitle>Historial de Mensajes</CardTitle>
+              <CardTitle>Historial de mensajes</CardTitle>
             </CardHeader>
             <CardContent>
+              {filteredReminders.length === 0 ? (
+                <EmptyState
+                  icon={MessageSquare}
+                  title="No hay recordatorios para estos filtros"
+                  description="Ajustá la búsqueda o creá un nuevo recordatorio."
+                />
+              ) : (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -352,6 +313,7 @@ export default function RecordatoriosScreen() {
                       <TableHead>Tipo</TableHead>
                       <TableHead>Mensaje</TableHead>
                       <TableHead>Fecha</TableHead>
+                      <TableHead>Consentimiento</TableHead>
                       <TableHead>Estado</TableHead>
                       <TableHead className="text-right">Acciones</TableHead>
                     </TableRow>
@@ -360,6 +322,8 @@ export default function RecordatoriosScreen() {
                     {filteredReminders.map((reminder) => {
                       const status = statusConfig[reminder.estado] || statusConfig["Programado"]
                       const type = typeConfig[reminder.tipo] || { label: reminder.tipo, icon: <MessageSquare className="h-4 w-4" />, color: "bg-gray-100 text-gray-800" }
+                      const cliente = clientes.find((c) => c.nombre === reminder.destinatario)
+                      const consiente = cliente?.consentimientoWhatsApp ?? false
 
                       return (
                         <TableRow key={reminder.id}>
@@ -376,10 +340,20 @@ export default function RecordatoriosScreen() {
                           <TableCell className="max-w-xs truncate">{reminder.mensaje}</TableCell>
                           <TableCell>{reminder.fechaProgramada}</TableCell>
                           <TableCell>
-                            <Badge variant={status.variant} className="gap-1">
-                              {status.icon}
-                              {status.label}
-                            </Badge>
+                            {consiente ? (
+                              <Badge variant="outline" className="gap-1 border-success/50 text-success">
+                                <CheckCircle className="h-3 w-3" />
+                                Sí
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="gap-1 text-muted-foreground">
+                                <XCircle className="h-3 w-3" />
+                                No
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <StatusBadge status={status.label} />
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-1">
@@ -401,6 +375,7 @@ export default function RecordatoriosScreen() {
                   </TableBody>
                 </Table>
               </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -507,6 +482,12 @@ export default function RecordatoriosScreen() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Secondary metrics — last */}
+      <div className="space-y-3 border-t border-border/70 pt-6">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Resumen</h2>
+        <KpiStrip items={kpis} className="lg:grid-cols-4 xl:grid-cols-4" />
+      </div>
     </div>
   )
 }

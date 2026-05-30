@@ -28,6 +28,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { turnosHoy } from "@/lib/mock-data"
+import { SectionHeader } from "@/components/shared/section-header"
+import { LargePrimaryAction } from "@/components/shared/large-primary-action"
+import { StatusBadge } from "@/components/shared/status-badge"
+import { KpiStrip, type KpiItem } from "@/components/shared/kpi-strip"
 
 const estadoColors: Record<string, string> = {
   "Pendiente": "bg-secondary text-secondary-foreground",
@@ -74,72 +78,23 @@ export function TurnosPage() {
 
   const turnosCompletados = turnosHoy.filter(t => t.estado === "Finalizado").length
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Turnos</h1>
-          <p className="text-muted-foreground">
-            Gestión de agenda y turnos
-          </p>
-        </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Nuevo Turno
-        </Button>
-      </div>
+  const kpis: KpiItem[] = [
+    { label: "Turnos hoy", value: turnosHoy.length, icon: Calendar },
+    { label: "Pendientes", value: turnosActivos, icon: Clock, tone: "warning" },
+    { label: "Finalizados", value: turnosCompletados, icon: Check, tone: "success" },
+    { label: "Profesionales", value: 2, icon: User },
+  ]
 
-      {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardContent className="flex items-center gap-4 pt-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-              <Calendar className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{turnosHoy.length}</p>
-              <p className="text-sm text-muted-foreground">Turnos hoy</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-4 pt-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-warning/10">
-              <Clock className="h-6 w-6 text-warning" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{turnosActivos}</p>
-              <p className="text-sm text-muted-foreground">Pendientes</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-4 pt-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-success/10">
-              <Check className="h-6 w-6 text-success" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{turnosCompletados}</p>
-              <p className="text-sm text-muted-foreground">Finalizados</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-4 pt-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-secondary/50">
-              <User className="h-6 w-6 text-secondary-foreground" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">2</p>
-              <p className="text-sm text-muted-foreground">Profesionales</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+  return (
+    <div className="animate-section-in mx-auto max-w-[1600px] space-y-6">
+      <SectionHeader
+        title="Turnos"
+        description="Gestión de agenda y turnos. Si el turno es una cirugía, se conecta con la sección Cirugías."
+        action={<LargePrimaryAction label="Nuevo turno" icon={Plus} href="/turnos?nuevo=1" />}
+      />
 
       {/* Calendar Navigation */}
-      <Card>
+      <Card className="rounded-2xl">
         <CardContent className="pt-6">
           <div className="flex items-center justify-between mb-4">
             <Button variant="ghost" size="icon">
@@ -227,9 +182,7 @@ export function TurnosPage() {
                       </Badge>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge className={estadoColors[turno.estado]}>
-                        {turno.estado}
-                      </Badge>
+                      <StatusBadge status={turno.estado} />
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -320,6 +273,12 @@ export function TurnosPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Secondary metrics — last */}
+      <div className="space-y-3 border-t border-border/70 pt-6">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Resumen</h2>
+        <KpiStrip items={kpis} className="lg:grid-cols-4 xl:grid-cols-4" />
+      </div>
     </div>
   )
 }

@@ -43,13 +43,11 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { vacunasClinicas, mascotas, clientes } from "@/lib/mock-data"
-
-const estadoColors: Record<string, string> = {
-  Aplicada: "bg-success text-success-foreground",
-  Próxima: "bg-primary text-primary-foreground",
-  Pendiente: "bg-secondary text-secondary-foreground",
-  Vencida: "bg-destructive text-destructive-foreground",
-}
+import { SectionHeader } from "@/components/shared/section-header"
+import { LargePrimaryAction } from "@/components/shared/large-primary-action"
+import { StatusBadge } from "@/components/shared/status-badge"
+import { EmptyState } from "@/components/shared/empty-state"
+import { KpiStrip, type KpiItem } from "@/components/shared/kpi-strip"
 
 function formatDate(date?: string | null) {
   if (!date) return "-"
@@ -93,27 +91,20 @@ export function VacunasPage() {
 
   const vacunasVencidas = vacunasClinicas.filter((vacuna) => vacuna.estado === "Vencida")
 
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Vacunas</h1>
-          <p className="text-muted-foreground">
-            Control global de vacunación y recordatorios WhatsApp por paciente
-          </p>
-        </div>
-        <Button className="bg-primary hover:bg-primary/90">
-          <Plus className="mr-2 h-4 w-4" />
-          Registrar vacuna
-        </Button>
-      </div>
+  const kpis: KpiItem[] = [
+    { label: "Aplicadas", value: stats.aplicadas, icon: Check, tone: "success" },
+    { label: "Próximas", value: stats.proximas, icon: Clock },
+    { label: "Vencidas", value: stats.vencidas, icon: AlertTriangle, tone: "critical" },
+    { label: "Pendientes", value: stats.pendientes, icon: Syringe, tone: "warning" },
+  ]
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <StatCard icon={Check} label="Aplicadas" value={stats.aplicadas} tone="success" />
-        <StatCard icon={Clock} label="Próximas" value={stats.proximas} tone="primary" />
-        <StatCard icon={AlertTriangle} label="Vencidas" value={stats.vencidas} tone="danger" />
-        <StatCard icon={Syringe} label="Pendientes" value={stats.pendientes} tone="secondary" />
-      </div>
+  return (
+    <div className="animate-section-in mx-auto max-w-[1600px] space-y-6">
+      <SectionHeader
+        title="Vacunas"
+        description="Control global de vacunación y recordatorios WhatsApp por paciente. El calendario se adapta a la etapa de vida (cachorro, adulto, senior)."
+        action={<LargePrimaryAction label="Aplicar vacuna" icon={Plus} tone="green" href="/vacunas?nueva=1" />}
+      />
 
       {vacunasVencidas.length > 0 && (
         <Card className="border-destructive/50 bg-destructive/5">
@@ -231,6 +222,14 @@ export function VacunasPage() {
             </TabsList>
 
             <TabsContent value={activeTab}>
+              {filteredVacunas.length === 0 ? (
+                <EmptyState
+                  icon={Syringe}
+                  title="No hay vacunas para estos filtros"
+                  description="Ajustá los filtros o registrá una nueva aplicación."
+                  action={<LargePrimaryAction label="Aplicar vacuna" icon={Plus} tone="green" href="/vacunas?nueva=1" />}
+                />
+              ) : (
               <div className="rounded-md border">
                 <Table>
                   <TableHeader>
@@ -268,7 +267,7 @@ export function VacunasPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge className={estadoColors[vacuna.estado]}>{vacuna.estado}</Badge>
+                          <StatusBadge status={vacuna.estado} />
                         </TableCell>
                         <TableCell className="hidden md:table-cell">{formatDate(vacuna.fechaAplicada)}</TableCell>
                         <TableCell className="hidden lg:table-cell">
@@ -321,43 +320,17 @@ export function VacunasPage() {
                   </TableBody>
                 </Table>
               </div>
+              )}
             </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Secondary metrics — last */}
+      <div className="space-y-3 border-t border-border/70 pt-6">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Resumen</h2>
+        <KpiStrip items={kpis} className="lg:grid-cols-4 xl:grid-cols-4" />
+      </div>
     </div>
-  )
-}
-
-function StatCard({
-  icon: Icon,
-  label,
-  value,
-  tone,
-}: {
-  icon: typeof Syringe
-  label: string
-  value: number
-  tone: "success" | "primary" | "danger" | "secondary"
-}) {
-  const toneClass = {
-    success: "bg-success/10 text-success",
-    primary: "bg-primary/10 text-primary",
-    danger: "bg-destructive/10 text-destructive",
-    secondary: "bg-secondary/20 text-secondary-foreground",
-  }[tone]
-
-  return (
-    <Card>
-      <CardContent className="flex items-center gap-4 pt-6">
-        <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${toneClass}`}>
-          <Icon className="h-6 w-6" />
-        </div>
-        <div>
-          <p className="text-2xl font-bold">{value}</p>
-          <p className="text-sm text-muted-foreground">{label}</p>
-        </div>
-      </CardContent>
-    </Card>
   )
 }

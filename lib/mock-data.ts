@@ -496,7 +496,34 @@ export const actividadReciente = [
   },
 ]
 
-export const historialLuna = [
+// Legacy per-pet clinical history (heterogeneous events). All variant fields
+// are optional so consumers can read any event shape type-safely.
+export interface HistorialEventoLegacy {
+  id: number | string
+  fecha: string
+  tipo: string
+  veterinario: string
+  motivo?: string
+  sintomas?: string
+  diagnostico?: string
+  tratamiento?: string
+  peso?: string
+  observaciones?: string
+  proximoControl?: string
+  archivo?: string | null
+  vacuna?: string
+  lote?: string
+  laboratorio?: string
+  proximaVacuna?: string
+  procedimiento?: string
+  anestesia?: string
+  duracion?: string
+  complicaciones?: string
+  postoperatorio?: string
+  medicacion?: { nombre: string; dosis: string; frecuencia: string; duracion: string }[]
+}
+
+export const historialLuna: HistorialEventoLegacy[] = [
   {
     id: 1,
     fecha: "2024-01-10",

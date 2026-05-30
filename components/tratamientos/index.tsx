@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import {
   Search,
@@ -34,6 +34,9 @@ import { LargePrimaryAction } from "@/components/shared/large-primary-action"
 import { StatusBadge } from "@/components/shared/status-badge"
 import { KpiStrip, type KpiItem } from "@/components/shared/kpi-strip"
 import { EmptyState } from "@/components/shared/empty-state"
+import { QuickCreateClientDialog } from "@/components/shared/quick-create-client-dialog"
+import { QuickCreatePetDialog } from "@/components/shared/quick-create-pet-dialog"
+import { NewTreatmentDialog } from "./new-treatment-dialog"
 
 const prioridadColors: Record<string, string> = {
   "Alta": "bg-destructive text-destructive-foreground",
@@ -44,6 +47,18 @@ const prioridadColors: Record<string, string> = {
 export function TratamientosPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [activeTab, setActiveTab] = useState("tratamientos")
+  const [treatmentDialogOpen, setTreatmentDialogOpen] = useState(false)
+  const [clientDialogOpen, setClientDialogOpen] = useState(false)
+  const [petDialogOpen, setPetDialogOpen] = useState(false)
+  const [petInitialCliente, setPetInitialCliente] = useState<number | null>(null)
+
+  // Auto-open the new-treatment flow when arriving from Principal (?nuevo=1).
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    if (new URLSearchParams(window.location.search).get("nuevo") === "1") {
+      setTreatmentDialogOpen(true)
+    }
+  }, [])
 
   const activos = tratamientosActivos.filter((t) => t.estado === "Activo").length
   const controlesPend = controlesPendientes.length
@@ -73,7 +88,7 @@ export function TratamientosPage() {
       <SectionHeader
         title="Tratamientos"
         description="Iniciá, controlá o finalizá tratamientos y reutilizá plantillas clínicas."
-        action={<LargePrimaryAction label="Nuevo tratamiento" icon={Plus} />}
+        action={<LargePrimaryAction label="Nuevo tratamiento" icon={Plus} onClick={() => setTreatmentDialogOpen(true)} />}
       />
 
       {/* Search */}
@@ -105,7 +120,7 @@ export function TratamientosPage() {
               icon={ClipboardList}
               title="Sin tratamientos para esa búsqueda"
               description="Probá con otro término o iniciá un nuevo tratamiento."
-              action={<LargePrimaryAction label="Nuevo tratamiento" icon={Plus} />}
+              action={<LargePrimaryAction label="Nuevo tratamiento" icon={Plus} onClick={() => setTreatmentDialogOpen(true)} />}
             />
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -311,6 +326,34 @@ export function TratamientosPage() {
         </h2>
         <KpiStrip items={kpis} className="lg:grid-cols-5 xl:grid-cols-5" />
       </div>
+
+      <NewTreatmentDialog
+        open={treatmentDialogOpen}
+        onOpenChange={setTreatmentDialogOpen}
+        onCreateClient={() => {
+          setTreatmentDialogOpen(false)
+          setClientDialogOpen(true)
+        }}
+        onCreatePet={(clienteId) => {
+          setTreatmentDialogOpen(false)
+          setPetInitialCliente(clienteId)
+          setPetDialogOpen(true)
+        }}
+      />
+      <QuickCreateClientDialog
+        open={clientDialogOpen}
+        onOpenChange={setClientDialogOpen}
+        onCreatePet={() => {
+          setPetInitialCliente(null)
+          setPetDialogOpen(true)
+        }}
+      />
+      <QuickCreatePetDialog
+        open={petDialogOpen}
+        onOpenChange={setPetDialogOpen}
+        initialClienteId={petInitialCliente}
+        onCreateClient={() => setClientDialogOpen(true)}
+      />
     </div>
   )
 }

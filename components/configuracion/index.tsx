@@ -23,11 +23,14 @@ import {
   Mail,
   Save,
   Users,
-  CreditCard,
-  FileText,
-  Printer,
+  Stethoscope,
+  Syringe,
+  Scissors,
+  FlaskConical,
 } from "lucide-react"
-import { profesionales } from "@/lib/mock-data"
+import { profesionales, configuracion } from "@/lib/mock-data"
+import { SectionHeader } from "@/components/shared/section-header"
+import { LargePrimaryAction } from "@/components/shared/large-primary-action"
 
 export default function ConfiguracionScreen() {
   const [isSaving, setIsSaving] = useState(false)
@@ -38,19 +41,18 @@ export default function ConfiguracionScreen() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Configuración</h1>
-          <p className="text-muted-foreground">
-            Administre la configuración del sistema
-          </p>
-        </div>
-        <Button className="bg-primary hover:bg-primary/90" onClick={handleSave} disabled={isSaving}>
-          <Save className="mr-2 h-4 w-4" />
-          {isSaving ? "Guardando..." : "Guardar Cambios"}
-        </Button>
-      </div>
+    <div className="animate-section-in mx-auto max-w-[1600px] space-y-6">
+      <SectionHeader
+        title="Configuración"
+        description="Administrá el equipo, los datos clínicos y la seguridad del sistema."
+        action={
+          <LargePrimaryAction
+            label={isSaving ? "Guardando..." : "Guardar cambios"}
+            icon={Save}
+            onClick={handleSave}
+          />
+        }
+      />
 
       <Tabs defaultValue="usuarios" className="space-y-4">
         <TabsList className="flex-wrap">
@@ -58,13 +60,13 @@ export default function ConfiguracionScreen() {
             <Users className="mr-2 h-4 w-4" />
             Usuarios
           </TabsTrigger>
+          <TabsTrigger value="clinica">
+            <Stethoscope className="mr-2 h-4 w-4" />
+            Clínica
+          </TabsTrigger>
           <TabsTrigger value="notificaciones">
             <Bell className="mr-2 h-4 w-4" />
             Notificaciones
-          </TabsTrigger>
-          <TabsTrigger value="facturacion">
-            <CreditCard className="mr-2 h-4 w-4" />
-            Facturación
           </TabsTrigger>
           <TabsTrigger value="seguridad">
             <Shield className="mr-2 h-4 w-4" />
@@ -175,10 +177,10 @@ export default function ConfiguracionScreen() {
                 <Separator />
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium">Stock bajo</p>
-                    <p className="text-sm text-muted-foreground">Alertar cuando el stock esté bajo</p>
+                    <p className="font-medium">Controles pendientes</p>
+                    <p className="text-sm text-muted-foreground">Alertar sobre controles clínicos próximos</p>
                   </div>
-                  <Switch />
+                  <Switch defaultChecked />
                 </div>
               </CardContent>
             </Card>
@@ -224,110 +226,43 @@ export default function ConfiguracionScreen() {
           </div>
         </TabsContent>
 
-        <TabsContent value="facturacion" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Datos de Facturación
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Punto de Venta</Label>
-                  <Input defaultValue="00001" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Condición frente al IVA</Label>
-                  <Select defaultValue="ri">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ri">Responsable Inscripto</SelectItem>
-                      <SelectItem value="mono">Monotributista</SelectItem>
-                      <SelectItem value="exento">Exento</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Inicio de Actividades</Label>
-                  <Input type="date" defaultValue="2015-03-15" />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Factura Electrónica</p>
-                    <p className="text-sm text-muted-foreground">AFIP Webservice</p>
-                  </div>
-                  <Badge className="bg-green-600">Conectado</Badge>
-                </div>
-              </CardContent>
-            </Card>
+        <TabsContent value="clinica" className="space-y-4">
+          <Card className="rounded-2xl">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Stethoscope className="h-5 w-5" />
+                Datos de la clínica
+              </CardTitle>
+              <CardDescription>Información general de Agroveterinaria Gross.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Nombre</Label>
+                <Input defaultValue={configuracion.veterinaria.nombre} />
+              </div>
+              <div className="space-y-2">
+                <Label>Teléfono</Label>
+                <Input defaultValue={configuracion.veterinaria.telefono} />
+              </div>
+              <div className="space-y-2">
+                <Label>Dirección</Label>
+                <Input defaultValue={configuracion.veterinaria.direccion} />
+              </div>
+              <div className="space-y-2">
+                <Label>Email</Label>
+                <Input defaultValue={configuracion.veterinaria.email} />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label>Horarios de atención</Label>
+                <Input defaultValue={configuracion.veterinaria.horarios} />
+              </div>
+            </CardContent>
+          </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Printer className="h-5 w-5" />
-                  Impresión
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Impresora Predeterminada</Label>
-                  <Select defaultValue="thermal">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="thermal">Impresora Térmica (Tickets)</SelectItem>
-                      <SelectItem value="laser">Impresora Láser (A4)</SelectItem>
-                      <SelectItem value="pdf">Guardar como PDF</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Imprimir logo en tickets</p>
-                    <p className="text-sm text-muted-foreground">Incluir logo de la clínica</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Imprimir automáticamente</p>
-                    <p className="text-sm text-muted-foreground">Al finalizar cada venta</p>
-                  </div>
-                  <Switch />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="md:col-span-2">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CreditCard className="h-5 w-5" />
-                  Métodos de Pago
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4 md:grid-cols-3">
-                  {[
-                    { name: "Efectivo", enabled: true },
-                    { name: "Tarjeta de Débito", enabled: true },
-                    { name: "Tarjeta de Crédito", enabled: true },
-                    { name: "Transferencia Bancaria", enabled: true },
-                    { name: "Mercado Pago", enabled: false },
-                    { name: "Cuenta Corriente", enabled: true },
-                  ].map((method) => (
-                    <div key={method.name} className="flex items-center justify-between rounded-lg border p-3">
-                      <span className="text-sm font-medium">{method.name}</span>
-                      <Switch defaultChecked={method.enabled} />
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+          <div className="grid gap-4 md:grid-cols-3">
+            <TypesCard icon={Syringe} title="Tipos de vacunas" items={configuracion.tiposVacunas} />
+            <TypesCard icon={FlaskConical} title="Tipos de estudios" items={configuracion.tiposEstudios} />
+            <TypesCard icon={Scissors} title="Tipos de cirugías" items={configuracion.tiposCirugia} />
           </div>
         </TabsContent>
 
@@ -406,5 +341,35 @@ export default function ConfiguracionScreen() {
         </TabsContent>
       </Tabs>
     </div>
+  )
+}
+
+function TypesCard({
+  icon: Icon,
+  title,
+  items,
+}: {
+  icon: typeof Syringe
+  title: string
+  items: string[]
+}) {
+  return (
+    <Card className="rounded-2xl">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Icon className="h-4 w-4 text-primary" />
+          {title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-wrap gap-2">
+          {items.map((item) => (
+            <Badge key={item} variant="secondary" className="rounded-lg">
+              {item}
+            </Badge>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   )
 }

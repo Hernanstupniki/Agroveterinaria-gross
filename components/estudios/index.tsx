@@ -45,14 +45,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { estudiosArchivos } from "@/lib/mock-data"
-
-const estadoColors: Record<string, string> = {
-  "Solicitado": "bg-muted text-muted-foreground",
-  "Pendiente de resultado": "bg-warning text-warning-foreground",
-  "Resultado recibido": "bg-success text-success-foreground",
-  "Informado al dueño": "bg-primary text-primary-foreground",
-  "Archivado en historial": "bg-secondary text-secondary-foreground",
-}
+import { SectionHeader } from "@/components/shared/section-header"
+import { LargePrimaryAction } from "@/components/shared/large-primary-action"
+import { StatusBadge } from "@/components/shared/status-badge"
+import { EmptyState } from "@/components/shared/empty-state"
+import { KpiStrip, type KpiItem } from "@/components/shared/kpi-strip"
 
 const tipoIcons: Record<string, typeof FileText> = {
   "Análisis de sangre": Microscope,
@@ -81,72 +78,23 @@ export function EstudiosPage() {
   const pendientes = estudiosArchivos.filter(e => e.estado === "Pendiente de resultado").length
   const recibidos = estudiosArchivos.filter(e => e.estado === "Resultado recibido").length
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Estudios y Archivos</h1>
-          <p className="text-muted-foreground">
-            Gestión de estudios médicos y archivos adjuntos
-          </p>
-        </div>
-        <Button>
-          <Upload className="mr-2 h-4 w-4" />
-          Cargar Archivo
-        </Button>
-      </div>
+  const kpis: KpiItem[] = [
+    { label: "Total archivos", value: estudiosArchivos.length, icon: FileText },
+    { label: "Pendientes", value: pendientes, icon: Microscope, tone: "warning" },
+    { label: "Resultados recibidos", value: recibidos, icon: FileCheck, tone: "success" },
+    { label: "Con archivo", value: estudiosArchivos.filter(e => e.archivo).length, icon: FileImage },
+  ]
 
-      {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardContent className="flex items-center gap-4 pt-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-              <FileText className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{estudiosArchivos.length}</p>
-              <p className="text-sm text-muted-foreground">Total archivos</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-4 pt-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-warning/10">
-              <Microscope className="h-6 w-6 text-warning" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{pendientes}</p>
-              <p className="text-sm text-muted-foreground">Pendientes</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-4 pt-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-success/10">
-              <FileCheck className="h-6 w-6 text-success" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{recibidos}</p>
-              <p className="text-sm text-muted-foreground">Resultados recibidos</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-4 pt-6">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
-              <FileImage className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{estudiosArchivos.filter(e => e.archivo).length}</p>
-              <p className="text-sm text-muted-foreground">Con archivo</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+  return (
+    <div className="animate-section-in mx-auto max-w-[1600px] space-y-6">
+      <SectionHeader
+        title="Estudios y Archivos"
+        description="Adjuntá análisis, radiografías o archivos. Cada estudio queda en la historia clínica."
+        action={<LargePrimaryAction label="Cargar estudio" icon={Upload} tone="green" href="/estudios?nuevo=1" />}
+      />
 
       {/* Filters */}
-      <Card>
+      <Card className="rounded-2xl">
         <CardContent className="pt-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center">
             <div className="relative flex-1">
@@ -189,12 +137,20 @@ export function EstudiosPage() {
       </Card>
 
       {/* Table */}
-      <Card>
+      <Card className="rounded-2xl">
         <CardHeader>
-          <CardTitle>Listado de Estudios</CardTitle>
+          <CardTitle>Listado de estudios</CardTitle>
           <CardDescription>{filteredEstudios.length} registros encontrados</CardDescription>
         </CardHeader>
         <CardContent>
+          {filteredEstudios.length === 0 ? (
+            <EmptyState
+              icon={FileText}
+              title="No hay estudios para estos filtros"
+              description="Ajustá la búsqueda o cargá un nuevo estudio."
+              action={<LargePrimaryAction label="Cargar estudio" icon={Upload} tone="green" href="/estudios?nuevo=1" />}
+            />
+          ) : (
           <div className="rounded-md border">
             <Table>
               <TableHeader>
@@ -245,9 +201,7 @@ export function EstudiosPage() {
                         {estudio.profesional}
                       </TableCell>
                       <TableCell>
-                        <Badge className={estadoColors[estudio.estado]}>
-                          {estudio.estado.split(' ').slice(0, 2).join(' ')}
-                        </Badge>
+                        <StatusBadge status={estudio.estado} />
                       </TableCell>
                       <TableCell>
                         {estudio.archivo ? (
@@ -289,8 +243,15 @@ export function EstudiosPage() {
               </TableBody>
             </Table>
           </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* Secondary metrics — last */}
+      <div className="space-y-3 border-t border-border/70 pt-6">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Resumen</h2>
+        <KpiStrip items={kpis} className="lg:grid-cols-4 xl:grid-cols-4" />
+      </div>
     </div>
   )
 }
