@@ -24,20 +24,20 @@ export function Topbar() {
   const unreadCount = notifications.filter((notification) => notification.unread).length
 
   return (
-    <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b border-border bg-card px-4 lg:px-6">
+    <header className="sticky top-0 z-40 flex min-h-20 items-center gap-5 border-b border-border bg-card px-5 py-3 lg:px-8">
       <div className="w-10 lg:hidden" />
 
-      <div className="relative max-w-md flex-1">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <div className="relative max-w-xl flex-1">
+        <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           placeholder="Buscar mascota, cliente, turno..."
-          className="border-0 bg-muted pl-9"
+          className="h-12 rounded-xl border-0 bg-muted pl-11"
         />
       </div>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="relative">
+          <Button variant="ghost" size="icon" className="relative h-11 w-11 rounded-xl">
             <Bell className="h-5 w-5" />
             {unreadCount > 0 && (
               <Badge className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary p-0 text-[10px]">
@@ -74,7 +74,7 @@ export function Topbar() {
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="flex items-center gap-2 px-2">
+          <Button variant="ghost" className="flex h-12 shrink-0 items-center gap-3 rounded-xl px-3">
             <Avatar className="h-8 w-8">
               <AvatarImage src="/placeholder-user.jpg" />
               <AvatarFallback className="bg-primary text-sm text-primary-foreground">DG</AvatarFallback>

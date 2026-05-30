@@ -44,7 +44,7 @@ const primaryActions = [
   },
   {
     title: "Cirugías",
-    description: "Agendar o registrar una cirugia ya programada.",
+    description: "Agendar o registrar una cirugía ya programada.",
     href: "/cirugias",
     icon: Scissors,
     className: "border-primary/20 bg-card hover:border-primary/50 hover:bg-primary/5",
@@ -83,8 +83,8 @@ export function Dashboard() {
                     <p className="text-sm leading-relaxed opacity-80">{action.description}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 text-sm font-semibold">
-                  Abrir
+                <div className="mt-auto flex h-14 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-center text-base font-bold leading-tight text-primary-foreground shadow-sm">
+                  {action.title}
                   <ClipboardPlus className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </div>
               </CardContent>
@@ -96,7 +96,7 @@ export function Dashboard() {
               <NewClientDialog
                 key={action.title}
                 trigger={
-                  <button type="button" className="group block min-h-[210px] text-left">
+                  <button type="button" className="group block min-h-[210px] w-full text-left">
                     {card}
                   </button>
                 }

@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useMemo, useState } from "react"
 import type { LucideIcon } from "lucide-react"
-import { Calendar, CheckCircle, ClipboardList, Pause, Pill, Plus, Settings, Stethoscope } from "lucide-react"
+import { Calendar, CheckCircle, ClipboardList, Pause, Pill, Plus, Settings, Stethoscope, XCircle } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -18,11 +18,18 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { ClinicalActionFlow } from "@/components/clinical/action-flow"
+import { controlFrequencyPresets, durationPresets, reminderPresets } from "@/lib/clinical-presets"
 import { clientes, mascotas } from "@/lib/mock-data"
 import {
   activeTreatmentsSeed,
+  buildActiveTreatmentView,
+  calculateTreatmentEndDate,
   calculateNextTreatmentControl,
   formatControlFrequency,
+  generateTreatmentControls,
+  getTreatmentDurationPreset,
+  getTreatmentFrequencyPreset,
+  getTreatmentReminderPreset,
   treatmentProtocols,
   type TreatmentStatus,
 } from "@/lib/treatment-workflow"
@@ -31,6 +38,7 @@ const statusStyles: Record<TreatmentStatus, string> = {
   activo: "bg-success text-success-foreground",
   pausado: "bg-warning text-warning-foreground",
   finalizado: "bg-muted text-muted-foreground",
+  cancelado: "bg-destructive text-destructive-foreground",
 }
 
 function formatDate(date?: string | null) {
@@ -112,6 +120,14 @@ function TreatmentRegistrationForm({
     () => calculateNextTreatmentControl(startedAt, selectedProtocolId),
     [startedAt, selectedProtocolId],
   )
+  const estimatedEndDate = useMemo(
+    () => calculateTreatmentEndDate(startedAt, selectedProtocolId),
+    [startedAt, selectedProtocolId],
+  )
+  const generatedControls = useMemo(
+    () => generateTreatmentControls(startedAt, selectedProtocolId),
+    [startedAt, selectedProtocolId],
+  )
   const canSave = Boolean(client.id && pet.id && selectedProtocol && startedAt)
 
   return (
@@ -164,14 +180,28 @@ function TreatmentRegistrationForm({
               <CardDescription>Basado en el protocolo {selectedProtocol.name}.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3 md:grid-cols-3">
-              <Info label="Duracion estimada" value={selectedProtocol.estimatedDuration} />
-              <Info label="Frecuencia de control" value={formatControlFrequency(selectedProtocol.controlFrequencyValue, selectedProtocol.controlFrequencyUnit)} />
+              <Info label="Duracion estimada" value={getTreatmentDurationPreset(selectedProtocol).label} />
+              <Info
+                label="Fecha final"
+                value={selectedProtocol.durationType === "lifetime" ? "Sin fecha final automatica" : formatDate(estimatedEndDate)}
+              />
+              <Info label="Frecuencia de control" value={formatControlFrequency(selectedProtocol)} />
+              <Info label="Recordatorio" value={getTreatmentReminderPreset(selectedProtocol).label} />
               <Info label="Proximo control" value={formatDate(nextControl)} />
               <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 md:col-span-3">
                 <p className="font-medium text-primary">Historia clinica y seguimiento activo</p>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Al guardar, el registro queda preparado para la historia clinica de {pet.nombre}, actividad del dia y controles futuros.
                 </p>
+                <div className="mt-3 grid gap-2 md:grid-cols-3">
+                  {generatedControls.slice(0, 6).map((control) => (
+                    <Info
+                      key={control.id}
+                      label={control.title}
+                      value={`Control ${formatDate(control.dueDate)} / aviso ${formatDate(control.reminderDate)}`}
+                    />
+                  ))}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -214,9 +244,10 @@ export function ActiveTreatments() {
       <CardContent>
         <div className="grid gap-3 xl:grid-cols-2">
           {activeTreatmentsSeed.map((treatment) => {
+            const treatmentView = buildActiveTreatmentView(treatment)
             const client = clientes.find((item) => item.id === treatment.clientId)
             const pet = mascotas.find((item) => item.id === treatment.petId)
-            const protocol = treatmentProtocols.find((item) => item.id === treatment.protocolId)
+            const protocol = treatmentView.protocol
 
             return (
               <article key={treatment.id} className="rounded-xl border bg-card p-4">
@@ -231,7 +262,7 @@ export function ActiveTreatments() {
                       {client?.nombre} - {pet?.nombre}
                     </p>
                   </div>
-                  <Badge variant="outline">Control {formatDate(treatment.nextControlAt)}</Badge>
+                  <Badge variant="outline">Control {formatDate(treatmentView.nextControlAt)}</Badge>
                 </div>
 
                 <div className="mt-4 grid gap-2 text-sm md:grid-cols-3">
@@ -239,22 +270,27 @@ export function ActiveTreatments() {
                   <Info label="Mascota" value={pet?.nombre || "-"} />
                   <Info label="Inicio" value={formatDate(treatment.startedAt)} />
                   <Info label="Estado" value={treatment.status} />
-                  <Info label="Proximo control" value={formatDate(treatment.nextControlAt)} />
+                  <Info label="Proximo control" value={formatDate(treatmentView.nextControlAt)} />
+                  <Info label="Recordatorio" value={formatDate(treatmentView.generatedReminders[0]?.reminderDate)} />
                   <Info label="Observaciones" value={treatment.observations} />
                 </div>
 
-                <div className="mt-4 grid gap-2 sm:grid-cols-3">
-                  <Button className="h-12 rounded-xl bg-primary font-bold hover:bg-primary/90">
+                <div className="mt-4 grid gap-2 sm:grid-cols-4">
+                  <Button className="h-12 rounded-xl bg-primary px-3 text-center font-bold leading-tight hover:bg-primary/90">
                     <Plus className="mr-2 h-4 w-4" />
                     Actualizar avance
                   </Button>
-                  <Button className="h-12 rounded-xl bg-primary font-bold hover:bg-primary/90">
+                  <Button className="h-12 rounded-xl bg-primary px-3 text-center font-bold leading-tight hover:bg-primary/90">
                     <CheckCircle className="mr-2 h-4 w-4" />
                     Finalizar
                   </Button>
-                  <Button className="h-12 rounded-xl bg-primary font-bold hover:bg-primary/90">
+                  <Button className="h-12 rounded-xl bg-primary px-3 text-center font-bold leading-tight hover:bg-primary/90">
                     <Pause className="mr-2 h-4 w-4" />
                     Pausar
+                  </Button>
+                  <Button variant="destructive" className="h-12 rounded-xl px-3 text-center font-bold leading-tight">
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Cancelar
                   </Button>
                 </div>
               </article>
@@ -282,9 +318,9 @@ export function TreatmentProtocols() {
         <div className="rounded-xl border border-primary/25 bg-primary/5 p-4">
           <div className="grid gap-4 lg:grid-cols-2">
             <Field label="Nombre del protocolo" placeholder="Ej: Leishmaniasis" />
-            <Field label="Duracion estimada" placeholder="Ej: 60 dias / segun evolucion" />
-            <Field label="Frecuencia de controles" placeholder="Ej: cada 2 semanas" />
-            <Field label="Recordatorios" placeholder="Ej: preparar aviso 48 hs antes" />
+            <PresetSelect label="Duracion estimada" placeholder="Seleccionar duracion" items={durationPresets} />
+            <PresetSelect label="Frecuencia de controles" placeholder="Seleccionar frecuencia" items={controlFrequencyPresets} />
+            <PresetSelect label="Recordatorio" placeholder="Seleccionar recordatorio" items={reminderPresets} />
           </div>
           <div className="mt-4 space-y-2">
             <Label>Indicaciones</Label>
@@ -307,9 +343,9 @@ export function TreatmentProtocols() {
               </div>
               <p className="mt-2 text-sm text-muted-foreground">{protocol.description}</p>
               <div className="mt-3 grid gap-2 text-sm md:grid-cols-2">
-                <Info label="Duracion" value={protocol.estimatedDuration} />
-                <Info label="Controles" value={formatControlFrequency(protocol.controlFrequencyValue, protocol.controlFrequencyUnit)} />
-                <Info label="Recordatorios" value={protocol.reminders} />
+                <Info label="Duracion" value={getTreatmentDurationPreset(protocol).label} />
+                <Info label="Controles" value={getTreatmentFrequencyPreset(protocol).label} />
+                <Info label="Recordatorios" value={getTreatmentReminderPreset(protocol).label} />
                 <Info label="Estados" value={protocol.possibleStates.join(", ")} />
               </div>
               <p className="mt-3 rounded-md bg-muted/35 p-3 text-sm text-muted-foreground">{protocol.indications}</p>
@@ -348,7 +384,7 @@ function ActionCard({
             </div>
           </div>
           <div className="mt-auto flex h-14 items-center justify-center rounded-xl bg-primary px-4 text-base font-bold text-primary-foreground group-hover:bg-primary/90">
-            {buttonLabel}
+            <span className="text-center leading-tight">{buttonLabel}</span>
           </div>
         </CardContent>
       </Card>
@@ -375,11 +411,39 @@ function Field({
   )
 }
 
+function PresetSelect({
+  label,
+  placeholder,
+  items,
+}: {
+  label: string
+  placeholder: string
+  items: { id: string; label: string }[]
+}) {
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <Select defaultValue={items[0]?.id}>
+        <SelectTrigger className="h-12 bg-background">
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          {items.map((item) => (
+            <SelectItem key={item.id} value={item.id}>
+              {item.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+}
+
 function Info({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-md bg-muted/35 px-3 py-2">
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="truncate font-medium">{value}</p>
+      <p className="break-words font-medium leading-tight">{value}</p>
     </div>
   )
 }

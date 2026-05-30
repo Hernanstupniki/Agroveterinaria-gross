@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { ClinicalActionFlow } from "@/components/clinical/action-flow"
+import { durationPresets, reminderPresets } from "@/lib/clinical-presets"
 import { clientes, mascotas } from "@/lib/mock-data"
 import {
   buildPetVaccinationHistory,
@@ -37,7 +38,9 @@ import {
   calculateNextDose,
   formatInterval,
   getActiveVaccinesForSpecies,
+  getDoseIntervalPreset,
   getDosesForVaccine,
+  getSchemeReminderPreset,
   vaccineDoses,
   vaccineSchemes,
 } from "@/lib/vaccine-workflow"
@@ -252,6 +255,10 @@ function VaccineRegistrationForm({
                   label="Proxima dosis"
                   value={nextDose ? `${nextDose.dose.name} - ${formatDate(nextDose.estimatedAt)}` : "Esquema completo"}
                 />
+                <Info
+                  label="Recordatorio"
+                  value={nextDose?.reminder.reminderDate ? formatDate(nextDose.reminder.reminderDate) : "Sin fecha calculable"}
+                />
                 <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 md:col-span-3">
                   <div className="flex items-center gap-2 font-medium text-primary">
                     <Bell className="h-4 w-4" />
@@ -339,7 +346,7 @@ export function PendingVaccines() {
                   <Info label="Mascota" value={item.pet.nombre} />
                   <Info label="Fecha estimada" value={formatDate(item.estimatedAt)} />
                   <Info label="Estado" value={item.status} />
-                  <Info label="Recordatorio" value={item.reminder.status === "preparado" ? "Preparado" : item.reminder.status} />
+                  <Info label="Recordatorio" value={item.reminder.reminderDate ? formatDate(item.reminder.reminderDate) : item.reminder.status} />
                   <Info label="Origen" value="Calendario demo" />
                 </div>
               </article>
@@ -369,9 +376,29 @@ export function VaccineSchemes() {
         <div className="rounded-xl border border-primary/25 bg-primary/5 p-4">
           <div className="grid gap-4 lg:grid-cols-2">
             <Field label="Nombre de vacuna" placeholder="Ej: Vacuna X" />
-            <Field label="Especie / tipo animal" placeholder="Perro, gato u otro" />
-            <Field label="Cantidad de dosis" placeholder="Ej: 2" />
-            <Field label="Estado del esquema" placeholder="Activo / Inactivo" />
+            <PresetSelect
+              label="Especie / tipo animal"
+              placeholder="Seleccionar especie"
+              items={["Perro", "Gato", "Otro"].map((label) => ({ id: label, label }))}
+            />
+            <PresetSelect
+              label="Intervalo entre dosis"
+              placeholder="Seleccionar intervalo"
+              items={durationPresets.filter((preset) => preset.unit !== "lifetime")}
+            />
+            <PresetSelect
+              label="Recordatorio"
+              placeholder="Seleccionar recordatorio"
+              items={reminderPresets}
+            />
+            <PresetSelect
+              label="Estado del esquema"
+              placeholder="Seleccionar estado"
+              items={[
+                { id: "activo", label: "Activo" },
+                { id: "inactivo", label: "Inactivo" },
+              ]}
+            />
           </div>
           <div className="mt-4 space-y-2">
             <Label>Observaciones</Label>
@@ -386,6 +413,7 @@ export function VaccineSchemes() {
         <div className="grid gap-3 lg:grid-cols-2">
           {vaccineSchemes.map((scheme) => {
             const doses = getDosesForVaccine(scheme.id)
+            const reminderPreset = getSchemeReminderPreset(scheme)
             return (
               <article key={scheme.id} className="rounded-lg border bg-card p-4">
                 <div className="flex flex-wrap items-center gap-2">
@@ -396,6 +424,10 @@ export function VaccineSchemes() {
                   </Badge>
                 </div>
                 <p className="mt-2 text-sm text-muted-foreground">{scheme.description}</p>
+                <div className="mt-3 grid gap-2 text-sm md:grid-cols-2">
+                  <Info label="Recordatorio" value={reminderPreset.label} />
+                  <Info label="Observaciones" value={scheme.observations} />
+                </div>
                 <div className="mt-3 space-y-2">
                   {doses.map((dose) => (
                     <div key={dose.id} className="rounded-md bg-muted/35 p-3 text-sm">
@@ -405,7 +437,7 @@ export function VaccineSchemes() {
                         {dose.recurrent && <Badge className="bg-primary text-primary-foreground">Recurrente</Badge>}
                       </div>
                       <p className="mt-1 text-muted-foreground">
-                        Intervalo: {formatInterval(dose.intervalValue, dose.intervalUnit)}
+                        Intervalo: {formatInterval(getDoseIntervalPreset(dose))}
                       </p>
                     </div>
                   ))}
@@ -446,7 +478,7 @@ function ActionCard({
             </div>
           </div>
           <div className="mt-auto flex h-14 items-center justify-center rounded-xl bg-primary px-4 text-base font-bold text-primary-foreground group-hover:bg-primary/90">
-            {buttonLabel}
+            <span className="text-center leading-tight">{buttonLabel}</span>
           </div>
         </CardContent>
       </Card>
@@ -546,11 +578,39 @@ function Field({
   )
 }
 
+function PresetSelect({
+  label,
+  placeholder,
+  items,
+}: {
+  label: string
+  placeholder: string
+  items: { id: string; label: string }[]
+}) {
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <Select defaultValue={items[0]?.id}>
+        <SelectTrigger className="h-12 bg-background">
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          {items.map((item) => (
+            <SelectItem key={item.id} value={item.id}>
+              {item.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+}
+
 function Info({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-md bg-muted/35 px-3 py-2">
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="truncate font-medium">{value}</p>
+      <p className="break-words font-medium leading-tight">{value}</p>
     </div>
   )
 }

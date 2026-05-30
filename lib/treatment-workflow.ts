@@ -1,15 +1,19 @@
-export type TreatmentStatus = "activo" | "pausado" | "finalizado"
-export type TreatmentControlUnit = "dias" | "semanas" | "meses"
+import { addPresetToDate, generateControls, generateLifetimeControls, type GeneratedControl } from "./clinical-mock-logic"
+import { controlFrequencyPresets, durationPresets, getPreset, reminderPresets } from "./clinical-presets"
+
+export type TreatmentStatus = "activo" | "pausado" | "finalizado" | "cancelado"
+export type TreatmentDurationType = "fixed" | "lifetime"
 
 export interface TreatmentProtocol {
   id: string
   name: string
   description: string
-  estimatedDuration: string
-  controlFrequencyValue: number
-  controlFrequencyUnit: TreatmentControlUnit
+  durationType: TreatmentDurationType
+  durationPresetId: string
+  controlFrequencyPresetId: string
+  reminderOffsetPresetId: string
   indications: string
-  reminders: string
+  observations: string
   active: boolean
   possibleStates: TreatmentStatus[]
 }
@@ -22,7 +26,6 @@ export interface ActiveTreatment {
   name: string
   startedAt: string
   status: TreatmentStatus
-  nextControlAt: string
   observations: string
 }
 
@@ -30,38 +33,41 @@ export const treatmentProtocols: TreatmentProtocol[] = [
   {
     id: "protocol-demo-leishmaniasis",
     name: "Leishmaniasis",
-    description: "Protocolo demo para seguimiento clinico con controles periodicos.",
-    estimatedDuration: "Segun evolucion clinica",
-    controlFrequencyValue: 2,
-    controlFrequencyUnit: "semanas",
+    description: "Protocolo demo de por vida con controles mensuales.",
+    durationType: "lifetime",
+    durationPresetId: "lifetime",
+    controlFrequencyPresetId: "monthly",
+    reminderOffsetPresetId: "3-days-before",
     indications: "Registrar evolucion, peso, tolerancia y signos clinicos en cada control.",
-    reminders: "Preparar recordatorio antes de cada control.",
+    observations: "No tiene fecha final automatica; se finaliza manualmente.",
     active: true,
-    possibleStates: ["activo", "pausado", "finalizado"],
+    possibleStates: ["activo", "pausado", "finalizado", "cancelado"],
   },
   {
     id: "protocol-demo-otitis",
     name: "Otitis externa",
-    description: "Protocolo demo para controles cortos y ajuste de medicacion.",
-    estimatedDuration: "10 a 15 dias",
-    controlFrequencyValue: 10,
-    controlFrequencyUnit: "dias",
+    description: "Protocolo demo de 2 semanas con controles frecuentes.",
+    durationType: "fixed",
+    durationPresetId: "2-weeks",
+    controlFrequencyPresetId: "every-3-days",
+    reminderOffsetPresetId: "1-day-before",
     indications: "Revisar conducto auditivo, dolor, secrecion y respuesta al tratamiento.",
-    reminders: "Control al finalizar medicacion inicial.",
+    observations: "Ejemplo de tratamiento fijo con recordatorios.",
     active: true,
-    possibleStates: ["activo", "pausado", "finalizado"],
+    possibleStates: ["activo", "pausado", "finalizado", "cancelado"],
   },
   {
     id: "protocol-demo-renal",
     name: "Enfermedad renal cronica",
-    description: "Protocolo demo para seguimiento cronico.",
-    estimatedDuration: "Indefinido",
-    controlFrequencyValue: 1,
-    controlFrequencyUnit: "meses",
+    description: "Protocolo demo cronico con controles mensuales.",
+    durationType: "lifetime",
+    durationPresetId: "lifetime",
+    controlFrequencyPresetId: "monthly",
+    reminderOffsetPresetId: "1-week-before",
     indications: "Controlar parametros clinicos y estudios complementarios.",
-    reminders: "Recordatorio mensual de control.",
+    observations: "Seguimiento continuo con ventana mock de 6 meses.",
     active: true,
-    possibleStates: ["activo", "pausado", "finalizado"],
+    possibleStates: ["activo", "pausado", "finalizado", "cancelado"],
   },
 ]
 
@@ -72,9 +78,8 @@ export const activeTreatmentsSeed: ActiveTreatment[] = [
     petId: 2,
     protocolId: "protocol-demo-renal",
     name: "Enfermedad renal cronica",
-    startedAt: "2024-01-12",
+    startedAt: "2026-06-01",
     status: "activo",
-    nextControlAt: "2024-02-12",
     observations: "Registro demo: monitorear hidratacion y apetito.",
   },
   {
@@ -83,44 +88,98 @@ export const activeTreatmentsSeed: ActiveTreatment[] = [
     petId: 4,
     protocolId: "protocol-demo-otitis",
     name: "Otitis externa",
-    startedAt: "2024-01-08",
+    startedAt: "2026-06-01",
     status: "activo",
-    nextControlAt: "2024-01-18",
     observations: "Registro demo: evaluar respuesta a gotas oticas.",
   },
   {
-    id: "treat-demo-luna-cadera",
+    id: "treat-demo-luna-leish",
     clientId: 1,
     petId: 1,
     protocolId: "protocol-demo-leishmaniasis",
-    name: "Seguimiento locomotor",
-    startedAt: "2024-01-10",
+    name: "Leishmaniasis",
+    startedAt: "2026-06-01",
     status: "pausado",
-    nextControlAt: "2024-02-10",
-    observations: "Registro demo de seguimiento activo.",
+    observations: "Registro demo de protocolo de por vida pausado.",
   },
 ]
 
-export function calculateNextTreatmentControl(startedAt: string, protocolId: string) {
-  const protocol = treatmentProtocols.find((item) => item.id === protocolId)
-  if (!protocol || !startedAt) return null
-  return addInterval(startedAt, protocol.controlFrequencyValue, protocol.controlFrequencyUnit)
+export function getTreatmentProtocol(protocolId: string) {
+  return treatmentProtocols.find((protocol) => protocol.id === protocolId)
 }
 
-export function formatControlFrequency(value: number, unit: TreatmentControlUnit) {
-  if (value === 0) return "Sin frecuencia"
-  const singular: Record<TreatmentControlUnit, string> = {
-    dias: "dia",
-    semanas: "semana",
-    meses: "mes",
+export function getTreatmentDurationPreset(protocol: TreatmentProtocol) {
+  return getPreset(protocol.durationPresetId, durationPresets)
+}
+
+export function getTreatmentFrequencyPreset(protocol: TreatmentProtocol) {
+  return getPreset(protocol.controlFrequencyPresetId, controlFrequencyPresets)
+}
+
+export function getTreatmentReminderPreset(protocol: TreatmentProtocol) {
+  return getPreset(protocol.reminderOffsetPresetId, reminderPresets)
+}
+
+export function calculateTreatmentEndDate(startedAt: string, protocolId: string) {
+  const protocol = getTreatmentProtocol(protocolId)
+  if (!protocol || protocol.durationType === "lifetime") return null
+  return addPresetToDate(startedAt, getTreatmentDurationPreset(protocol))
+}
+
+export function generateTreatmentControls(startedAt: string, protocolId: string, status: TreatmentStatus = "activo") {
+  const protocol = getTreatmentProtocol(protocolId)
+  if (!protocol) return []
+
+  const controlStatus: GeneratedControl["status"] =
+    status === "pausado" ? "pausado" : status === "finalizado" || status === "cancelado" ? "cancelado" : "pendiente"
+
+  if (protocol.durationType === "lifetime") {
+    return generateLifetimeControls({
+      startDate: startedAt,
+      frequencyPreset: getTreatmentFrequencyPreset(protocol),
+      reminderPreset: getTreatmentReminderPreset(protocol),
+      label: `Control ${protocol.name}`,
+      status: controlStatus,
+    })
   }
-  return `${value} ${value === 1 ? singular[unit] : unit}`
+
+  return generateControls({
+    startDate: startedAt,
+    durationPreset: getTreatmentDurationPreset(protocol),
+    frequencyPreset: getTreatmentFrequencyPreset(protocol),
+    reminderPreset: getTreatmentReminderPreset(protocol),
+    label: `Control ${protocol.name}`,
+    status: controlStatus,
+  })
 }
 
-function addInterval(date: string, value: number, unit: TreatmentControlUnit) {
-  const result = new Date(`${date}T00:00:00`)
-  if (unit === "dias") result.setDate(result.getDate() + value)
-  if (unit === "semanas") result.setDate(result.getDate() + value * 7)
-  if (unit === "meses") result.setMonth(result.getMonth() + value)
-  return result.toISOString().slice(0, 10)
+export function calculateNextTreatmentControl(startedAt: string, protocolId: string) {
+  return generateTreatmentControls(startedAt, protocolId)[0]?.dueDate || null
+}
+
+export function buildActiveTreatmentView(treatment: ActiveTreatment) {
+  const protocol = getTreatmentProtocol(treatment.protocolId)
+  const generatedControls = generateTreatmentControls(treatment.startedAt, treatment.protocolId, treatment.status)
+  const estimatedEndDate = calculateTreatmentEndDate(treatment.startedAt, treatment.protocolId)
+
+  return {
+    ...treatment,
+    protocol,
+    estimatedEndDate,
+    generatedControls,
+    generatedReminders: generatedControls
+      .filter((control) => control.reminderDate)
+      .map((control) => ({
+        id: `reminder-${control.id}`,
+        dueDate: control.dueDate,
+        reminderDate: control.reminderDate,
+        status: control.status,
+        title: `Recordatorio ${control.title}`,
+      })),
+    nextControlAt: generatedControls.find((control) => control.status === "pendiente")?.dueDate || null,
+  }
+}
+
+export function formatControlFrequency(protocol: TreatmentProtocol) {
+  return getTreatmentFrequencyPreset(protocol).label
 }

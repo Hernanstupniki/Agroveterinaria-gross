@@ -1,5 +1,7 @@
+import { addPresetToDate, calculateReminderDate } from "./clinical-mock-logic"
+import { durationPresets, getPreset, reminderPresets, type ClinicalPreset } from "./clinical-presets"
+
 export type VaccineSpecies = "Perro" | "Gato" | "Otro"
-export type VaccineIntervalUnit = "dias" | "semanas" | "meses" | "anos"
 export type VaccinationOrigin = "aplicada_hoy" | "carga_historica"
 export type VaccineScheduleStatus = "pendiente" | "aplicada" | "vencida" | "cancelada"
 export type ReminderStatus = "preparado" | "programado" | "enviado" | "sin_recordatorio"
@@ -11,6 +13,7 @@ export interface VaccineScheme {
   description: string
   active: boolean
   observations: string
+  reminderOffsetPresetId: string
 }
 
 export interface VaccineDose {
@@ -18,8 +21,7 @@ export interface VaccineDose {
   vaccineId: string
   name: string
   order: number
-  intervalValue: number
-  intervalUnit: VaccineIntervalUnit
+  intervalPresetId: string
   recurrent: boolean
   observations: string
 }
@@ -45,6 +47,7 @@ export interface PetVaccineSchedule {
   estimatedAt: string
   status: VaccineScheduleStatus
   reminderStatus: ReminderStatus
+  reminderDate?: string | null
 }
 
 export interface VaccineReminder {
@@ -54,6 +57,7 @@ export interface VaccineReminder {
   vaccineId: string
   doseId: string
   estimatedAt: string
+  reminderDate?: string | null
   status: ReminderStatus
 }
 
@@ -65,6 +69,7 @@ export const vaccineSchemes: VaccineScheme[] = [
     description: "Esquema demo para refuerzo anual.",
     active: true,
     observations: "Usar como semilla de configuracion, no como dato clinico real.",
+    reminderOffsetPresetId: "1-week-before",
   },
   {
     id: "vac-demo-sextuple-perro",
@@ -73,6 +78,7 @@ export const vaccineSchemes: VaccineScheme[] = [
     description: "Esquema demo con dosis inicial y refuerzo.",
     active: true,
     observations: "Configurable por especie y dosis.",
+    reminderOffsetPresetId: "3-days-before",
   },
   {
     id: "vac-demo-triple-felina",
@@ -81,6 +87,7 @@ export const vaccineSchemes: VaccineScheme[] = [
     description: "Esquema demo felino con refuerzo anual.",
     active: true,
     observations: "Semilla de ejemplo para gatos.",
+    reminderOffsetPresetId: "1-week-before",
   },
   {
     id: "vac-demo-leishmaniasis",
@@ -89,6 +96,7 @@ export const vaccineSchemes: VaccineScheme[] = [
     description: "Esquema demo con dosis seriadas.",
     active: true,
     observations: "Ejemplo de flujo con intervalos configurables.",
+    reminderOffsetPresetId: "3-days-before",
   },
 ]
 
@@ -98,8 +106,7 @@ export const vaccineDoses: VaccineDose[] = [
     vaccineId: "vac-demo-antirrabica-perro",
     name: "Refuerzo anual",
     order: 1,
-    intervalValue: 1,
-    intervalUnit: "anos",
+    intervalPresetId: "1-year",
     recurrent: true,
     observations: "Repite todos los anos desde la ultima aplicacion.",
   },
@@ -108,8 +115,7 @@ export const vaccineDoses: VaccineDose[] = [
     vaccineId: "vac-demo-sextuple-perro",
     name: "Dosis 1",
     order: 1,
-    intervalValue: 0,
-    intervalUnit: "dias",
+    intervalPresetId: "1-day",
     recurrent: false,
     observations: "Primera dosis.",
   },
@@ -118,8 +124,7 @@ export const vaccineDoses: VaccineDose[] = [
     vaccineId: "vac-demo-sextuple-perro",
     name: "Dosis 2",
     order: 2,
-    intervalValue: 2,
-    intervalUnit: "semanas",
+    intervalPresetId: "2-weeks",
     recurrent: false,
     observations: "Se calcula dos semanas despues de Dosis 1.",
   },
@@ -128,8 +133,7 @@ export const vaccineDoses: VaccineDose[] = [
     vaccineId: "vac-demo-sextuple-perro",
     name: "Refuerzo anual",
     order: 3,
-    intervalValue: 1,
-    intervalUnit: "anos",
+    intervalPresetId: "1-year",
     recurrent: true,
     observations: "Refuerzo anual luego de completar esquema inicial.",
   },
@@ -138,8 +142,7 @@ export const vaccineDoses: VaccineDose[] = [
     vaccineId: "vac-demo-triple-felina",
     name: "Refuerzo anual",
     order: 1,
-    intervalValue: 1,
-    intervalUnit: "anos",
+    intervalPresetId: "1-year",
     recurrent: true,
     observations: "Refuerzo anual felino.",
   },
@@ -148,8 +151,7 @@ export const vaccineDoses: VaccineDose[] = [
     vaccineId: "vac-demo-leishmaniasis",
     name: "Dosis 1",
     order: 1,
-    intervalValue: 0,
-    intervalUnit: "dias",
+    intervalPresetId: "1-day",
     recurrent: false,
     observations: "Inicio de esquema.",
   },
@@ -158,8 +160,7 @@ export const vaccineDoses: VaccineDose[] = [
     vaccineId: "vac-demo-leishmaniasis",
     name: "Dosis 2",
     order: 2,
-    intervalValue: 2,
-    intervalUnit: "semanas",
+    intervalPresetId: "2-weeks",
     recurrent: false,
     observations: "Ejemplo solicitado: dos semanas despues de Dosis 1.",
   },
@@ -202,31 +203,43 @@ export const petVaccinationsSeed: PetVaccination[] = [
 ]
 
 export function getDosesForVaccine(vaccineId: string) {
-  return vaccineDoses
-    .filter((dose) => dose.vaccineId === vaccineId)
-    .sort((a, b) => a.order - b.order)
+  return vaccineDoses.filter((dose) => dose.vaccineId === vaccineId).sort((a, b) => a.order - b.order)
 }
 
 export function getActiveVaccinesForSpecies(species: string) {
   return vaccineSchemes.filter((scheme) => scheme.active && (scheme.species === species || scheme.species === "Otro"))
 }
 
+export function getDoseIntervalPreset(dose: VaccineDose) {
+  return getPreset(dose.intervalPresetId, durationPresets)
+}
+
+export function getSchemeReminderPreset(scheme: VaccineScheme) {
+  return getPreset(scheme.reminderOffsetPresetId, reminderPresets)
+}
+
 export function calculateNextDose(vaccineId: string, doseId: string, appliedAt: string) {
+  const scheme = vaccineSchemes.find((item) => item.id === vaccineId)
   const doses = getDosesForVaccine(vaccineId)
   const appliedDose = doses.find((dose) => dose.id === doseId)
-  if (!appliedDose || !appliedAt) return null
+  if (!scheme || !appliedDose || !appliedAt) return null
 
   const nextDose = doses.find((dose) => dose.order === appliedDose.order + 1) || (appliedDose.recurrent ? appliedDose : null)
   if (!nextDose) return null
 
   const intervalSource = nextDose === appliedDose ? appliedDose : nextDose
-  const estimatedAt = addInterval(appliedAt, intervalSource.intervalValue, intervalSource.intervalUnit)
+  const intervalPreset = getDoseIntervalPreset(intervalSource)
+  const estimatedAt = addPresetToDate(appliedAt, intervalPreset)
+  if (!estimatedAt) return null
+
+  const reminderDate = calculateReminderDate(estimatedAt, getSchemeReminderPreset(scheme))
 
   return {
     dose: nextDose,
     estimatedAt,
     reminder: {
       estimatedAt,
+      reminderDate,
       status: "preparado" as ReminderStatus,
     },
   }
@@ -258,6 +271,7 @@ export function buildPetVaccineSchedule(petId: number, today = "2026-05-29"): Pe
         estimatedAt: record.next.estimatedAt,
         status: record.next.estimatedAt < today ? "vencida" : "pendiente",
         reminderStatus: "preparado",
+        reminderDate: record.next.reminder.reminderDate,
       })
     }
   }
@@ -273,26 +287,12 @@ export function buildReminderForSchedule(schedule: PetVaccineSchedule): VaccineR
     vaccineId: schedule.vaccineId,
     doseId: schedule.doseId,
     estimatedAt: schedule.estimatedAt,
+    reminderDate: schedule.reminderDate,
     status: "preparado",
   }
 }
 
-export function formatInterval(value: number, unit: VaccineIntervalUnit) {
-  if (value === 0) return "Sin intervalo inicial"
-  const singular: Record<VaccineIntervalUnit, string> = {
-    dias: "dia",
-    semanas: "semana",
-    meses: "mes",
-    anos: "ano",
-  }
-  return `${value} ${value === 1 ? singular[unit] : unit}`
-}
-
-function addInterval(date: string, value: number, unit: VaccineIntervalUnit) {
-  const result = new Date(`${date}T00:00:00`)
-  if (unit === "dias") result.setDate(result.getDate() + value)
-  if (unit === "semanas") result.setDate(result.getDate() + value * 7)
-  if (unit === "meses") result.setMonth(result.getMonth() + value)
-  if (unit === "anos") result.setFullYear(result.getFullYear() + value)
-  return result.toISOString().slice(0, 10)
+export function formatInterval(preset: ClinicalPreset) {
+  if (preset.value === 0) return "Sin intervalo inicial"
+  return preset.label
 }

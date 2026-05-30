@@ -73,7 +73,7 @@ export function HistorialPage() {
   const filteredHistorial = historialLuna.filter(evento => {
     const matchesTipo = tipoFilter === "todos" || evento.tipo === tipoFilter
     const matchesSearch = searchTerm === "" || 
-      evento.motivo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (evento.motivo?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
       (evento.diagnostico?.toLowerCase().includes(searchTerm.toLowerCase()))
     return matchesTipo && matchesSearch
   })

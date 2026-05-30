@@ -39,6 +39,7 @@ import {
   vacunasClinicas,
   vacunasRegistradas,
 } from "@/lib/mock-data"
+import { buildMockClinicalHistory } from "@/lib/clinical-history-workflow"
 
 const estadoColors: Record<string, string> = {
   Saludable: "bg-success text-success-foreground",
@@ -66,6 +67,24 @@ const tipoEventoColors: Record<string, string> = {
 
 interface FichaMascotaProps {
   mascotaId: number
+}
+
+interface TimelineEvent {
+  id: string | number
+  fecha: string
+  tipo: string
+  veterinario: string
+  motivo?: string
+  sintomas?: string
+  diagnostico?: string
+  tratamiento?: string
+  vacuna?: string
+  laboratorio?: string
+  peso?: string
+  procedimiento?: string
+  proximoControl?: string
+  observaciones?: string
+  archivo?: string | null
 }
 
 const vacunaEstadoStyles: Record<string, { badge: string; card: string; icon: string; label: string }> = {
@@ -124,7 +143,8 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
   const cirugiasProgramadas = cirugiasMascota.filter(
     (item) => item.estado === "Programada" || item.estado === "Confirmada" || item.estado === "Pendiente confirmación",
   )
-  const timelineEventos = (mascota.id === 1
+  const mockClinicalHistory = buildMockClinicalHistory(mascota.id)
+  const baseTimelineEventos: TimelineEvent[] = (mascota.id === 1
     ? historialLuna
     : [
         ...vacunasMascota.map((vacuna) => ({
@@ -150,7 +170,7 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
           id: `tratamiento-${tratamiento.id}`,
           fecha: tratamiento.fechaInicio,
           tipo: "Tratamiento",
-          veterinario: tratamiento.veterinario,
+          veterinario: "Sistema demo",
           motivo: tratamiento.diagnostico,
           tratamiento: `${tratamiento.medicamento} · ${tratamiento.dosis} · ${tratamiento.frecuencia}`,
           proximoControl: tratamiento.proximoControl,
@@ -165,7 +185,29 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
           diagnostico: cirugia.registroCirugia?.diagnosticoPrevio || cirugia.estado,
           proximoControl: cirugia.postoperatorio?.fechaControl,
         })),
-      ]).sort((a, b) => b.fecha.localeCompare(a.fecha))
+      ])
+  const timelineEventos: TimelineEvent[] = [
+    ...baseTimelineEventos,
+    ...mockClinicalHistory.map((event) => ({
+      id: event.id,
+      fecha: event.date,
+      tipo:
+        event.type === "vaccine"
+          ? "Vacuna"
+          : event.type === "treatment"
+            ? "Tratamiento"
+            : event.type === "surgery"
+              ? "CirugÃ­a"
+              : "Consulta",
+      veterinario: "Sistema demo",
+      motivo: event.title,
+      diagnostico: event.status,
+      observaciones: event.description,
+      proximoControl: event.type === "control" ? event.date : undefined,
+    })),
+  ]
+    .filter((event, index, events) => events.findIndex((item) => item.id === event.id) === index)
+    .sort((a, b) => b.fecha.localeCompare(a.fecha))
   const ultimaConsulta = timelineEventos.find((evento) => evento.tipo === "Consulta") || timelineEventos[0]
 
   const alertas = [
@@ -209,10 +251,10 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
 
   const quickActions = [
     { label: "Consulta", icon: FileHeart, href: "/historial", className: "bg-primary text-primary-foreground hover:bg-primary/90" },
-    { label: "Vacuna", icon: Syringe, href: "/vacunas", className: "bg-success text-success-foreground hover:bg-success/90" },
+    { label: "Vacuna", icon: Syringe, href: `/vacunas/registrar?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}`, className: "bg-success text-success-foreground hover:bg-success/90" },
     { label: "Estudio", icon: FileText, href: "/estudios", className: "bg-secondary text-secondary-foreground hover:bg-secondary/90" },
-    { label: "Tratamiento", icon: Pill, href: "/tratamientos", className: "bg-warning text-warning-foreground hover:bg-warning/90" },
-    { label: "Cirugía", icon: Scissors, href: "/cirugias", className: "bg-background hover:bg-muted" },
+    { label: "Tratamiento", icon: Pill, href: `/tratamientos/registrar?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}`, className: "bg-warning text-warning-foreground hover:bg-warning/90" },
+    { label: "Cirugía", icon: Scissors, href: `/cirugias/agendar?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}`, className: "bg-background hover:bg-muted" },
     { label: "Recordatorio", icon: MessageCircle, href: "/recordatorios", className: "bg-background hover:bg-muted" },
   ]
 
@@ -312,10 +354,10 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
           <CardContent>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
               {quickActions.map((action) => (
-                <Button key={action.label} asChild variant="outline" className={`h-14 min-w-0 justify-start gap-2 px-3 ${action.className}`}>
+                <Button key={action.label} asChild variant="outline" className={`h-14 min-w-0 justify-center gap-2 px-3 text-center leading-tight ${action.className}`}>
                   <Link href={action.href} title={action.label}>
                     <action.icon className="h-4 w-4 shrink-0" />
-                    <span className="min-w-0 whitespace-normal text-left text-sm leading-tight">{action.label}</span>
+                    <span className="min-w-0 whitespace-normal text-center text-sm leading-tight">{action.label}</span>
                   </Link>
                 </Button>
               ))}
@@ -363,8 +405,8 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
                   </CardTitle>
                   <CardDescription>Aplicadas, próximas, pendientes y vencidas para este paciente</CardDescription>
                 </div>
-                <Button className="h-12 bg-primary px-5 font-bold hover:bg-primary/90" asChild>
-                  <Link href="/vacunas">
+                <Button className="h-12 bg-primary px-5 text-center font-bold leading-tight hover:bg-primary/90" asChild>
+                  <Link href={`/vacunas/registrar?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}`}>
                     <Plus className="mr-2 h-4 w-4" />
                     Registrar vacuna
                   </Link>

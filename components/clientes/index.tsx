@@ -168,7 +168,7 @@ export function ClientesPage() {
                 Mascotas asociadas
               </CardTitle>
               <CardDescription>
-                Desde cada mascota se accede a ficha clinica, vacunas, tratamientos y cirugias.
+                Desde cada mascota se accede a ficha clinica, vacunas, tratamientos y cirugías.
               </CardDescription>
             </CardHeader>
             <CardContent>

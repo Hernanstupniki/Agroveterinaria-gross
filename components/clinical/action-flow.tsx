@@ -76,7 +76,7 @@ export function ClinicalActionFlow({
             <p className="max-w-2xl text-muted-foreground">{description}</p>
           </div>
         </div>
-        <Button variant="outline" asChild>
+        <Button variant="outline" className="h-12 rounded-xl px-4 text-center font-semibold leading-tight" asChild>
           <Link href="/">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Volver al inicio
@@ -149,7 +149,7 @@ export function ClinicalActionFlow({
               })}
             </div>
 
-            <Button variant="outline" className="h-11" asChild>
+            <Button variant="outline" className="h-12 rounded-xl px-4 text-center font-bold leading-tight" asChild>
               <Link href="/clientes">
                 <UserPlus className="mr-2 h-4 w-4" />
                 Crear cliente con mascota
@@ -194,10 +194,10 @@ export function ClinicalActionFlow({
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" onClick={() => setSelectedClientId(null)}>
+              <Button variant="outline" className="h-12 rounded-xl px-4 text-center font-bold leading-tight" onClick={() => setSelectedClientId(null)}>
                 Cambiar cliente
               </Button>
-              <Button className="bg-primary hover:bg-primary/90" asChild>
+              <Button className="h-12 rounded-xl bg-primary px-4 text-center font-bold leading-tight hover:bg-primary/90" asChild>
                 <Link href="/clientes">
                   <PawPrint className="mr-2 h-4 w-4" />
                   Agregar mascota a este cliente
@@ -226,10 +226,10 @@ export function ClinicalActionFlow({
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" onClick={() => setSelectedPetId(null)}>
+                <Button variant="outline" size="sm" className="h-11 rounded-xl px-4 text-center font-semibold leading-tight" onClick={() => setSelectedPetId(null)}>
                   Cambiar mascota
                 </Button>
-                <Button variant="outline" size="sm" asChild>
+                <Button variant="outline" size="sm" className="h-11 rounded-xl px-4 text-center font-semibold leading-tight" asChild>
                   <Link href={`/mascotas/${selectedPet.id}`}>Abrir ficha clinica</Link>
                 </Button>
               </div>
