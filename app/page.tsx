@@ -1,10 +1,10 @@
 import { AppLayout } from "@/components/layout"
-import { Dashboard } from "@/components/dashboard"
+import { Principal } from "@/components/principal"
 
 export default function Home() {
   return (
     <AppLayout>
-      <Dashboard />
+      <Principal />
     </AppLayout>
   )
 }

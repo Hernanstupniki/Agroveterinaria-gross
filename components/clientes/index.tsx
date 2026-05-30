@@ -47,6 +47,10 @@ import {
 } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { clientes, mascotas } from "@/lib/mock-data"
+import { SectionHeader } from "@/components/shared/section-header"
+import { LargePrimaryAction } from "@/components/shared/large-primary-action"
+import { EmptyState } from "@/components/shared/empty-state"
+import { UserPlus } from "lucide-react"
 
 export function ClientesPage() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -64,23 +68,15 @@ export function ClientesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Clientes</h1>
-          <p className="text-muted-foreground">
-            Gestión de clientes y dueños de mascotas
-          </p>
-        </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Nuevo Cliente
-        </Button>
-      </div>
+    <div className="animate-section-in mx-auto max-w-[1600px] space-y-6">
+      <SectionHeader
+        title="Clientes"
+        description="Gestión de clientes y dueños de mascotas."
+        action={<LargePrimaryAction label="Nuevo cliente" icon={UserPlus} />}
+      />
 
       {/* Search */}
-      <Card>
+      <Card className="rounded-2xl">
         <CardContent className="pt-6">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -101,6 +97,14 @@ export function ClientesPage() {
           <CardDescription>{filteredClientes.length} clientes registrados</CardDescription>
         </CardHeader>
         <CardContent>
+          {filteredClientes.length === 0 ? (
+            <EmptyState
+              icon={UserPlus}
+              title="No se encontraron clientes"
+              description="Probá con otro término de búsqueda o registrá un nuevo cliente."
+              action={<LargePrimaryAction label="Nuevo cliente" icon={UserPlus} />}
+            />
+          ) : (
           <div className="rounded-md border">
             <Table>
               <TableHeader>
@@ -256,6 +260,7 @@ export function ClientesPage() {
               </TableBody>
             </Table>
           </div>
+          )}
         </CardContent>
       </Card>
     </div>

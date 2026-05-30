@@ -67,12 +67,12 @@ export function Dashboard() {
   const respuestasPendientes = respuestasWhatsAppPendientes.filter(r => r.requiereAccion)
 
   return (
-    <div className="space-y-6">
+    <div className="animate-section-in mx-auto max-w-[1600px] space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Resumen</h1>
         <p className="text-muted-foreground">
-          Bienvenido a Agroveterinaria Gross. Resumen del día: {new Date().toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          Métricas, alertas y actividad de Agroveterinaria Gross — {new Date().toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
         </p>
       </div>
 

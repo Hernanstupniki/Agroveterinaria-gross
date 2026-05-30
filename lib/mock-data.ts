@@ -1146,3 +1146,253 @@ export const configuracion = {
     "Cirugía menor",
   ],
 }
+
+// ───────────────────────────────────────────────────────────────────────────
+// Clinical-operative model (backend-ready structure, mock data for now).
+// These types/collections are additive: existing screens keep using the arrays
+// above; new flows should build on the typed entities below.
+// ───────────────────────────────────────────────────────────────────────────
+
+export type EtapaVida = "cachorro" | "adulto" | "senior" | "no_definido"
+
+// Treatment templates — created once, reusable on any pet. Prefill but stay editable.
+export interface PlantillaTratamiento {
+  id: string
+  nombre: string
+  descripcion: string
+  medicamentoBase: string
+  dosisSugerida: string
+  frecuenciaSugerida: string
+  duracionSugerida: string
+  controlesSugeridos: string[]
+  notas: string
+  activo: boolean
+}
+
+export const plantillasTratamiento: PlantillaTratamiento[] = [
+  {
+    id: "pt-leishmaniasis",
+    nombre: "Leishmaniasis",
+    descripcion: "Protocolo de manejo crónico de leishmaniasis canina.",
+    medicamentoBase: "Milteforan (miltefosina) + Alopurinol",
+    dosisSugerida: "Milteforan 2 mg/kg + Alopurinol 10 mg/kg",
+    frecuenciaSugerida: "Milteforan cada 24 h (28 días) · Alopurinol cada 12 h",
+    duracionSugerida: "Inducción 28 días · mantenimiento prolongado",
+    controlesSugeridos: [
+      "Hemograma y bioquímica al inicio",
+      "Control renal y hepático mensual",
+      "Reevaluación clínica a los 30 días",
+      "Proteinograma cada 3-6 meses",
+    ],
+    notas: "Ajustar alopurinol según función renal. Reforzar prevención de flebótomos (collar/pipeta).",
+    activo: true,
+  },
+  {
+    id: "pt-otitis",
+    nombre: "Otitis externa",
+    descripcion: "Tratamiento tópico de otitis externa bacteriana/fúngica.",
+    medicamentoBase: "Otomax (gentamicina/clotrimazol/betametasona)",
+    dosisSugerida: "5 gotas por oído",
+    frecuenciaSugerida: "Cada 12 h",
+    duracionSugerida: "7-10 días",
+    controlesSugeridos: ["Citología ótica inicial", "Control a los 10 días"],
+    notas: "Limpiar el conducto antes de aplicar. Revisar membrana timpánica.",
+    activo: true,
+  },
+  {
+    id: "pt-erc",
+    nombre: "Enfermedad renal crónica",
+    descripcion: "Manejo de soporte para ERC felina/canina.",
+    medicamentoBase: "Benazepril + dieta renal",
+    dosisSugerida: "Benazepril 0,25-0,5 mg/kg",
+    frecuenciaSugerida: "Cada 24 h",
+    duracionSugerida: "Indefinido",
+    controlesSugeridos: ["Creatinina/urea cada 2-4 semanas", "Presión arterial", "Relación P/C urinaria"],
+    notas: "Vigilar hidratación y apetito. Ajustar según estadío IRIS.",
+    activo: true,
+  },
+]
+
+// Unified clinical-history event — everything clinical lands here.
+export type TipoEventoHistoria =
+  | "consulta"
+  | "vacuna"
+  | "tratamiento"
+  | "cirugia"
+  | "estudio"
+  | "control"
+  | "recordatorio"
+
+export type PrioridadEvento = "alta" | "media" | "baja"
+
+export interface HistoriaClinicaEvento {
+  id: string
+  mascotaId: number
+  clienteId: number
+  fecha: string
+  tipo: TipoEventoHistoria
+  titulo: string
+  descripcion: string
+  origenId: string | number | null
+  profesional: string | null
+  prioridad: PrioridadEvento
+  metadata?: Record<string, unknown>
+}
+
+export const historiaClinicaEventos: HistoriaClinicaEvento[] = [
+  {
+    id: "ev-1",
+    mascotaId: 1,
+    clienteId: 1,
+    fecha: "2024-01-10",
+    tipo: "consulta",
+    titulo: "Control postratamiento",
+    descripcion: "Evolución favorable. Continuar con dieta especial.",
+    origenId: 1,
+    profesional: "Dr. García",
+    prioridad: "baja",
+  },
+  {
+    id: "ev-2",
+    mascotaId: 1,
+    clienteId: 1,
+    fecha: "2023-11-20",
+    tipo: "vacuna",
+    titulo: "Vacuna Séxtuple aplicada",
+    descripcion: "Lote AB12345 (Nobivac). Próxima dosis 2024-11-20.",
+    origenId: 3,
+    profesional: "Dr. García",
+    prioridad: "baja",
+  },
+  {
+    id: "ev-3",
+    mascotaId: 1,
+    clienteId: 1,
+    fecha: "2023-06-15",
+    tipo: "cirugia",
+    titulo: "Ovariohisterectomía",
+    descripcion: "Cirugía electiva sin complicaciones. Recuperación normal.",
+    origenId: 3,
+    profesional: "Dr. García",
+    prioridad: "media",
+  },
+  {
+    id: "ev-4",
+    mascotaId: 2,
+    clienteId: 2,
+    fecha: "2024-01-12",
+    tipo: "estudio",
+    titulo: "Perfil renal solicitado",
+    descripcion: "Análisis de sangre — control de ERC estadío 2.",
+    origenId: 2,
+    profesional: "Dra. López",
+    prioridad: "alta",
+  },
+  {
+    id: "ev-5",
+    mascotaId: 2,
+    clienteId: 2,
+    fecha: "2023-10-15",
+    tipo: "tratamiento",
+    titulo: "Inicio Fortekor 2.5mg",
+    descripcion: "1 comprimido cada 24 h en ayunas. Tratamiento indefinido.",
+    origenId: 1,
+    profesional: "Dra. López",
+    prioridad: "media",
+  },
+  {
+    id: "ev-6",
+    mascotaId: 6,
+    clienteId: 5,
+    fecha: "2024-01-11",
+    tipo: "estudio",
+    titulo: "Radiografía de tórax prequirúrgica",
+    descripcion: "Resultado recibido. Apto para cirugía con riesgo moderado.",
+    origenId: 3,
+    profesional: "Dr. García",
+    prioridad: "media",
+  },
+  {
+    id: "ev-7",
+    mascotaId: 6,
+    clienteId: 5,
+    fecha: "2024-01-18",
+    tipo: "cirugia",
+    titulo: "Extirpación tumor cutáneo (programada)",
+    descripcion: "Cirugía agendada. Verificar estudios prequirúrgicos y ayuno.",
+    origenId: 1,
+    profesional: "Dr. García",
+    prioridad: "alta",
+  },
+]
+
+// WhatsApp reminders — UI/data ready for a future Evolution API integration.
+export type TipoRecordatorio = "vacuna" | "cirugia" | "tratamiento" | "control" | "consulta"
+export type EstadoRecordatorio = "pendiente" | "enviado" | "cancelado" | "fallido"
+
+export interface RecordatorioWhatsApp {
+  id: string
+  clienteId: number
+  mascotaId: number
+  tipo: TipoRecordatorio
+  fechaProgramada: string
+  horaProgramada: string
+  mensaje: string
+  estado: EstadoRecordatorio
+  canal: "whatsapp"
+  consentimientoRequerido: boolean
+  metadata?: Record<string, unknown>
+}
+
+export const recordatoriosWhatsApp: RecordatorioWhatsApp[] = [
+  {
+    id: "rw-1",
+    clienteId: 3,
+    mascotaId: 3,
+    tipo: "vacuna",
+    fechaProgramada: "2024-01-15",
+    horaProgramada: "10:00",
+    mensaje:
+      "Hola, te recordamos que a Rocky le corresponde su vacuna antirrábica (vencida). Respondé este mensaje para coordinar un turno en Agroveterinaria Gross.",
+    estado: "pendiente",
+    canal: "whatsapp",
+    consentimientoRequerido: true,
+  },
+  {
+    id: "rw-2",
+    clienteId: 4,
+    mascotaId: 4,
+    tipo: "control",
+    fechaProgramada: "2024-01-15",
+    horaProgramada: "09:00",
+    mensaje:
+      "Hola, te recordamos que mañana Milo tiene turno de control de otitis a las 11:30 en Agroveterinaria Gross.",
+    estado: "pendiente",
+    canal: "whatsapp",
+    consentimientoRequerido: true,
+  },
+  {
+    id: "rw-3",
+    clienteId: 5,
+    mascotaId: 6,
+    tipo: "cirugia",
+    fechaProgramada: "2024-01-17",
+    horaProgramada: "18:00",
+    mensaje:
+      "Hola, te recordamos la cirugía de Max para el 18/01 a las 10:00. Recordá el ayuno de 12 h previas. Agroveterinaria Gross.",
+    estado: "enviado",
+    canal: "whatsapp",
+    consentimientoRequerido: true,
+  },
+]
+
+/** Infers a pet's life stage from its birth date (used for vaccine scheduling). */
+export function calcularEtapaVida(fechaNacimiento?: string | null): EtapaVida {
+  if (!fechaNacimiento) return "no_definido"
+  const nacimiento = new Date(fechaNacimiento)
+  if (Number.isNaN(nacimiento.getTime())) return "no_definido"
+  const años = (Date.now() - nacimiento.getTime()) / (1000 * 60 * 60 * 24 * 365.25)
+  if (años < 1) return "cachorro"
+  if (años < 8) return "adulto"
+  return "senior"
+}
