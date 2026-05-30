@@ -196,34 +196,34 @@ export function ClientesPage() {
                       </div>
                     </div>
 
-                    <div className="mt-4 space-y-2">
+                    <div className="mt-4 space-y-3">
                       <Button className="h-14 w-full rounded-xl bg-primary px-5 text-base font-bold shadow-md shadow-primary/15 hover:bg-primary/90" asChild>
                         <Link href={`/mascotas/${mascota.id}`}>
                           <FileHeart className="mr-2 h-5 w-5" />
                           Ver ficha
                         </Link>
                       </Button>
-                      <div className="grid grid-cols-4 gap-2">
-                        <Button variant="outline" className="h-11 rounded-xl text-sm font-semibold leading-tight" asChild>
-                          <Link href={`/historial-clinico?clienteId=${selectedCliente.id}&mascotaId=${mascota.id}`}>
-                            <ClipboardList className="mr-1.5 h-4 w-4" />
-                            Historia clinica
-                          </Link>
-                        </Button>
-                        <Button variant="outline" className="h-11 rounded-xl text-sm font-semibold leading-tight" asChild>
-                          <Link href={`/vacunas?clienteId=${selectedCliente.id}&mascotaId=${mascota.id}`}>
+                      <Button variant="outline" className="h-11 w-full rounded-xl font-semibold" asChild>
+                        <Link href={`/mascotas/${mascota.id}?tab=historia`}>
+                          <ClipboardList className="mr-2 h-4 w-4" />
+                          Historia clinica
+                        </Link>
+                      </Button>
+                      <div className="grid grid-cols-3 gap-2">
+                        <Button variant="outline" className="h-11 rounded-xl font-semibold" asChild>
+                          <Link href={`/mascotas/${mascota.id}?tab=vacunas`}>
                             <Syringe className="mr-1.5 h-4 w-4" />
                             Vacunas
                           </Link>
                         </Button>
-                        <Button variant="outline" className="h-11 rounded-xl text-sm font-semibold leading-tight" asChild>
-                          <Link href={`/tratamientos?clienteId=${selectedCliente.id}&mascotaId=${mascota.id}`}>
+                        <Button variant="outline" className="h-11 rounded-xl font-semibold" asChild>
+                          <Link href={`/mascotas/${mascota.id}?tab=tratamientos`}>
                             <Pill className="mr-1.5 h-4 w-4" />
                             Tratamientos
                           </Link>
                         </Button>
-                        <Button variant="outline" className="h-11 rounded-xl text-sm font-semibold leading-tight" asChild>
-                          <Link href={`/cirugias?clienteId=${selectedCliente.id}&mascotaId=${mascota.id}`}>
+                        <Button variant="outline" className="h-11 rounded-xl font-semibold" asChild>
+                          <Link href={`/mascotas/${mascota.id}?tab=cirugias`}>
                             <Scissors className="mr-1.5 h-4 w-4" />
                             Cirugías
                           </Link>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import {
   Activity,
   AlertTriangle,
@@ -228,7 +229,8 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
   const mascota = mascotas.find((item) => item.id === mascotaId) || mascotas[0]
   const cliente = clientes.find((item) => item.id === mascota.clienteId)
   const [storedClinicalEvents, setStoredClinicalEvents] = useState<ClinicalHistoryEvent[]>([])
-  const [activeTab, setActiveTab] = useState("resumen")
+  const searchParams = useSearchParams()
+  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "resumen")
   const [historySearch, setHistorySearch] = useState("")
   const [historyTypeFilter, setHistoryTypeFilter] = useState("todos")
   const [historyVetFilter, setHistoryVetFilter] = useState("todos")
