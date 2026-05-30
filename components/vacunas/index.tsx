@@ -619,15 +619,27 @@ export function VaccineSchemeCreator() {
                         value={row.nameEdited ? row.name : ""}
                         onChange={(value) => updateDoseName(row.id, value, true)}
                       />
-                      <PresetSelect
-                        label={isFirst ? "Intervalo desde la aplicacion" : `Intervalo desde ${index === 1 ? "Dosis 1" : `Dosis ${index}`}`}
-                        placeholder="Seleccionar intervalo"
-                        value={row.intervalPresetId}
-                        onValueChange={(value) =>
-                          setDoseRows((rows) => rows.map((item) => (item.id === row.id ? { ...item, intervalPresetId: value } : item)))
-                        }
-                        items={durationPresets.filter((preset) => preset.unit !== "lifetime")}
-                      />
+                      {isFirst ? (
+                        <div className="space-y-2">
+                          <Label>Tipo</Label>
+                          <div className="flex h-12 items-center rounded-md border bg-muted/50 px-3 text-sm font-medium text-muted-foreground">
+                            Primera aplicacion — sin intervalo previo
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            La primera dosis se aplica en la fecha de inicio del esquema.
+                          </p>
+                        </div>
+                      ) : (
+                        <PresetSelect
+                          label={`Intervalo desde ${index === 1 ? "Dosis 1" : `Dosis ${index}`}`}
+                          placeholder="Seleccionar intervalo"
+                          value={row.intervalPresetId}
+                          onValueChange={(value) =>
+                            setDoseRows((rows) => rows.map((item) => (item.id === row.id ? { ...item, intervalPresetId: value } : item)))
+                          }
+                          items={durationPresets.filter((preset) => preset.unit !== "lifetime")}
+                        />
+                      )}
                     </div>
 
                     <div className="mt-3 rounded-lg border bg-muted/30 p-3">
