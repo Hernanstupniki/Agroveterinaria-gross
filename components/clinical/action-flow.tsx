@@ -211,33 +211,48 @@ export function ClinicalActionFlow({
 
       {selectedClient && selectedPet && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between rounded-lg border bg-primary/5 px-3 py-2">
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 items-center rounded-lg border border-primary/30 bg-primary/5 px-3 py-3">
+            {/* Left: avatar + basic info */}
             <div className="flex items-center gap-3 min-w-0">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-primary text-primary-foreground text-xs">{selectedPet.nombre[0]}</AvatarFallback>
+              <Avatar className="h-10 w-10">
+                <AvatarFallback className="bg-primary text-primary-foreground text-sm">{selectedPet.nombre[0]}</AvatarFallback>
               </Avatar>
               <div className="min-w-0">
-                <p className="text-sm font-semibold leading-tight">{selectedPet.nombre}</p>
-                <p className="text-xs text-muted-foreground">{selectedPet.especie} · {selectedPet.raza}</p>
-                <p className="hidden text-xs text-muted-foreground sm:block">Dueño: {selectedClient.nombre}</p>
+                <p className="text-sm font-semibold leading-tight truncate">{selectedPet.nombre}</p>
+                <p className="text-xs text-muted-foreground truncate">{selectedPet.especie} · {selectedPet.raza}</p>
+                <p className="text-xs text-muted-foreground truncate">Dueño: {selectedClient.nombre}</p>
               </div>
             </div>
 
-            <div className="flex flex-col items-end gap-2">
-              <Button variant="outline" size="sm" className="h-8 rounded-lg px-3 text-xs" onClick={() => setSelectedPetId(null)}>
+            {/* Center: quick chips / data */}
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="outline" className="text-xs">{selectedPet.estadoGeneral}</Badge>
+                {selectedPet.alergias && selectedPet.alergias.length > 0 && (
+                  <Badge variant="outline" className="text-xs">Alergia: {selectedPet.alergias[0]}</Badge>
+                )}
+                {selectedPet.antecedentes && selectedPet.antecedentes.length > 0 && (
+                  <Badge variant="outline" className="text-xs">Antecedente: {selectedPet.antecedentes[0]}</Badge>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+                {selectedPet.peso && <div>Peso: <span className="font-medium text-foreground">{selectedPet.peso} kg</span></div>}
+                {selectedPet.ultimoDiagnostico && <div>Último diagnóstico: <span className="font-medium text-foreground">{selectedPet.ultimoDiagnostico}</span></div>}
+                {selectedPet.ultimaConsulta && <div>Última consulta: <span className="font-medium text-foreground">{selectedPet.ultimaConsulta}</span></div>}
+              </div>
+            </div>
+
+            {/* Right: actions */}
+            <div className="flex items-center justify-end gap-2">
+              <Button variant="outline" size="sm" className="h-9 rounded-lg px-3 text-sm" onClick={() => setSelectedPetId(null)}>
                 Cambiar mascota
               </Button>
-              <div className="flex items-center gap-2">
-                <span className="sr-only">Accesos de consulta</span>
-                <Button variant="outline" size="sm" className="h-8 rounded-lg px-3 text-xs" asChild>
-                  <a href={`/historial-clinico/ver?clienteId=${selectedClient.id}&mascotaId=${selectedPet.id}`} target="_blank" rel="noopener noreferrer">
-                    Historial
-                  </a>
-                </Button>
-                <Button variant="outline" size="sm" className="h-8 rounded-lg px-3 text-xs" asChild>
-                  <a href={`/mascotas/${selectedPet.id}`} target="_blank" rel="noopener noreferrer">Ficha</a>
-                </Button>
-              </div>
+              <Button variant="outline" size="sm" className="h-9 rounded-lg px-3 text-sm" asChild>
+                <a href={`/historial-clinico/ver?clienteId=${selectedClient.id}&mascotaId=${selectedPet.id}`} target="_blank" rel="noopener noreferrer">Historial clínico</a>
+              </Button>
+              <Button variant="outline" size="sm" className="h-9 rounded-lg px-3 text-sm" asChild>
+                <a href={`/mascotas/${selectedPet.id}`} target="_blank" rel="noopener noreferrer">Ficha clínica</a>
+              </Button>
             </div>
           </div>
 
