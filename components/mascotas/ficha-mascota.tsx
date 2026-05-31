@@ -303,7 +303,7 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
   }
 
   const quickActions = [
-    { label: "Atencion", icon: FileHeart, href: `/atencion/nueva?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}` },
+    { label: "Atención", icon: FileHeart, href: `/atencion/nueva?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}` },
     { label: "Vacuna", icon: Syringe, href: `/vacunas/registrar?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}` },
     { label: "Tratamiento", icon: Pill, href: `/tratamientos/registrar?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}` },
     { label: "Cirugía", icon: Scissors, href: `/cirugias/agendar?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}` },
@@ -328,9 +328,9 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
                   className="h-12 rounded-xl bg-white px-5 text-base font-bold text-primary shadow-sm hover:bg-white/90"
                   asChild
                 >
-                  <Link href={`/historial-clinico?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}`}>
+                  <Link href={`/atencion/nueva?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}`}>
                     <Plus className="mr-2 h-5 w-5" />
-                    Nueva atencion
+                    Nueva atención
                   </Link>
                 </Button>
                 <Button variant="secondary" className="h-12 rounded-xl bg-white/14 px-5 text-base font-bold text-white hover:bg-white/22" onClick={() => setEditDialogOpen(true)}>
@@ -348,13 +348,11 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
               <div className="min-w-0 space-y-2">
                 <div className="flex flex-wrap items-center gap-3">
                   <h1 className="text-4xl font-bold tracking-normal">{mascota.nombre}</h1>
-                  <Badge className={estadoColors[mascota.estadoGeneral] || "bg-muted text-muted-foreground"}>
-                    {mascota.estadoGeneral}
-                  </Badge>
                 </div>
                 <p className="text-base text-white/85">
                   {mascota.especie} · {mascota.raza} · {mascota.sexo} · {mascota.edad}
                 </p>
+
               </div>
             </div>
           </div>
@@ -606,14 +604,16 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
               <CardDescription>Cargar una acción clínica vinculada a esta mascota.</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+              <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6">
                 {quickActions.map((action) => (
-                    <Button key={action.label} asChild className="h-14 rounded-xl bg-primary px-4 text-center font-bold leading-tight hover:bg-primary/90">
-                      <Link href={action.href || "#"}>
-                        <action.icon className="mr-2 h-5 w-5 shrink-0" />
-                        <span className="whitespace-normal">{action.label}</span>
-                      </Link>
-                    </Button>
+                    <div key={action.label} className="min-w-0">
+                      <Button asChild className="h-14 w-full rounded-xl bg-primary px-4 text-center font-bold leading-tight hover:bg-primary/90 flex items-center justify-center gap-2">
+                        <Link href={action.href || "#"}>
+                          <action.icon className="h-5 w-5 shrink-0" />
+                          <span className="whitespace-normal break-words text-sm">{action.label}</span>
+                        </Link>
+                      </Button>
+                    </div>
                   ))}
               </div>
             </CardContent>
@@ -886,7 +886,7 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
                   <Button className="min-h-14 rounded-2xl bg-primary px-6 py-3 text-base font-bold leading-tight shadow-md shadow-primary/20 hover:bg-primary/90" asChild>
 <Link href={`/atencion/nueva?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}`}>
                       <Plus className="mr-2 h-5 w-5" />
-                      Registrar atencion
+                      Nueva atención
                     </Link>
                   </Button>
                 </div>
@@ -1229,5 +1229,3 @@ function CompactDetail({ label, value }: { label: string; value: string }) {
     </div>
   )
 }
-
-

@@ -4,7 +4,7 @@ import { useMemo, useState, type ReactNode } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import type { LucideIcon } from "lucide-react"
-import { ArrowLeft, PawPrint, Search, UserPlus, Users, ClipboardList, FileText } from "lucide-react"
+import { ArrowLeft, FileText, PawPrint, Search, UserPlus, Users } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -14,13 +14,14 @@ import { clientes, mascotas } from "@/lib/mock-data"
 import { getMascotaData, type MascotaData } from "@/lib/mascota-store"
 
 type Client = (typeof clientes)[number]
+export type ClinicalActionSelection = { client: Client; pet: MascotaData }
 
 interface ClinicalActionFlowProps {
   title: string
   description: string
   actionLabel: string
   icon: LucideIcon
-  children: (selection: { client: Client; pet: MascotaData }) => ReactNode
+  children: (selection: ClinicalActionSelection) => ReactNode
 }
 
 export function ClinicalActionFlow({
@@ -99,7 +100,7 @@ export function ClinicalActionFlow({
               Buscar cliente o mascota
             </CardTitle>
             <CardDescription>
-              Selecciona un cliente existente. Si no esta cargado, podes ir a Clientes y crearlo con sus mascotas.
+              Seleccioná un cliente existente. Si no está cargado, podés ir a Clientes y crearlo con sus mascotas.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -109,7 +110,7 @@ export function ClinicalActionFlow({
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
                 className="h-12 pl-10"
-                placeholder="Buscar por cliente, telefono, email o mascota..."
+                placeholder="Buscar por cliente, teléfono, email o mascota..."
               />
             </div>
 
@@ -167,7 +168,7 @@ export function ClinicalActionFlow({
               <PawPrint className="h-5 w-5 text-primary" />
               Mascotas de {selectedClient.nombre}
             </CardTitle>
-            <CardDescription>Elegi la mascota sobre la que vas a cargar la accion clinica.</CardDescription>
+            <CardDescription>Elegí la mascota sobre la que vas a cargar la acción clínica.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -186,7 +187,7 @@ export function ClinicalActionFlow({
                     </Avatar>
                     <div>
                       <p className="font-semibold">{pet.nombre}</p>
-                      <p className="text-sm text-muted-foreground">{pet.especie} - {pet.raza}</p>
+                      <p className="text-sm text-muted-foreground">{pet.especie} · {pet.raza}</p>
                       <p className="mt-2 text-xs text-muted-foreground">{pet.estadoGeneral}</p>
                     </div>
                   </div>
@@ -211,57 +212,69 @@ export function ClinicalActionFlow({
 
       {selectedClient && selectedPet && (
         <div className="space-y-4">
-          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 items-center rounded-lg border border-primary/30 bg-primary/5 px-3 py-3">
-            {/* Left: avatar + basic info */}
-            <div className="flex items-center gap-3 min-w-0">
-              <Avatar className="h-10 w-10">
-                <AvatarFallback className="bg-primary text-primary-foreground text-sm">{selectedPet.nombre[0]}</AvatarFallback>
-              </Avatar>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold leading-tight truncate">{selectedPet.nombre}</p>
-                <p className="text-xs text-muted-foreground truncate">{selectedPet.especie} · {selectedPet.raza}</p>
-                <p className="text-xs text-muted-foreground truncate">Dueño: {selectedClient.nombre}</p>
-              </div>
-            </div>
+          <Card className="border-primary/25 bg-primary/5 shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="flex min-w-0 flex-1 gap-3">
+                  <Avatar className="h-12 w-12 shrink-0">
+                    <AvatarFallback className="bg-primary text-base font-bold text-primary-foreground">
+                      {selectedPet.nombre[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 space-y-1.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-xl font-bold leading-tight">{selectedPet.nombre}</h2>
+                      <Badge className="bg-success text-success-foreground">
+                        {selectedPet.estadoGeneral}
+                      </Badge>
+                    </div>
+                    <p className="text-sm font-medium text-foreground">
+                      {selectedPet.especie} · {selectedPet.raza}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedPet.edad} · {selectedPet.sexo} · {selectedPet.peso} kg · {selectedPet.esterilizado ? "Esterilizado" : "No esterilizado"}
+                    </p>
+                    <p className="break-words text-sm text-muted-foreground">
+                      <span className="font-semibold text-foreground">Dueño:</span> {selectedClient.nombre} · {selectedClient.telefono} · {selectedClient.email}
+                    </p>
+                    {(selectedPet.alergias.length > 0 || selectedPet.antecedentes.length > 0) && (
+                      <p className="break-words text-sm text-muted-foreground">
+                        {selectedPet.alergias.length > 0 && (
+                          <>
+                            <span className="font-semibold text-destructive">Alergias:</span> {selectedPet.alergias.join(", ")}
+                          </>
+                        )}
+                        {selectedPet.alergias.length > 0 && selectedPet.antecedentes.length > 0 && " · "}
+                        {selectedPet.antecedentes.length > 0 && (
+                          <>
+                            <span className="font-semibold text-warning">Antecedentes:</span> {selectedPet.antecedentes.join(", ")}
+                          </>
+                        )}
+                      </p>
+                    )}
+                    <p className="break-words text-sm text-muted-foreground">
+                      <span className="font-semibold text-foreground">Última consulta:</span> {selectedPet.ultimaConsulta || "-"}
+                      <span className="mx-1">·</span>
+                      <span className="font-semibold text-foreground">Último diagnóstico:</span> {selectedPet.ultimoDiagnostico || "-"}
+                    </p>
+                  </div>
+                </div>
 
-            {/* Center: quick data (diagnosis + small stats). Chips moved below for clarity. */}
-            <div className="flex flex-col gap-2">
-              <div className="flex gap-4 items-center text-xs text-muted-foreground truncate">
-                {selectedPet.peso && <div className="truncate">Peso: <span className="font-medium text-foreground">{selectedPet.peso} kg</span></div>}
-                {selectedPet.ultimaConsulta && <div className="truncate">Última consulta: <span className="font-medium text-foreground">{selectedPet.ultimaConsulta}</span></div>}
+                <div className="grid gap-2 sm:grid-cols-2 lg:w-56 lg:grid-cols-1">
+                  <Button variant="outline" className="h-11 rounded-xl font-bold" onClick={() => setSelectedPetId(null)}>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Cambiar mascota
+                  </Button>
+                  <Button variant="outline" className="h-11 rounded-xl font-bold" asChild>
+                    <a href={`/mascotas/${selectedPet.id}`} target="_blank" rel="noopener noreferrer">
+                      <FileText className="mr-2 h-4 w-4" />
+                      Ver ficha clínica
+                    </a>
+                  </Button>
+                </div>
               </div>
-              {selectedPet.ultimoDiagnostico && (
-                <div className="text-xs text-muted-foreground whitespace-normal">Diagnóstico: <span className="font-medium text-foreground">{selectedPet.ultimoDiagnostico}</span></div>
-              )}
-            </div>
-
-            {/* Right: actions */}
-            <div className="flex flex-col items-end justify-center gap-2">
-              <Button variant="outline" size="sm" className="h-10 rounded-lg px-4 text-sm font-semibold" onClick={() => setSelectedPetId(null)}>
-                <UserPlus className="mr-2 h-4 w-4" />
-                Cambiar mascota
-              </Button>
-              <div className="flex gap-2">
-                <Button variant="ghost" size="sm" className="h-8 rounded-lg px-3 text-sm" asChild>
-                  <a href={`/historial-clinico/ver?clienteId=${selectedClient.id}&mascotaId=${selectedPet.id}`} target="_blank" rel="noopener noreferrer"><ClipboardList className="mr-2 h-4 w-4" />Historial clínico</a>
-                </Button>
-                <Button variant="ghost" size="sm" className="h-8 rounded-lg px-3 text-sm" asChild>
-                  <a href={`/mascotas/${selectedPet.id}`} target="_blank" rel="noopener noreferrer"><FileText className="mr-2 h-4 w-4" />Ficha clínica</a>
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Chips row: moved below main grid to avoid crowding center */}
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <Badge variant="outline" className="text-xs">{selectedPet.estadoGeneral}</Badge>
-            {selectedPet.alergias && selectedPet.alergias.length > 0 && (
-              <Badge variant="destructive" className="text-xs">Alergia: {selectedPet.alergias[0]}</Badge>
-            )}
-            {selectedPet.antecedentes && selectedPet.antecedentes.length > 0 && (
-              <Badge variant="outline" className="text-xs">Antecedente: {selectedPet.antecedentes[0]}</Badge>
-            )}
-          </div>
+            </CardContent>
+          </Card>
 
           {children({ client: selectedClient, pet: selectedPet })}
         </div>

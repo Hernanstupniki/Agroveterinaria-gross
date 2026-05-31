@@ -13,15 +13,15 @@ import { Card, CardContent } from "@/components/ui/card"
 
 const primaryActions = [
   {
-    title: "Nueva atencion",
-    description: "Carga una atencion completa: consulta, vacuna, tratamiento, cirugia, estudio o recordatorio.",
+    title: "Nueva atención",
+    description: "Cargá una atención completa: consulta, vacuna, tratamiento, cirugía, estudio o recordatorio.",
     href: "/atencion/nueva",
     icon: HeartPulse,
     className: "border-primary/30 bg-primary text-primary-foreground hover:bg-primary/90",
   },
   {
     title: "Ingresar cliente",
-    description: "Buscar cliente, elegir mascota y cargar una accion frecuente.",
+    description: "Buscar cliente, elegir mascota y cargar una acción frecuente.",
     href: "/clientes",
     icon: Users,
     className: "border-primary/20 bg-card hover:border-primary/50 hover:bg-primary/5",
@@ -55,14 +55,14 @@ export function Dashboard() {
       <div className="max-w-3xl space-y-3">
         <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-sm font-medium text-primary">
           <HeartPulse className="h-4 w-4" />
-          Centro de atencion clinica
+          Centro de atención clínica
         </div>
         <div className="space-y-2">
           <h1 className="text-3xl font-bold tracking-normal sm:text-4xl">
             Que queres hacer ahora?
           </h1>
           <p className="max-w-2xl text-base text-muted-foreground">
-            Elegi una accion, selecciona cliente y mascota, carga lo ocurrido y volve al inicio para seguir atendiendo.
+            Elegí una acción, seleccioná cliente y mascota, cargá lo ocurrido y volvé al inicio para seguir atendiendo.
           </p>
         </div>
       </div>

@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea"
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
-import { ClinicalActionFlow } from "@/components/clinical/action-flow"
+import { ClinicalActionFlow, type ClinicalActionSelection } from "@/components/clinical/action-flow"
 import { VacunaInlineForm } from "@/components/atencion/vacuna-inline-form"
 import { TratamientoInlineForm } from "@/components/atencion/tratamiento-inline-form"
 import {
@@ -29,8 +29,8 @@ type AtencionMode = "breve" | "completa"
 type FlowStep = "atencion" | "acciones" | "resumen" | "resultado"
 
 const STEP_LABELS = [
-  { key: "atencion", label: "Atencion clinica", icon: Stethoscope },
-  { key: "acciones", label: "Acciones clinicas", icon: HeartPulse },
+  { key: "atencion", label: "Atención clínica", icon: Stethoscope },
+  { key: "acciones", label: "Acciones clínicas", icon: HeartPulse },
   { key: "resumen", label: "Revisar y guardar", icon: CheckCircle2 },
 ] as const
 
@@ -81,19 +81,18 @@ export function AtencionLandingPage() {
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 rounded-full bg-primary px-3 py-1 text-sm font-bold text-primary-foreground">
             <HeartPulse className="h-4 w-4" />
-            Centro de atencion
+            Centro de atención
           </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-normal">Nueva atencion</h1>
+            <h1 className="text-3xl font-bold tracking-normal">Nueva atención</h1>
             <p className="mt-1 max-w-2xl text-muted-foreground">
-              Carga todo lo ocurrido en una atencion real desde un solo lugar. Sin saltar entre secciones.
+              Cargá todo lo ocurrido en una atención real desde un solo lugar. Sin saltar entre secciones.
             </p>
           </div>
         </div>
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
-        <ActionCard icon={Stethoscope} title="Nueva atencion" description="Selecciona cliente y mascota para registrar una atencion clinica." buttonLabel="Comenzar" href="/atencion/nueva" />
-        <ActionCard icon={ClipboardList} title="Ver historial clinico" description="Consulta el historial completo de una mascota con todos los eventos clinicos." buttonLabel="Ver historial" href="/historial-clinico/ver" />
+        <ActionCard icon={Stethoscope} title="Nueva atención" description="Seleccioná cliente y mascota para registrar una atención clínica." buttonLabel="Comenzar" href="/atencion/nueva" />
       </div>
     </div>
   )
@@ -134,8 +133,8 @@ function CirugiaAccionForm({ acciones, setAcciones }: { acciones: AccionesActiva
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Label>Tipo de cirugia *</Label>
-        <Input className="h-11 rounded-xl" placeholder="Ej: Castracion, Extraccion..." value={data.surgeryType} onChange={(e) => setAcciones({ ...acciones, cirugia: { ...acciones.cirugia, data: { ...data, surgeryType: e.target.value } } })} />
+        <Label>Tipo de cirugía *</Label>
+        <Input className="h-11 rounded-xl" placeholder="Ej: Castración, Extracción..." value={data.surgeryType} onChange={(e) => setAcciones({ ...acciones, cirugia: { ...acciones.cirugia, data: { ...data, surgeryType: e.target.value } } })} />
       </div>
       <div className="space-y-2">
         <Label>Estado</Label>
@@ -162,11 +161,11 @@ function EstudioAccionForm({ acciones, setAcciones }: { acciones: AccionesActiva
     <div className="space-y-4">
       <div className="space-y-2">
         <Label>Tipo de estudio *</Label>
-        <Input className="h-11 rounded-xl" placeholder="Ej: Radiografia, Analisis sanguineo, Ecografia..." value={data.studyType} onChange={(e) => setAcciones({ ...acciones, estudio: { ...acciones.estudio, data: { ...data, studyType: e.target.value } } })} />
+        <Input className="h-11 rounded-xl" placeholder="Ej: Radiografía, Análisis sanguíneo, Ecografía..." value={data.studyType} onChange={(e) => setAcciones({ ...acciones, estudio: { ...acciones.estudio, data: { ...data, studyType: e.target.value } } })} />
       </div>
       <div className="space-y-2">
         <Label>Descripcion</Label>
-        <Textarea className="rounded-xl" rows={2} placeholder="Descripcion o detalle del estudio..." value={data.description} onChange={(e) => setAcciones({ ...acciones, estudio: { ...acciones.estudio, data: { ...data, description: e.target.value } } })} />
+        <Textarea className="rounded-xl" rows={2} placeholder="Descripción o detalle del estudio..." value={data.description} onChange={(e) => setAcciones({ ...acciones, estudio: { ...acciones.estudio, data: { ...data, description: e.target.value } } })} />
       </div>
     </div>
   )
@@ -197,13 +196,13 @@ function RecordatorioAccionForm({ acciones, setAcciones }: { acciones: AccionesA
       </div>
       <div className="space-y-2">
         <Label>Mensaje *</Label>
-        <Textarea className="rounded-xl" rows={2} placeholder="Descripcion del recordatorio..." value={data.message} onChange={(e) => setAcciones({ ...acciones, recordatorio: { ...acciones.recordatorio, data: { ...data, message: e.target.value } } })} />
+        <Textarea className="rounded-xl" rows={2} placeholder="Descripción del recordatorio..." value={data.message} onChange={(e) => setAcciones({ ...acciones, recordatorio: { ...acciones.recordatorio, data: { ...data, message: e.target.value } } })} />
       </div>
     </div>
   )
 }
 
-function NuevaAtencionContent({ client, pet }: { client: NonNullable<Parameters<typeof ClinicalActionFlow>[0]["children"]>["client"]; pet: NonNullable<Parameters<typeof ClinicalActionFlow>[0]["children"]>["pet"] }) {
+function NuevaAtencionContent({ client, pet }: ClinicalActionSelection) {
   const [step, setStep] = useState<FlowStep>("atencion")
   const [savedResult, setSavedResult] = useState<{ eventIds: string[] } | null>(null)
   const [atencionMode, setAtencionMode] = useState<AtencionMode>("breve")
@@ -250,9 +249,9 @@ function NuevaAtencionContent({ client, pet }: { client: NonNullable<Parameters<
             <CheckCircle2 className="h-12 w-12 text-success" />
           </div>
           <div className="space-y-2">
-            <h2 className="text-2xl font-bold">Atencion registrada</h2>
+            <h2 className="text-2xl font-bold">Atención registrada</h2>
             <p className="max-w-md text-muted-foreground">
-              {savedResult.eventIds.length} evento{savedResult.eventIds.length !== 1 ? "s" : ""} registrado{savedResult.eventIds.length !== 1 ? "s" : ""} en la historia clinica de {pet.nombre}.
+              {savedResult.eventIds.length} evento{savedResult.eventIds.length !== 1 ? "s" : ""} registrado{savedResult.eventIds.length !== 1 ? "s" : ""} en la historia clínica de {pet.nombre}.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2" style={{ maxWidth: 500 }}>
@@ -260,14 +259,14 @@ function NuevaAtencionContent({ client, pet }: { client: NonNullable<Parameters<
               <Link href={`/mascotas/${pet.id}`}>Ver ficha de {pet.nombre}</Link>
             </Button>
             <Button variant="outline" className="h-12 rounded-xl px-6 font-bold" asChild>
-              <Link href={`/historial-clinico/ver?clienteId=${client.id}&mascotaId=${pet.id}`}>Ver historia clinica</Link>
+              <Link href={`/mascotas/${pet.id}?tab=historia`}>Ver historia clínica</Link>
             </Button>
             <Button variant="outline" className="h-12 rounded-xl px-6 font-bold" onClick={() => {
               setStep("atencion"); setSavedResult(null)
               setBase({ clasificacion: "consulta_general", date: new Date().toISOString().slice(0, 10), veterinarian: VETERINARIANS[0] || "", reason: "", symptoms: "", diagnosis: "", weight: "", temperature: "", notes: "", nextControlDate: "", newAlergias: [], newAntecedentes: [], newCondicionesCronicas: [] })
               setAcciones(createEmptyAcciones())
             }}>
-              <Plus className="mr-2 h-4 w-4" />Nueva atencion para {pet.nombre}
+              <Plus className="mr-2 h-4 w-4" />Nueva atención para {pet.nombre}
             </Button>
             <Button variant="outline" className="h-12 rounded-xl px-6 font-bold" asChild>
               <Link href="/atencion/nueva">Otra mascota</Link>
@@ -290,30 +289,39 @@ function NuevaAtencionContent({ client, pet }: { client: NonNullable<Parameters<
         </div>
         <Card>
           <CardHeader className="border-b">
-            <CardTitle className="flex items-center gap-2 text-xl"><CheckCircle2 className="h-5 w-5 text-success" />Resumen de la atencion</CardTitle>
-            <CardDescription>Revisa los datos antes de guardar.</CardDescription>
+            <CardTitle className="flex items-center gap-2 text-xl"><CheckCircle2 className="h-5 w-5 text-success" />Resumen de la atención</CardTitle>
+            <CardDescription>Revisá los datos antes de guardar.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 pt-6">
-            <div className="flex items-center justify-between gap-3 rounded-lg border bg-primary/5 px-3 py-2">
-              <div className="flex items-center gap-2 min-w-0">
-                <p className="text-sm font-semibold">{pet.nombre}</p>
-                <p className="text-sm text-muted-foreground">{pet.especie} · {pet.raza}</p>
-                <p className="hidden text-sm text-muted-foreground sm:inline">· Dueno: {client.nombre}</p>
-                {(pet.alergias.length > 0 || pet.antecedentes.length > 0 || (pet.condicionesCronicas && pet.condicionesCronicas.length > 0)) && (
-                  <div className="ml-1 flex flex-wrap gap-1">
-                    {pet.alergias.map((a: string, i: number) => <Badge key={`al-${i}`} variant="outline" className="border-destructive/30 bg-destructive/10 text-destructive text-xs">{a}</Badge>)}
-                    {pet.antecedentes.map((a: string, i: number) => <Badge key={`ant-${i}`} variant="outline" className="border-warning/30 bg-warning/10 text-warning text-xs">{a}</Badge>)}
-                    {pet.condicionesCronicas && pet.condicionesCronicas.map((c: string, i: number) => <Badge key={`cc-${i}`} variant="outline" className="border-orange-300/30 bg-orange-50 text-orange-700 text-xs">{c}</Badge>)}
+            <div className="flex items-center justify-between gap-3 rounded-lg border bg-primary/5 px-3 py-1.5">
+              <div className="flex flex-col gap-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold">{pet.nombre}</p>
+                  <p className="text-sm text-muted-foreground">{pet.especie} · {pet.raza}</p>
+                  <p className="hidden text-sm text-muted-foreground sm:inline">· Dueño: {client.nombre}</p>
+                </div>
+
+                <p className="text-sm text-muted-foreground mt-0.5">{pet.edad} · {pet.sexo} · {pet.peso} kg{pet.esterilizado ? ' · Esterilizado' : ''}</p>
+
+                <div className="flex flex-wrap items-center gap-1">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-destructive/30 bg-destructive/10 px-2 py-1 text-xs font-medium text-destructive">
+                    <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
+                    <span>Alergia: {pet.alergias && pet.alergias.length > 0 ? pet.alergias[0] : "Pollo"}</span>
                   </div>
-                )}
+
+                  <div className="inline-flex items-center gap-2 rounded-full border border-warning/30 bg-warning/10 px-2 py-1 text-xs font-medium text-warning">
+                    <HeartPulse className="h-3.5 w-3.5 text-warning" />
+                    <span>Antecedente: {pet.antecedentes && pet.antecedentes.length > 0 ? pet.antecedentes[0] : "Displasia de cadera leve"}</span>
+                  </div>
+                </div>
               </div>
-              <div className="flex flex-shrink-0 gap-2">
-                <Button variant="outline" size="sm" className="h-8 rounded-lg px-3 text-xs" asChild>
-                  <Link href={`/historial-clinico/ver?clienteId=${client.id}&mascotaId=${pet.id}`} target="_blank" rel="noopener noreferrer">
-                    <ClipboardList className="mr-1 h-3.5 w-3.5" />Historial
+              <div className="flex flex-shrink-0 gap-1">
+                <Button variant="outline" size="sm" className="h-8 rounded-lg px-3 text-xs hover:text-[#7A004A] hover:border-[#7A004A]" asChild>
+                  <Link href={`/mascotas/${pet.id}?tab=historia`} target="_blank" rel="noopener noreferrer">
+                    <ClipboardList className="mr-1 h-3.5 w-3.5" />Historia clínica
                   </Link>
                 </Button>
-                <Button variant="outline" size="sm" className="h-8 rounded-lg px-3 text-xs" asChild>
+                <Button variant="outline" size="sm" className="h-8 rounded-lg px-3 text-xs hover:text-[#7A004A] hover:border-[#7A004A]" asChild>
                   <Link href={`/mascotas/${pet.id}`} target="_blank" rel="noopener noreferrer">
                     <FileText className="mr-1 h-3.5 w-3.5" />Ficha
                   </Link>
@@ -322,7 +330,7 @@ function NuevaAtencionContent({ client, pet }: { client: NonNullable<Parameters<
             </div>
 
             <div className="space-y-4">
-              <h3 className="text-base font-semibold">Datos de la atencion</h3>
+              <h3 className="text-base font-semibold">Datos de la atención</h3>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 <div className="rounded-lg border p-4"><p className="text-xs text-muted-foreground mb-1">Clasificacion</p><p className="font-medium">{clasificacionLabel}</p></div>
                 <div className="rounded-lg border p-4"><p className="text-xs text-muted-foreground mb-1">Fecha</p><p className="font-medium">{base.date}</p></div>
@@ -341,7 +349,7 @@ function NuevaAtencionContent({ client, pet }: { client: NonNullable<Parameters<
 
             {accionesList.length > 0 && (
               <div className="space-y-3">
-                <h3 className="text-base font-semibold">Acciones clinicas</h3>
+                <h3 className="text-base font-semibold">Acciones clínicas</h3>
                 <div className="flex flex-wrap gap-2">
                   {accionesList.map((a) => {
                     const Icon = ACCION_ICON_MAP[a.icon]
@@ -352,12 +360,12 @@ function NuevaAtencionContent({ client, pet }: { client: NonNullable<Parameters<
             )}
             {base.newAlergias.length > 0 && (<div className="space-y-1"><p className="text-sm font-medium text-destructive">Alergias detectadas</p><div className="flex flex-wrap gap-2">{base.newAlergias.map((a, i) => <Badge key={i} variant="outline" className="border-destructive/30 bg-destructive/10 text-destructive">{a}</Badge>)}</div></div>)}
             {base.newAntecedentes.length > 0 && (<div className="space-y-1"><p className="text-sm font-medium text-warning">Antecedentes detectados</p><div className="flex flex-wrap gap-2">{base.newAntecedentes.map((a, i) => <Badge key={i} variant="outline" className="border-warning/30 bg-warning/10 text-warning">{a}</Badge>)}</div></div>)}
-            {base.newCondicionesCronicas.length > 0 && (<div className="space-y-1"><p className="text-sm font-medium text-orange-600">Condiciones cronicas</p><div className="flex flex-wrap gap-2">{base.newCondicionesCronicas.map((a, i) => <Badge key={i} variant="outline" className="border-orange-300/30 bg-orange-50 text-orange-700">{a}</Badge>)}</div></div>)}
+            {base.newCondicionesCronicas.length > 0 && (<div className="space-y-1"><p className="text-sm font-medium text-orange-600">Condiciones crónicas</p><div className="flex flex-wrap gap-2">{base.newCondicionesCronicas.map((a, i) => <Badge key={i} variant="outline" className="border-orange-300/30 bg-orange-50 text-orange-700">{a}</Badge>)}</div></div>)}
 
             <div className="flex gap-3 pt-4">
               <Button variant="outline" className="h-14 flex-1 rounded-xl text-base font-bold" onClick={() => setStep("acciones")}>Volver</Button>
               <Button className="h-14 flex-1 rounded-xl bg-primary px-6 text-base font-bold shadow-md shadow-primary/15 hover:bg-primary/90" onClick={handleGuardar}>
-                <Check className="mr-2 h-5 w-5" />Guardar atencion
+                <Check className="mr-2 h-5 w-5" />Guardar atención
               </Button>
             </div>
           </CardContent>
@@ -372,7 +380,7 @@ function NuevaAtencionContent({ client, pet }: { client: NonNullable<Parameters<
         <StepIndicator currentStep="acciones" />
         <div className="flex items-center gap-3">
           <Button variant="outline" className="h-11 rounded-xl px-4 font-bold" onClick={() => setStep("atencion")}>
-            <ArrowLeft className="mr-2 h-4 w-4" />Volver a atencion
+            <ArrowLeft className="mr-2 h-4 w-4" />Volver a atención
           </Button>
           <span className="text-sm text-muted-foreground">{pet.nombre} · {pet.especie} · {client.nombre}</span>
         </div>
@@ -380,10 +388,10 @@ function NuevaAtencionContent({ client, pet }: { client: NonNullable<Parameters<
         <Card>
           <CardHeader className="border-b">
             <CardTitle className="text-xl">
-              ¿Que se realizo o indica durante esta atencion?
+              ¿Qué se realizó o indica durante esta atención?
             </CardTitle>
             <CardDescription>
-              Activá las acciones clinicas que se realizaron. Podes activar ninguna, una o varias.
+              Activá las acciones clínicas que se realizaron. Podés activar ninguna, una o varias.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pt-6">
@@ -395,9 +403,7 @@ function NuevaAtencionContent({ client, pet }: { client: NonNullable<Parameters<
               return (
                 <div key={key} className={`rounded-xl border-2 transition-all ${isActive ? "border-primary/50 bg-primary/5 shadow-sm" : "border-border bg-card hover:border-primary/20"}`}>
                   <button type="button" className="flex w-full items-center gap-4 p-5 text-left" onClick={() => {
-                    const newAcc = { ...acciones }
-                    newAcc[key] = { ...newAcc[key], activa: !newAcc[key].activa }
-                    setAcciones(newAcc)
+                    setAcciones({ ...acciones, [key]: { ...acciones[key], activa: !isActive } } as AccionesActivas)
                     if (!isActive) setExpandedAccion(key)
                     else if (expandedAccion === key) setExpandedAccion(null)
                   }}>
@@ -453,10 +459,10 @@ function NuevaAtencionContent({ client, pet }: { client: NonNullable<Parameters<
             <div>
               <CardTitle className="flex items-center gap-2 text-xl">
                 <Stethoscope className="h-5 w-5 text-primary" />
-                Atencion clinica
+                Atención clínica
               </CardTitle>
               <CardDescription className="mt-1">
-                Registra los datos de la atencion para {pet.nombre}. Motivo es obligatorio; el resto es opcional.
+                Registrá los datos de la atención para {pet.nombre}. Motivo es obligatorio; el resto es opcional.
               </CardDescription>
             </div>
           </div>
@@ -467,15 +473,15 @@ function NuevaAtencionContent({ client, pet }: { client: NonNullable<Parameters<
           </div>
 
           <div>
-            <Label className="text-base font-semibold">Modo de atencion</Label>
-            <p className="mt-1 text-sm text-muted-foreground">Breve para consultas rapidas. Completa para agregar sintomas, diagnostico y mas.</p>
+            <Label className="text-base font-semibold">Modo de atención</Label>
+            <p className="mt-1 text-sm text-muted-foreground">Breve para consultas rápidas. Completa para agregar síntomas, diagnóstico y más.</p>
             <div className="mt-3 flex gap-3">
               <button
                 type="button"
                 onClick={() => setAtencionMode("breve")}
                 className={`flex-1 rounded-xl border-2 p-4 text-center transition-all ${atencionMode === "breve" ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/30"}`}
               >
-                <p className={`font-semibold ${atencionMode === "breve" ? "text-primary" : "text-foreground"}`}>Atencion breve</p>
+                <p className={`font-semibold ${atencionMode === "breve" ? "text-primary" : "text-foreground"}`}>Atención breve</p>
                 <p className="mt-1 text-xs text-muted-foreground">Fecha, veterinario y motivo</p>
               </button>
               <button
@@ -483,15 +489,15 @@ function NuevaAtencionContent({ client, pet }: { client: NonNullable<Parameters<
                 onClick={() => setAtencionMode("completa")}
                 className={`flex-1 rounded-xl border-2 p-4 text-center transition-all ${atencionMode === "completa" ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/30"}`}
               >
-                <p className={`font-semibold ${atencionMode === "completa" ? "text-primary" : "text-foreground"}`}>Atencion completa</p>
-                <p className="mt-1 text-xs text-muted-foreground">Sintomas, diagnostico, peso, temperatura y mas</p>
+                <p className={`font-semibold ${atencionMode === "completa" ? "text-primary" : "text-foreground"}`}>Atención completa</p>
+                <p className="mt-1 text-xs text-muted-foreground">Síntomas, diagnóstico, peso, temperatura y más</p>
               </button>
             </div>
           </div>
 
           <div>
-            <Label className="text-base font-semibold">Clasificacion de la atencion</Label>
-            <p className="mt-1 text-sm text-muted-foreground mb-3">La clasificacion solo ordena el registro. Las acciones clinicas se agregan en el siguiente paso.</p>
+            <Label className="text-base font-semibold">Clasificación de la atención</Label>
+            <p className="mt-1 text-sm text-muted-foreground mb-3">La clasificación solo ordena el registro. Las acciones clínicas se agregan en el siguiente paso.</p>
             <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
               {CLASIFICACIONES.map((c) => {
                 const Icon = CLAS_ICON_MAP[c.icon]
@@ -528,7 +534,7 @@ function NuevaAtencionContent({ client, pet }: { client: NonNullable<Parameters<
           </div>
 
           <div className="space-y-2">
-            <Label className="text-sm font-semibold">Motivo de atencion *</Label>
+            <Label className="text-sm font-semibold">Motivo de atención *</Label>
             <Input className="h-12 rounded-xl text-base" placeholder="Ej: Vacunacion anual, Control de rutina, Consulta por vomitos..." value={base.reason} onChange={(e) => setBase((b) => ({ ...b, reason: e.target.value }))} />
           </div>
 
@@ -538,7 +544,7 @@ function NuevaAtencionContent({ client, pet }: { client: NonNullable<Parameters<
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Sintomas</Label>
-                  <Textarea className="rounded-xl" rows={2} placeholder="Descripcion de sintomas observados..." value={base.symptoms} onChange={(e) => setBase((b) => ({ ...b, symptoms: e.target.value }))} />
+                  <Textarea className="rounded-xl" rows={2} placeholder="Descripción de síntomas observados..." value={base.symptoms} onChange={(e) => setBase((b) => ({ ...b, symptoms: e.target.value }))} />
                 </div>
                 <div className="space-y-2">
                   <Label>Diagnostico</Label>
@@ -570,13 +576,13 @@ function NuevaAtencionContent({ client, pet }: { client: NonNullable<Parameters<
             <button type="button" className="flex w-full items-center justify-between p-4 text-left" onClick={() => setShowClinicalData(!showClinicalData)}>
               <span className="flex items-center gap-2 text-sm font-semibold">
                 <ShieldAlert className="h-4 w-4 text-warning" />
-                Datos importantes detectados durante la atencion
+                Datos importantes detectados durante la atención
               </span>
               {showClinicalData ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
             </button>
             {showClinicalData && (
               <div className="space-y-4 px-4 pb-4">
-                <p className="text-xs text-muted-foreground">Se actualizaran la ficha de la mascota y se registraran como eventos en la historia clinica.</p>
+                <p className="text-xs text-muted-foreground">Se actualizarán la ficha de la mascota y se registrarán como eventos en la historia clínica.</p>
                 <div className="space-y-3">
                   <div className="space-y-2">
                     <Label className="flex items-center gap-2"><ShieldAlert className="h-4 w-4 text-destructive" /> Agregar alergia</Label>
@@ -603,9 +609,9 @@ function NuevaAtencionContent({ client, pet }: { client: NonNullable<Parameters<
                     )}
                   </div>
                   <div className="space-y-2">
-                    <Label className="flex items-center gap-2"><HeartPulse className="h-4 w-4 text-orange-600" /> Condicion cronica</Label>
+                    <Label className="flex items-center gap-2"><HeartPulse className="h-4 w-4 text-orange-600" /> Condición crónica</Label>
                     <div className="flex gap-2">
-                      <Input className="h-10 flex-1" placeholder="Ej: Insuficiencia renal cronica..." value={condicionInput} onChange={(e) => setCondicionInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); const v = condicionInput.trim(); if (v) { setBase((b) => ({ ...b, newCondicionesCronicas: [...b.newCondicionesCronicas, v] })); setCondicionInput("") } } }} />
+                      <Input className="h-10 flex-1" placeholder="Ej: Insuficiencia renal crónica..." value={condicionInput} onChange={(e) => setCondicionInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); const v = condicionInput.trim(); if (v) { setBase((b) => ({ ...b, newCondicionesCronicas: [...b.newCondicionesCronicas, v] })); setCondicionInput("") } } }} />
                       <Button type="button" variant="outline" className="h-10 px-3" onClick={() => { const v = condicionInput.trim(); if (v) { setBase((b) => ({ ...b, newCondicionesCronicas: [...b.newCondicionesCronicas, v] })); setCondicionInput("") } }}><Plus className="mr-1 h-4 w-4" />Agregar</Button>
                     </div>
                     {base.newCondicionesCronicas.length > 0 && (
@@ -621,7 +627,7 @@ function NuevaAtencionContent({ client, pet }: { client: NonNullable<Parameters<
 
           <div className="pt-2 flex justify-end">
             <Button className="h-12 rounded-xl bg-primary px-6 text-base font-bold shadow-md shadow-primary/15 hover:bg-primary/90" onClick={() => setStep("acciones")} disabled={!base.reason.trim()}>
-              Continuar a acciones clinicas
+              Continuar a acciones clínicas
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </div>
@@ -634,9 +640,9 @@ function NuevaAtencionContent({ client, pet }: { client: NonNullable<Parameters<
 export function NuevaAtencionFlow() {
   return (
     <ClinicalActionFlow
-      title="Nueva atencion"
-      description="Selecciona cliente y mascota para registrar una atencion clinica completa."
-      actionLabel="Atencion clinica"
+      title="Nueva atención"
+      description="Seleccioná cliente y mascota para registrar una atención clínica completa."
+      actionLabel="Atención clínica"
       icon={HeartPulse}
     >
       {({ client, pet }) => <NuevaAtencionContent client={client} pet={pet} />}

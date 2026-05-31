@@ -122,7 +122,7 @@ export function ClientesPage() {
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Clientes</h1>
             <p className="max-w-2xl text-muted-foreground">
-              Gestiona dueños, mascotas vinculadas y accesos a historia clinica desde un solo lugar.
+              Gestioná dueños, mascotas vinculadas y accesos a historia clínica desde un solo lugar.
             </p>
           </div>
         </div>
@@ -220,7 +220,7 @@ export function ClientesPage() {
                 Mascotas asociadas
               </CardTitle>
               <CardDescription>
-                Desde cada mascota se accede a ficha clinica, vacunas, tratamientos y cirugías.
+                Desde cada mascota se accede a ficha clínica, vacunas, tratamientos y cirugías.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -242,7 +242,7 @@ export function ClientesPage() {
                           {mascota.especie} - {mascota.raza} - {mascota.edad}
                         </p>
                         <p className="mt-2 text-sm">
-                          Ultimo diagnostico: <span className="font-medium">{mascota.ultimoDiagnostico}</span>
+                          Último diagnóstico: <span className="font-medium">{mascota.ultimoDiagnostico}</span>
                         </p>
                       </div>
                     </div>
@@ -257,7 +257,7 @@ export function ClientesPage() {
                       <Button variant="outline" className="h-11 w-full rounded-xl font-semibold" asChild>
                         <Link href={`/mascotas/${mascota.id}?tab=historia`}>
                           <ClipboardList className="mr-2 h-4 w-4" />
-                          Historia clinica
+                          Historia clínica
                         </Link>
                       </Button>
                       <div className="grid grid-cols-3 gap-2">
@@ -294,14 +294,14 @@ export function ClientesPage() {
                   <Stethoscope className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="font-semibold">Atencion rapida del cliente seleccionado</p>
+                  <p className="font-semibold">Atención rápida del cliente seleccionado</p>
                   <p className="text-sm text-muted-foreground">
-                    Registra una atencion clinica para una de las mascotas de este cliente.
+                    Registrá una atención clínica para una de las mascotas de este cliente.
                   </p>
                 </div>
               </div>
               <Button className="h-12 bg-primary px-5 font-bold hover:bg-primary/90" asChild>
-                <Link href={`/atencion/nueva?clienteId=${selectedCliente.id}`}>Nueva atencion</Link>
+                <Link href={`/atencion/nueva?clienteId=${selectedCliente.id}`}>Nueva atención</Link>
               </Button>
             </CardContent>
           </Card>

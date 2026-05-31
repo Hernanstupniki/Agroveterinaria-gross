@@ -100,7 +100,9 @@ export function getMascotaData(petId: number): MascotaData {
     esterilizado: overrides.esterilizado ?? base.esterilizado,
     alergias: overrides.alergias ?? normalizeAntecedentes(base.alergias),
     antecedentes: normalizeAntecedentes(overrides.antecedentes ?? base.antecedentes),
-    condicionesCronicas: overrides.condicionesCronicas ?? normalizeAntecedentes((base as Record<string, unknown>).condicionesCronicas),
+    condicionesCronicas:
+      overrides.condicionesCronicas ??
+      normalizeAntecedentes((base as Record<string, unknown>).condicionesCronicas as string | string[] | undefined),
     observacionesClinicas: overrides.observacionesClinicas ?? ((base as Record<string, unknown>).observacionesClinicas as string || ""),
     ultimaConsulta: base.ultimaConsulta,
     ultimoDiagnostico: overrides.ultimoDiagnostico ?? base.ultimoDiagnostico,
