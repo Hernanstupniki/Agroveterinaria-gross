@@ -2,12 +2,14 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { ArrowLeft, PawPrint, Plus, Trash2, UserPlus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { clientes } from "@/lib/mock-data"
 
 interface PetFormData {
   nombre: string
@@ -20,10 +22,13 @@ interface PetFormData {
 }
 
 export function NuevoClienteForm() {
-  const [nombre, setNombre] = useState("")
-  const [telefono, setTelefono] = useState("")
-  const [email, setEmail] = useState("")
-  const [direccion, setDireccion] = useState("")
+  const searchParams = useSearchParams()
+  const selectedClientId = Number(searchParams.get("clienteId"))
+  const selectedClient = clientes.find((client) => client.id === selectedClientId) || null
+  const [nombre, setNombre] = useState(selectedClient?.nombre || "")
+  const [telefono, setTelefono] = useState(selectedClient?.telefono || "")
+  const [email, setEmail] = useState(selectedClient?.email || "")
+  const [direccion, setDireccion] = useState(selectedClient?.direccion || "")
   const [petForms, setPetForms] = useState<PetFormData[]>([
     { nombre: "", especie: "", raza: "", nacimiento: "", peso: "", sexo: "", antecedentes: "" },
   ])
@@ -60,12 +65,16 @@ export function NuevoClienteForm() {
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 rounded-full bg-primary px-3 py-1 text-sm font-bold text-primary-foreground">
             <UserPlus className="h-4 w-4" />
-            Nuevo cliente
+            {selectedClient ? "Agregar mascota" : "Nuevo cliente"}
           </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-normal">Agregar cliente</h1>
+            <h1 className="text-3xl font-bold tracking-normal">
+              {selectedClient ? `Agregar mascota a ${selectedClient.nombre}` : "Agregar cliente"}
+            </h1>
             <p className="mt-1 max-w-2xl text-muted-foreground">
-              Carga los datos del cliente y vincula sus mascotas en una sola operacion.
+              {selectedClient
+                ? "El cliente queda preseleccionado para cargar una nueva mascota vinculada."
+                : "Carga los datos del cliente y vincula sus mascotas en una sola operacion."}
             </p>
           </div>
         </div>
@@ -83,7 +92,7 @@ export function NuevoClienteForm() {
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <Label>Nombre del cliente *</Label>
+            <Label>Nombre del cliente</Label>
             <Input
               className="h-11 rounded-xl"
               placeholder="Ej: Maria Garcia"
@@ -92,7 +101,7 @@ export function NuevoClienteForm() {
             />
           </div>
           <div className="space-y-2">
-            <Label>Telefono / WhatsApp *</Label>
+            <Label>Telefono / WhatsApp</Label>
             <Input
               className="h-11 rounded-xl"
               placeholder="(376) XXX XXXX"
@@ -166,7 +175,7 @@ export function NuevoClienteForm() {
               </div>
               <div className="grid gap-3 md:grid-cols-3">
                 <div className="space-y-2">
-                  <Label>Nombre *</Label>
+                  <Label>Nombre</Label>
                   <Input
                     className="h-10 rounded-xl"
                     placeholder="Ej: Luna"
@@ -175,7 +184,7 @@ export function NuevoClienteForm() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Especie *</Label>
+                  <Label>Especie</Label>
                   <Input
                     className="h-10 rounded-xl"
                     placeholder="Perro, gato..."
@@ -236,7 +245,6 @@ export function NuevoClienteForm() {
 
       <Button
         className="h-14 w-full rounded-xl bg-primary px-6 text-base font-bold shadow-md shadow-primary/15 hover:bg-primary/90"
-        disabled={!nombre.trim() || !telefono.trim()}
       >
         <UserPlus className="mr-2 h-5 w-5" />
         Guardar cliente y mascotas

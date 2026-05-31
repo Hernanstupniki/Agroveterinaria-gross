@@ -312,13 +312,12 @@ function ConsultationForm({
   const [antecedenteInput, setAntecedenteInput] = useState("")
 
   function handleSubmit() {
-    if (!form.reason.trim()) return
     const draft: ConsultationDraft = {
       clientId: client.id,
       petId: pet.id,
       date: form.date,
       veterinarian: form.veterinarian,
-      reason: form.reason,
+      reason: form.reason || "Atencion sin detalle",
       symptoms: form.symptoms,
       diagnosis: form.diagnosis,
       treatment: form.treatment,
@@ -392,7 +391,7 @@ function ConsultationForm({
       </div>
 
       <div className="space-y-2">
-        <Label>Motivo de atencion *</Label>
+        <Label>Motivo de atencion</Label>
         <Input className="h-11 rounded-xl" placeholder="Ej: Control postratamiento, vacunacion, enfermedad..." value={form.reason} onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))} />
       </div>
 
@@ -490,7 +489,6 @@ function ConsultationForm({
       <Button
         className="h-14 w-full rounded-xl bg-primary px-6 text-base font-bold shadow-md shadow-primary/15 hover:bg-primary/90"
         onClick={handleSubmit}
-        disabled={!form.reason.trim()}
       >
         <Plus className="mr-2 h-4 w-4" />
         Guardar atencion

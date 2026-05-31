@@ -50,14 +50,13 @@ export function ConsultaForm({ petId, clientId, petName, clientName, veterinaria
   const [showClinicalData, setShowClinicalData] = useState(false)
 
   function handleSubmit() {
-    if (!form.reason.trim()) return
     const draft: ConsultaAtencionDraft = {
       tipo: "consulta",
       petId,
       clientId,
       date: form.date,
       veterinarian: form.veterinarian,
-      reason: form.reason,
+      reason: form.reason || "Atencion sin detalle",
       symptoms: form.symptoms,
       diagnosis: form.diagnosis,
       treatment: form.treatment,
@@ -83,7 +82,7 @@ export function ConsultaForm({ petId, clientId, petName, clientName, veterinaria
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
-          <Label>Fecha *</Label>
+          <Label>Fecha</Label>
           <Input type="date" className="h-11 rounded-xl" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} />
         </div>
         <div className="space-y-2">
@@ -116,7 +115,7 @@ export function ConsultaForm({ petId, clientId, petName, clientName, veterinaria
       </div>
 
       <div className="space-y-2">
-        <Label>Motivo de atencion *</Label>
+        <Label>Motivo de atencion</Label>
         <Input className="h-11 rounded-xl" placeholder="Ej: Control postratamiento, vacunacion, enfermedad..." value={form.reason} onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))} />
       </div>
 
@@ -244,7 +243,6 @@ export function ConsultaForm({ petId, clientId, petName, clientName, veterinaria
         <Button
           className="h-14 flex-1 rounded-xl bg-primary px-6 text-base font-bold shadow-md shadow-primary/15 hover:bg-primary/90"
           onClick={handleSubmit}
-          disabled={!form.reason.trim()}
         >
           <Plus className="mr-2 h-5 w-5" />
           Guardar atencion

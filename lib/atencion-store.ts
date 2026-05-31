@@ -114,13 +114,14 @@ export function guardarAtencionCompleta(draft: AtencionCompletaDraft): AtencionR
   const { petId, clientId, base, acciones } = draft
 
   try {
+    const reason = base.reason || "Atencion sin detalle"
     const clasificacionLabel = CLASIFICACIONES.find((c) => c.key === base.clasificacion)?.label || "Atencion"
     const consultationEvent = createConsultationEvent({
       clientId,
       petId,
       date: base.date,
       veterinarian: base.veterinarian,
-      reason: base.reason,
+      reason,
       symptoms: base.symptoms || "",
       diagnosis: base.diagnosis || "",
       treatment: "",
@@ -157,7 +158,7 @@ export function guardarAtencionCompleta(draft: AtencionCompletaDraft): AtencionR
         eventType: "Recordatorio",
         date: base.nextControlDate,
         veterinarian: base.veterinarian,
-        title: `Control de seguimiento — ${base.reason}`,
+        title: `Control de seguimiento — ${reason}`,
         notes: `Proximo control programado para ${base.nextControlDate}`,
         status: "Programado",
       }

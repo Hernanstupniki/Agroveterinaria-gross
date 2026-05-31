@@ -37,15 +37,14 @@ export function TratamientoInlineForm({ petId, clientId, onSaved, onCancel }: Tr
   })
 
   function handleSubmit() {
-    if (!form.diagnosis.trim() || !form.medicamento.trim()) return
     const draft: TratamientoAtencionDraft = {
       tipo: "tratamiento",
       petId,
       clientId,
       date: form.date,
       veterinarian: form.veterinarian,
-      diagnosis: form.diagnosis,
-      medicamento: form.medicamento,
+      diagnosis: form.diagnosis || "Tratamiento sin diagnostico detallado",
+      medicamento: form.medicamento || "Medicamento no especificado",
       dosis: form.dosis,
       frecuencia: form.frecuencia,
       duracion: form.duracion,
@@ -59,7 +58,7 @@ export function TratamientoInlineForm({ petId, clientId, onSaved, onCancel }: Tr
     <div className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
-          <Label>Fecha *</Label>
+          <Label>Fecha</Label>
           <Input type="date" className="h-11 rounded-xl" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} />
         </div>
         <div className="space-y-2">
@@ -76,12 +75,12 @@ export function TratamientoInlineForm({ petId, clientId, onSaved, onCancel }: Tr
       </div>
 
       <div className="space-y-2">
-        <Label>Diagnostico *</Label>
+        <Label>Diagnostico</Label>
         <Input className="h-11 rounded-xl" placeholder="Diagnostico que motiva el tratamiento" value={form.diagnosis} onChange={(e) => setForm((f) => ({ ...f, diagnosis: e.target.value }))} />
       </div>
 
       <div className="space-y-2">
-        <Label>Medicamento *</Label>
+        <Label>Medicamento</Label>
         <Input className="h-11 rounded-xl" placeholder="Nombre del medicamento" value={form.medicamento} onChange={(e) => setForm((f) => ({ ...f, medicamento: e.target.value }))} />
       </div>
 
@@ -119,7 +118,6 @@ export function TratamientoInlineForm({ petId, clientId, onSaved, onCancel }: Tr
         <Button
           className="h-14 flex-1 rounded-xl bg-primary px-6 text-base font-bold shadow-md shadow-primary/15 hover:bg-primary/90"
           onClick={handleSubmit}
-          disabled={!form.diagnosis.trim() || !form.medicamento.trim()}
         >
           <Plus className="mr-2 h-5 w-5" />
           Guardar tratamiento

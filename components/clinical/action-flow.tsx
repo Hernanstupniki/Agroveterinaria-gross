@@ -152,7 +152,7 @@ export function ClinicalActionFlow({
             </div>
 
             <Button className="h-12 rounded-xl bg-primary px-4 text-center font-bold leading-tight text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90" asChild>
-              <Link href="/clientes">
+              <Link href="/clientes/agregar">
                 <UserPlus className="mr-2 h-4 w-4" />
                 Crear cliente con mascota
               </Link>
@@ -200,7 +200,7 @@ export function ClinicalActionFlow({
                 Cambiar cliente
               </Button>
               <Button className="h-12 rounded-xl bg-primary px-4 text-center font-bold leading-tight hover:bg-primary/90" asChild>
-                <Link href="/clientes">
+                <Link href={`/clientes/agregar?clienteId=${selectedClient.id}`}>
                   <PawPrint className="mr-2 h-4 w-4" />
                   Agregar mascota a este cliente
                 </Link>

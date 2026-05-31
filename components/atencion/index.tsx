@@ -134,7 +134,7 @@ function CirugiaAccionForm({ acciones, setAcciones }: { acciones: AccionesActiva
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Label>Tipo de cirugía *</Label>
+        <Label>Tipo de cirugía</Label>
         <Input className="h-11 rounded-xl" placeholder="Ej: Castración, Extracción..." value={data.surgeryType} onChange={(e) => setAcciones({ ...acciones, cirugia: { ...acciones.cirugia, data: { ...data, surgeryType: e.target.value } } })} />
       </div>
       <div className="space-y-2">
@@ -161,7 +161,7 @@ function EstudioAccionForm({ acciones, setAcciones }: { acciones: AccionesActiva
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Label>Tipo de estudio *</Label>
+        <Label>Tipo de estudio</Label>
         <Input className="h-11 rounded-xl" placeholder="Ej: Radiografía, Análisis sanguíneo, Ecografía..." value={data.studyType} onChange={(e) => setAcciones({ ...acciones, estudio: { ...acciones.estudio, data: { ...data, studyType: e.target.value } } })} />
       </div>
       <div className="space-y-2">
@@ -178,7 +178,7 @@ function RecordatorioAccionForm({ acciones, setAcciones }: { acciones: AccionesA
     <div className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
-          <Label>Fecha del recordatorio *</Label>
+          <Label>Fecha del recordatorio</Label>
           <Input type="date" className="h-11 rounded-xl" value={data.date} onChange={(e) => setAcciones({ ...acciones, recordatorio: { ...acciones.recordatorio, data: { ...data, date: e.target.value } } })} />
         </div>
         <div className="space-y-2">
@@ -196,7 +196,7 @@ function RecordatorioAccionForm({ acciones, setAcciones }: { acciones: AccionesA
         </div>
       </div>
       <div className="space-y-2">
-        <Label>Mensaje *</Label>
+        <Label>Mensaje</Label>
         <Textarea className="rounded-xl" rows={2} placeholder="Descripción del recordatorio..." value={data.message} onChange={(e) => setAcciones({ ...acciones, recordatorio: { ...acciones.recordatorio, data: { ...data, message: e.target.value } } })} />
       </div>
     </div>
@@ -336,7 +336,7 @@ function NuevaAtencionContent({ client, pet }: ClinicalActionSelection) {
                 <div className="rounded-lg border p-4"><p className="text-xs text-muted-foreground mb-1">Clasificacion</p><p className="font-medium">{clasificacionLabel}</p></div>
                 <div className="rounded-lg border p-4"><p className="text-xs text-muted-foreground mb-1">Fecha</p><p className="font-medium">{base.date}</p></div>
                 <div className="rounded-lg border p-4"><p className="text-xs text-muted-foreground mb-1">Veterinario</p><p className="font-medium">{base.veterinarian}</p></div>
-                <div className="rounded-lg border p-4 sm:col-span-2 lg:col-span-3"><p className="text-xs text-muted-foreground mb-1">Motivo</p><p className="font-medium">{base.reason}</p></div>
+                <div className="rounded-lg border p-4 sm:col-span-2 lg:col-span-3"><p className="text-xs text-muted-foreground mb-1">Motivo</p><p className="font-medium">{base.reason || "Atencion sin detalle"}</p></div>
               </div>
               {base.diagnosis && <div className="rounded-lg border p-4"><p className="text-xs text-muted-foreground mb-1">Diagnostico</p><p className="font-medium">{base.diagnosis}</p></div>}
               {(base.weight || base.temperature) && (
@@ -463,7 +463,7 @@ function NuevaAtencionContent({ client, pet }: ClinicalActionSelection) {
                 Atención clínica
               </CardTitle>
               <CardDescription className="mt-1">
-                Registrá los datos de la atención para {pet.nombre}. Motivo es obligatorio; el resto es opcional.
+                Registrá los datos de la atención para {pet.nombre}. Por ahora todos los campos de texto son opcionales.
               </CardDescription>
             </div>
           </div>
@@ -522,11 +522,11 @@ function NuevaAtencionContent({ client, pet }: ClinicalActionSelection) {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label className="text-sm font-semibold">Fecha *</Label>
+              <Label className="text-sm font-semibold">Fecha</Label>
               <Input type="date" className="h-12 rounded-xl" value={base.date} onChange={(e) => setBase((b) => ({ ...b, date: e.target.value }))} />
             </div>
             <div className="space-y-2">
-              <Label className="text-sm font-semibold">Veterinario *</Label>
+              <Label className="text-sm font-semibold">Veterinario</Label>
               <Select value={base.veterinarian} onValueChange={(v) => setBase((b) => ({ ...b, veterinarian: v }))}>
                 <SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger>
                 <SelectContent>{VETERINARIANS.map((v) => (<SelectItem key={v} value={v}>{v}</SelectItem>))}</SelectContent>
@@ -535,7 +535,7 @@ function NuevaAtencionContent({ client, pet }: ClinicalActionSelection) {
           </div>
 
           <div className="space-y-2">
-            <Label className="text-sm font-semibold">Motivo de atención *</Label>
+            <Label className="text-sm font-semibold">Motivo de atención</Label>
             <Input className="h-12 rounded-xl text-base" placeholder="Ej: Vacunacion anual, Control de rutina, Consulta por vomitos..." value={base.reason} onChange={(e) => setBase((b) => ({ ...b, reason: e.target.value }))} />
           </div>
 
@@ -627,7 +627,7 @@ function NuevaAtencionContent({ client, pet }: ClinicalActionSelection) {
           </div>
 
           <div className="pt-2 flex justify-end">
-            <Button className="h-12 rounded-xl bg-primary px-6 text-base font-bold shadow-md shadow-primary/15 hover:bg-primary/90" onClick={() => setStep("acciones")} disabled={!base.reason.trim()}>
+            <Button className="h-12 rounded-xl bg-primary px-6 text-base font-bold shadow-md shadow-primary/15 hover:bg-primary/90" onClick={() => setStep("acciones")}>
               Continuar a acciones clínicas
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>

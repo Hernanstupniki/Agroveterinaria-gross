@@ -61,7 +61,7 @@ export function VacunaInlineForm({ petId, clientId, onSaved, onCancel }: VacunaI
     <div className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
-          <Label>Fecha *</Label>
+          <Label>Fecha</Label>
           <Input type="date" className="h-11 rounded-xl" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} />
         </div>
         <div className="space-y-2">
@@ -78,7 +78,7 @@ export function VacunaInlineForm({ petId, clientId, onSaved, onCancel }: VacunaI
       </div>
 
       <div className="space-y-2">
-        <Label>Vacuna *</Label>
+        <Label>Vacuna</Label>
         {availableVaccines.length > 0 ? (
           <Select value={form.vaccineId} onValueChange={(v) => setForm((f) => ({ ...f, vaccineId: v, doseLabel: "" }))}>
             <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="Seleccionar vacuna" /></SelectTrigger>
