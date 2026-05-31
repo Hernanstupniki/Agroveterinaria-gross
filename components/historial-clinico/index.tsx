@@ -171,8 +171,6 @@ function HistorialContent({ client, pet, initialMode = "timeline" }: { client: C
 
   return (
     <div className="space-y-4">
-      <PatientHeader pet={pet} client={client} />
-
       <Button
         className="h-14 w-full rounded-xl bg-primary px-6 text-base font-bold shadow-md shadow-primary/15 hover:bg-primary/90"
         onClick={() => setMode("consulta")}
