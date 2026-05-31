@@ -2,7 +2,8 @@
 
 import Link from "next/link"
 import { useState } from "react"
-import { Search, Bell, User, ChevronDown, PawPrint } from "lucide-react"
+import { Search, Bell, User, ChevronDown, PawPrint, Stethoscope, LogOut } from "lucide-react"
+import { useAuth } from "@/lib/auth-context"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -49,6 +50,13 @@ export function Topbar() {
   const [petSelectorOpen, setPetSelectorOpen] = useState(false)
   const [selectedPet, setSelectedPet] = useState<typeof patientOptions[0] | null>(null)
   const unreadCount = notifications.filter(n => n.unread).length
+  const { usuario, logout } = useAuth()
+  const iniciales = (usuario?.nombre ?? "AG")
+    .split(" ")
+    .map((p) => p[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase()
 
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b border-border bg-card px-4 lg:px-6">
@@ -213,12 +221,12 @@ export function Topbar() {
             <Avatar className="h-8 w-8">
               <AvatarImage src="/placeholder-user.jpg" />
               <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                DG
+                {iniciales}
               </AvatarFallback>
             </Avatar>
             <div className="hidden md:flex flex-col items-start">
-              <span className="text-sm font-medium">Dr. García</span>
-              <span className="text-xs text-muted-foreground">Veterinario</span>
+              <span className="text-sm font-medium">{usuario?.nombre ?? "Administración"}</span>
+              <span className="text-xs text-muted-foreground capitalize">{usuario?.rol ?? "admin"}</span>
             </div>
             <ChevronDown className="hidden md:block h-4 w-4 text-muted-foreground" />
           </Button>
@@ -230,9 +238,15 @@ export function Topbar() {
             <User className="mr-2 h-4 w-4" />
             Perfil
           </DropdownMenuItem>
-          <DropdownMenuItem>Configuración</DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href="/asistente">
+              <Stethoscope className="mr-2 h-4 w-4" />
+              Modo simple
+            </Link>
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="text-destructive">
+          <DropdownMenuItem className="text-destructive" onClick={logout}>
+            <LogOut className="mr-2 h-4 w-4" />
             Cerrar sesión
           </DropdownMenuItem>
         </DropdownMenuContent>
