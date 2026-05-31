@@ -87,7 +87,7 @@ export function ModuleButton({
   tone?: ModuleTone
 }) {
   const className = cn(
-    buttonVariants({ variant: "outline", size: "sm" }),
+    buttonVariants({ variant: "outline", size: "lg" }),
     "flex-1",
     "active:scale-[0.98]",
   )

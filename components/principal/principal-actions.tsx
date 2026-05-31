@@ -194,7 +194,7 @@ function PacienteActivoCard({ index }: { index: number }) {
           <button
             type="button"
             className={cn(
-              "inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-md border bg-background px-3 text-sm font-medium shadow-xs transition-all hover:bg-accent hover:text-accent-foreground active:scale-[0.98]",
+              "inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-md border bg-background px-6 text-sm font-medium shadow-xs transition-all hover:bg-accent hover:text-accent-foreground active:scale-[0.98]",
             )}
           >
             Buscar
