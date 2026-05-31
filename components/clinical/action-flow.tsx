@@ -4,7 +4,7 @@ import { useMemo, useState, type ReactNode } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import type { LucideIcon } from "lucide-react"
-import { ArrowLeft, PawPrint, Search, UserPlus, Users } from "lucide-react"
+import { ArrowLeft, PawPrint, Search, UserPlus, Users, ClipboardList, FileText } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -224,42 +224,48 @@ export function ClinicalActionFlow({
               </div>
             </div>
 
-            {/* Center: quick chips / data */}
+            {/* Center: quick data (diagnosis + small stats). Chips moved below for clarity. */}
             <div className="flex flex-col gap-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="outline" className="text-xs">{selectedPet.estadoGeneral}</Badge>
-                {selectedPet.alergias && selectedPet.alergias.length > 0 && (
-                  <Badge variant="outline" className="text-xs">Alergia: {selectedPet.alergias[0]}</Badge>
-                )}
-                {selectedPet.antecedentes && selectedPet.antecedentes.length > 0 && (
-                  <Badge variant="outline" className="text-xs">Antecedente: {selectedPet.antecedentes[0]}</Badge>
-                )}
+              <div className="flex gap-4 items-center text-xs text-muted-foreground truncate">
+                {selectedPet.peso && <div className="truncate">Peso: <span className="font-medium text-foreground">{selectedPet.peso} kg</span></div>}
+                {selectedPet.ultimaConsulta && <div className="truncate">Última consulta: <span className="font-medium text-foreground">{selectedPet.ultimaConsulta}</span></div>}
               </div>
-              <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-                <div className="flex gap-4 items-center">
-                  {selectedPet.peso && <div>Peso: <span className="font-medium text-foreground">{selectedPet.peso} kg</span></div>}
-                  {selectedPet.ultimaConsulta && <div>Última consulta: <span className="font-medium text-foreground">{selectedPet.ultimaConsulta}</span></div>}
-                </div>
-                {selectedPet.ultimoDiagnostico && (
-                  <div className="whitespace-normal text-xs">Diagnóstico: <span className="font-medium text-foreground">{selectedPet.ultimoDiagnostico}</span></div>
-                )}
-              </div>
+              {selectedPet.ultimoDiagnostico && (
+                <div className="text-xs text-muted-foreground whitespace-normal">Diagnóstico: <span className="font-medium text-foreground">{selectedPet.ultimoDiagnostico}</span></div>
+              )}
             </div>
 
             {/* Right: actions */}
             <div className="flex flex-col items-end justify-center gap-2">
               <Button variant="outline" size="sm" className="h-10 rounded-lg px-4 text-sm font-semibold" onClick={() => setSelectedPetId(null)}>
+                <UserPlus className="mr-2 h-4 w-4" />
                 Cambiar mascota
               </Button>
               <div className="flex gap-2">
-                <a className="text-sm text-muted-foreground hover:text-primary" href={`/historial-clinico/ver?clienteId=${selectedClient.id}&mascotaId=${selectedPet.id}`} target="_blank" rel="noopener noreferrer">Historial clínico</a>
-                <a className="text-sm text-muted-foreground hover:text-primary" href={`/mascotas/${selectedPet.id}`} target="_blank" rel="noopener noreferrer">Ficha clínica</a>
+                <Button variant="ghost" size="sm" className="h-8 rounded-lg px-3 text-sm" asChild>
+                  <a href={`/historial-clinico/ver?clienteId=${selectedClient.id}&mascotaId=${selectedPet.id}`} target="_blank" rel="noopener noreferrer"><ClipboardList className="mr-2 h-4 w-4" />Historial clínico</a>
+                </Button>
+                <Button variant="ghost" size="sm" className="h-8 rounded-lg px-3 text-sm" asChild>
+                  <a href={`/mascotas/${selectedPet.id}`} target="_blank" rel="noopener noreferrer"><FileText className="mr-2 h-4 w-4" />Ficha clínica</a>
+                </Button>
               </div>
             </div>
           </div>
 
+          {/* Chips row: moved below main grid to avoid crowding center */}
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <Badge variant="outline" className="text-xs">{selectedPet.estadoGeneral}</Badge>
+            {selectedPet.alergias && selectedPet.alergias.length > 0 && (
+              <Badge variant="destructive" className="text-xs">Alergia: {selectedPet.alergias[0]}</Badge>
+            )}
+            {selectedPet.antecedentes && selectedPet.antecedentes.length > 0 && (
+              <Badge variant="outline" className="text-xs">Antecedente: {selectedPet.antecedentes[0]}</Badge>
+            )}
+          </div>
+
           {children({ client: selectedClient, pet: selectedPet })}
         </div>
+      )}
       )}
     </div>
   )
