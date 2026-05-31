@@ -1,7 +1,9 @@
 "use client"
 
 import { useCallback, useMemo, useState } from "react"
-import { ClipboardList, Clock, Download, FileText, MessageCircle, Pill, Plus, Scissors, Search, Stethoscope, Syringe, X, Activity, ArrowLeft } from "lucide-react"
+import Link from "next/link"
+import type { LucideIcon } from "lucide-react"
+import { ClipboardList, Plus, Search, Stethoscope, X, ArrowLeft, ShieldAlert, HeartPulse } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,15 +18,39 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { ClinicalActionFlow } from "@/components/clinical/action-flow"
+import { ClinicalTimelineItem } from "@/components/clinical/timeline-item"
 import {
   addConsultationFromDraft,
   buildClinicalTimeline,
   searchClinicalTimeline,
-  type ClinicalTimelineEvent,
   type ConsultationDraft,
   CLINICAL_HISTORY_EVENT_TYPES,
   VETERINARIANS,
 } from "@/lib/clinical-history-builder"
+import { updateMascotaData, getMascotaData } from "@/lib/mascota-store"
+
+function ActionCard({ icon: Icon, title, description, buttonLabel, href }: { icon: LucideIcon; title: string; description: string; buttonLabel: string; href: string }) {
+  return (
+    <Link href={href} className="group block">
+      <Card className="h-full transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg">
+        <CardContent className="flex h-full flex-col gap-5 p-5">
+          <div className="flex items-start gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+              <Icon className="h-7 w-7" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold leading-tight">{title}</h2>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
+            </div>
+          </div>
+          <div className="mt-auto flex h-14 items-center justify-center rounded-xl bg-primary px-4 text-base font-bold text-primary-foreground group-hover:bg-primary/90">
+            <span className="text-center leading-tight">{buttonLabel}</span>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
+  )
+}
 
 const estadoColors: Record<string, string> = {
   Saludable: "bg-success text-success-foreground",
@@ -32,110 +58,6 @@ const estadoColors: Record<string, string> = {
   "Vacuna vencida": "bg-destructive text-destructive-foreground",
   "Control pendiente": "bg-secondary text-secondary-foreground",
   "Cirugía programada": "bg-primary text-primary-foreground",
-}
-
-const tipoEventoIcons: Record<string, typeof Activity> = {
-  Consulta: Stethoscope,
-  Vacuna: Syringe,
-  Estudio: FileText,
-  Cirugía: Scissors,
-  Tratamiento: Pill,
-  Control: Clock,
-  Recordatorio: MessageCircle,
-}
-
-const tipoEventoColors: Record<string, string> = {
-  Consulta: "border-primary/30 bg-primary text-primary-foreground",
-  Vacuna: "border-success/30 bg-success text-success-foreground",
-  Estudio: "border-secondary/40 bg-secondary text-secondary-foreground",
-  Cirugía: "border-destructive/30 bg-destructive text-destructive-foreground",
-  Tratamiento: "border-warning/40 bg-warning text-warning-foreground",
-  Control: "border-primary/20 bg-primary/5 text-primary",
-  Recordatorio: "border-secondary/40 bg-secondary text-secondary-foreground",
-}
-
-function formatDate(dateStr: string) {
-  if (!dateStr) return "-"
-  const [year, month, day] = dateStr.split("-")
-  if (!year || !month || !day) return dateStr
-  return `${day}/${month}/${year}`
-}
-
-function ClinicalTimelineItem({
-  event,
-  isExpanded,
-  onToggle,
-}: {
-  event: ClinicalTimelineEvent
-  isExpanded: boolean
-  onToggle: () => void
-}) {
-  const Icon = tipoEventoIcons[event.tipo] || Activity
-  const colorClass = tipoEventoColors[event.tipo] || "border-muted bg-muted text-muted-foreground"
-
-  return (
-    <article className="relative pl-11">
-      <div className={`absolute left-0 top-1 flex h-8 w-8 items-center justify-center rounded-full border-2 ${colorClass}`}>
-        <Icon className="h-4 w-4" />
-      </div>
-      <div className="rounded-xl border bg-card p-4 shadow-sm">
-        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline">{event.tipo}</Badge>
-              {event.estado && <Badge variant="outline">{event.estado}</Badge>}
-              <span className="text-sm text-muted-foreground">{formatDate(event.fecha)}</span>
-              <span className="text-sm text-muted-foreground">· {event.veterinario}</span>
-            </div>
-            <h3 className="mt-2 font-bold">{event.motivo || event.procedimiento || event.tipo}</h3>
-            {(event.diagnostico || event.tratamiento) && (
-              <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                {event.diagnostico || event.tratamiento}
-              </p>
-            )}
-          </div>
-          <Button variant="outline" className="h-10 rounded-xl" onClick={onToggle}>
-            Ver detalle
-          </Button>
-        </div>
-
-        {isExpanded && (
-          <div className="mt-4 border-t pt-4">
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {event.diagnostico && <TimelineDetail label="Diagnostico" value={event.diagnostico} />}
-              {event.sintomas && event.sintomas !== "-" && <TimelineDetail label="Sintomas" value={event.sintomas} />}
-              {event.tratamiento && event.tratamiento !== "-" && <TimelineDetail label="Tratamiento" value={event.tratamiento} />}
-              {event.vacuna && <TimelineDetail label="Vacuna" value={`${event.vacuna} · ${event.laboratorio || "-"}`} />}
-              {event.peso && <TimelineDetail label="Peso" value={`${event.peso} kg`} />}
-              {event.temperatura && <TimelineDetail label="Temperatura" value={`${event.temperatura} °C`} />}
-              {event.procedimiento && <TimelineDetail label="Procedimiento" value={event.procedimiento} />}
-              {event.proximoControl && <TimelineDetail label="Proximo control" value={formatDate(event.proximoControl)} />}
-            </div>
-            {event.observaciones && (
-              <div className="mt-3 rounded-lg bg-muted/50 p-3 text-sm">{event.observaciones}</div>
-            )}
-            {event.archivo && (
-              <div className="mt-3 flex justify-end border-t pt-3">
-                <Button variant="outline" size="sm">
-                  <Download className="mr-2 h-4 w-4" />
-                  Ver archivo
-                </Button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </article>
-  )
-}
-
-function TimelineDetail({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-sm font-medium">{value}</p>
-    </div>
-  )
 }
 
 function PatientHeader({ pet, client }: { pet: NonNullable<Parameters<typeof ClinicalActionFlow>[0]["children"]>["pet"]; client: NonNullable<Parameters<typeof ClinicalActionFlow>[0]["children"]>["client"] }) {
@@ -158,11 +80,13 @@ function PatientHeader({ pet, client }: { pet: NonNullable<Parameters<typeof Cli
             <p className="text-sm text-muted-foreground">
               Dueno: {client.nombre} · {client.telefono} · {client.email}
             </p>
-            {(pet.alergias.length > 0 || pet.antecedentes) && (
+            {(pet.alergias.length > 0 || pet.antecedentes.length > 0 || (pet.condicionesCronicas && pet.condicionesCronicas.length > 0)) && (
               <p className="mt-1 text-sm text-muted-foreground">
                 {pet.alergias.length > 0 && `Alergias: ${pet.alergias.join(", ")}`}
-                {pet.alergias.length > 0 && pet.antecedentes && " · "}
-                {pet.antecedentes && `Antecedentes: ${pet.antecedentes}`}
+                {pet.alergias.length > 0 && (pet.antecedentes.length > 0 || (pet.condicionesCronicas && pet.condicionesCronicas.length > 0)) && " · "}
+                {pet.antecedentes.length > 0 && `Antecedentes: ${pet.antecedentes.join(", ")}`}
+                {pet.antecedentes.length > 0 && pet.condicionesCronicas && pet.condicionesCronicas.length > 0 && " · "}
+                {pet.condicionesCronicas && pet.condicionesCronicas.length > 0 && `Condiciones cronicas: ${pet.condicionesCronicas.join(", ")}`}
               </p>
             )}
           </div>
@@ -174,8 +98,8 @@ function PatientHeader({ pet, client }: { pet: NonNullable<Parameters<typeof Cli
 
 type HistorialMode = "timeline" | "consulta"
 
-function HistorialContent({ client, pet }: { client: NonNullable<Parameters<typeof ClinicalActionFlow>[0]["children"]>["client"]; pet: NonNullable<Parameters<typeof ClinicalActionFlow>[0]["children"]>["pet"] }) {
-  const [mode, setMode] = useState<HistorialMode>("timeline")
+function HistorialContent({ client, pet, initialMode = "timeline" }: { client: NonNullable<Parameters<typeof ClinicalActionFlow>[0]["children"]>["client"]; pet: NonNullable<Parameters<typeof ClinicalActionFlow>[0]["children"]>["pet"]; initialMode?: HistorialMode }) {
+  const [mode, setMode] = useState<HistorialMode>(initialMode)
   const [refreshKey, setRefreshKey] = useState(0)
   const [expandedEvent, setExpandedEvent] = useState<string | number | null>(null)
 
@@ -231,10 +155,10 @@ function HistorialContent({ client, pet }: { client: NonNullable<Parameters<type
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Stethoscope className="h-5 w-5 text-primary" />
-              Agregar consulta
+              Registrar atencion clinica
             </CardTitle>
             <CardDescription>
-              Registrar una nueva consulta clinica para {pet.nombre} ({pet.especie} · {pet.raza}).
+              Registrar una nueva atencion clinica para {pet.nombre} ({pet.especie} · {pet.raza}).
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -254,7 +178,14 @@ function HistorialContent({ client, pet }: { client: NonNullable<Parameters<type
         onClick={() => setMode("consulta")}
       >
         <Plus className="mr-2 h-5 w-5" />
-        Agregar consulta
+        Registrar atencion clinica
+      </Button>
+
+      <Button variant="outline" className="h-12 w-full rounded-xl text-base font-semibold" asChild>
+        <Link href={`/atencion/nueva?clienteId=${client.id}&mascotaId=${pet.id}`}>
+          <HeartPulse className="mr-2 h-5 w-5" />
+          Nueva atencion
+        </Link>
       </Button>
 
       <Card>
@@ -385,6 +316,11 @@ function ConsultationForm({
     attachmentName: "",
   })
 
+  const [newAlergias, setNewAlergias] = useState<string[]>([])
+  const [newAntecedentes, setNewAntecedentes] = useState<string[]>([])
+  const [alergiaInput, setAlergiaInput] = useState("")
+  const [antecedenteInput, setAntecedenteInput] = useState("")
+
   function handleSubmit() {
     if (!form.reason.trim()) return
     const draft: ConsultationDraft = {
@@ -404,6 +340,19 @@ function ConsultationForm({
       attachmentName: form.attachmentName,
     }
     addConsultationFromDraft(draft)
+
+    if (newAlergias.length > 0 || newAntecedentes.length > 0) {
+      const currentData = getMascotaData(pet.id)
+      const updates: Record<string, unknown> = {}
+      if (newAlergias.length > 0) {
+        updates.alergias = [...(currentData.alergias || []), ...newAlergias]
+      }
+      if (newAntecedentes.length > 0) {
+        updates.antecedentes = [...(currentData.antecedentes || []), ...newAntecedentes]
+      }
+      updateMascotaData(pet.id, updates as Record<string, unknown> !== undefined ? updates as import("@/lib/mascota-store").MascotaOverride : {})
+    }
+
     onSaved()
   }
 
@@ -420,7 +369,7 @@ function ConsultationForm({
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
-          <Label>Fecha de consulta</Label>
+          <Label>Fecha</Label>
           <Input type="date" className="h-11 rounded-xl" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} />
         </div>
         <div className="space-y-2">
@@ -453,7 +402,7 @@ function ConsultationForm({
       </div>
 
       <div className="space-y-2">
-        <Label>Motivo de consulta *</Label>
+        <Label>Motivo de atencion *</Label>
         <Input className="h-11 rounded-xl" placeholder="Ej: Control postratamiento, vacunacion, enfermedad..." value={form.reason} onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))} />
       </div>
 
@@ -488,14 +437,112 @@ function ConsultationForm({
         <Textarea className="rounded-xl" rows={2} placeholder="Notas adicionales..." value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
       </div>
 
+      <details className="rounded-xl border p-4">
+        <summary className="cursor-pointer font-semibold">
+          <ShieldAlert className="mr-2 inline h-4 w-4 text-warning" />
+          Datos clinicos importantes detectados (opcional)
+        </summary>
+        <div className="mt-4 space-y-4">
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <ShieldAlert className="h-4 w-4 text-destructive" />
+              Agregar alergia detectada
+            </Label>
+            <div className="flex gap-2">
+              <Input className="h-10 flex-1" placeholder="Ej: Penicilina, Pollo..." value={alergiaInput} onChange={(e) => setAlergiaInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); const v = alergiaInput.trim(); if (v) { setNewAlergias((a) => [...a, v]); setAlergiaInput("") } } }} />
+              <Button type="button" variant="outline" className="h-10 px-3" onClick={() => { const v = alergiaInput.trim(); if (v) { setNewAlergias((a) => [...a, v]); setAlergiaInput("") } }}>
+                <Plus className="mr-1 h-4 w-4" />
+                Agregar
+              </Button>
+            </div>
+            {newAlergias.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {newAlergias.map((a, i) => (
+                  <span key={i} className="inline-flex items-center gap-1 rounded-full border border-destructive/30 bg-destructive/10 px-3 py-1 text-sm font-medium text-destructive">
+                    {a}
+                    <button onClick={() => setNewAlergias((arr) => arr.filter((_, idx) => idx !== i))} className="ml-1 rounded-full p-0.5 hover:bg-black/10"><X className="h-3 w-3" /></button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <HeartPulse className="h-4 w-4 text-warning" />
+              Agregar antecedente detectado
+            </Label>
+            <div className="flex gap-2">
+              <Input className="h-10 flex-1" placeholder="Ej: Convulsiones anteriores, Cirugía previa..." value={antecedenteInput} onChange={(e) => setAntecedenteInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); const v = antecedenteInput.trim(); if (v) { setNewAntecedentes((a) => [...a, v]); setAntecedenteInput("") } } }} />
+              <Button type="button" variant="outline" className="h-10 px-3" onClick={() => { const v = antecedenteInput.trim(); if (v) { setNewAntecedentes((a) => [...a, v]); setAntecedenteInput("") } }}>
+                <Plus className="mr-1 h-4 w-4" />
+                Agregar
+              </Button>
+            </div>
+            {newAntecedentes.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {newAntecedentes.map((a, i) => (
+                  <span key={i} className="inline-flex items-center gap-1 rounded-full border border-warning/30 bg-warning/10 px-3 py-1 text-sm font-medium text-warning">
+                    {a}
+                    <button onClick={() => setNewAntecedentes((arr) => arr.filter((_, idx) => idx !== i))} className="ml-1 rounded-full p-0.5 hover:bg-black/10"><X className="h-3 w-3" /></button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <p className="text-xs text-muted-foreground">
+            Las alergias y antecedentes detectados se agregaran a la ficha de la mascota y se registraran como eventos en la historia clinica.
+          </p>
+        </div>
+      </details>
+
       <Button
         className="h-14 w-full rounded-xl bg-primary px-6 text-base font-bold shadow-md shadow-primary/15 hover:bg-primary/90"
         onClick={handleSubmit}
         disabled={!form.reason.trim()}
       >
         <Plus className="mr-2 h-4 w-4" />
-        Guardar consulta
+        Guardar atencion
       </Button>
+    </div>
+  )
+}
+
+export function HistorialClinicoPage() {
+  return (
+    <div className="space-y-6">
+      <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5">
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-2 rounded-full bg-primary px-3 py-1 text-sm font-bold text-primary-foreground">
+            <ClipboardList className="h-4 w-4" />
+            Historial Clinico
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold tracking-normal">Historial Clinico</h1>
+            <p className="mt-1 max-w-2xl text-muted-foreground">
+              Consulta la historia clinica de una mascota o registra una nueva atencion clinica.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <ActionCard
+          icon={ClipboardList}
+          title="Ver historial clinico"
+          description="Selecciona cliente y mascota para consultar su historia clinica, eventos y evolucion."
+          buttonLabel="Ver historial"
+          href="/historial-clinico/ver"
+        />
+        <ActionCard
+          icon={Stethoscope}
+          title="Registrar atencion clinica"
+          description="Selecciona cliente y mascota para registrar una nueva atencion, consulta, control o evento clinico."
+          buttonLabel="Registrar atencion"
+          href="/historial-clinico/agregar-consulta"
+        />
+      </div>
     </div>
   )
 }
@@ -509,6 +556,19 @@ export function HistorialClinico() {
       icon={ClipboardList}
     >
       {({ client, pet }) => <HistorialContent client={client} pet={pet} />}
+    </ClinicalActionFlow>
+  )
+}
+
+export function ConsultaRegistrationFlow() {
+  return (
+    <ClinicalActionFlow
+      title="Registrar atencion clinica"
+      description="Selecciona cliente y mascota para registrar una nueva atencion clinica."
+      actionLabel="Registrar atencion"
+      icon={Stethoscope}
+    >
+      {({ client, pet }) => <HistorialContent client={client} pet={pet} initialMode="consulta" />}
     </ClinicalActionFlow>
   )
 }

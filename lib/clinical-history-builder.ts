@@ -2,6 +2,7 @@ import { clientes, mascotas, historialLuna, vacunasRegistradas, estudiosArchivos
 import { buildMockClinicalHistory } from "@/lib/clinical-history-workflow"
 import {
   createConsultationEvent,
+  createAlertaClinicaEvent,
   readStoredClinicalHistoryEvents,
   writeStoredClinicalHistoryEvents,
   type ClinicalHistoryEvent,
@@ -10,6 +11,7 @@ import {
 import { profesionales } from "@/lib/mock-data"
 
 export type { ClinicalHistoryEvent, ConsultationDraft }
+export { createAlertaClinicaEvent }
 
 export const CLINICAL_HISTORY_EVENT_TYPES = [
   "Consulta",
@@ -19,6 +21,7 @@ export const CLINICAL_HISTORY_EVENT_TYPES = [
   "Estudio",
   "Control",
   "Recordatorio",
+  "Alerta clínica",
 ] as const
 
 export const VETERINARIANS = profesionales
@@ -59,7 +62,9 @@ export interface PetWithClient {
   clienteTelefono: string
   clienteEmail: string
   alergias: string[]
-  antecedentes: string
+  antecedentes: string[]
+  condicionesCronicas: string[]
+  observacionesClinicas: string
   ultimaConsulta: string
   ultimoDiagnostico: string
   esterilizado: boolean
@@ -70,6 +75,13 @@ export function getPetWithClient(petId: number): PetWithClient | null {
   if (!pet) return null
   const client = clientes.find((c) => c.id === pet.clienteId)
   if (!client) return null
+
+  const normalizeArr = (v: unknown): string[] => {
+    if (Array.isArray(v)) return v
+    if (typeof v === "string" && v.trim()) return [v.trim()]
+    return []
+  }
+
   return {
     id: pet.id,
     nombre: pet.nombre,
@@ -84,7 +96,9 @@ export function getPetWithClient(petId: number): PetWithClient | null {
     clienteTelefono: client.telefono,
     clienteEmail: client.email,
     alergias: pet.alergias,
-    antecedentes: pet.antecedentes,
+    antecedentes: normalizeArr(pet.antecedentes),
+    condicionesCronicas: normalizeArr((pet as Record<string, unknown>).condicionesCronicas),
+    observacionesClinicas: ((pet as Record<string, unknown>).observacionesClinicas as string) || "",
     ultimaConsulta: pet.ultimaConsulta,
     ultimoDiagnostico: pet.ultimoDiagnostico,
     esterilizado: pet.esterilizado,

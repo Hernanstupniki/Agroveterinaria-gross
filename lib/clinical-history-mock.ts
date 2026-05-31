@@ -10,6 +10,7 @@ export type ClinicalHistoryEventType =
   | "Estudio"
   | "Control"
   | "Recordatorio"
+  | "Alerta clínica"
 
 export interface ClinicalHistoryEvent {
   id: string
@@ -34,6 +35,8 @@ export interface ClinicalHistoryEvent {
   relatedTreatmentId?: string
   relatedVaccineId?: string
   attachmentName?: string
+  alertType?: string
+  alertDetail?: string
 }
 
 export interface ConsultationDraft {
@@ -107,5 +110,39 @@ export function createConsultationEvent(draft: ConsultationDraft): ClinicalHisto
     nextControlDate: draft.nextControlDate,
     status: draft.status || "Registrada",
     attachmentName: draft.attachmentName,
+  }
+}
+
+const ALERTA_CLINICA_TITLES: Record<string, string> = {
+  alergia: "Alergia registrada",
+  antecedente: "Antecedente registrado",
+  condicion_cronica: "Condición crónica registrada",
+  observacion: "Observación clínica registrada",
+}
+
+export function createAlertaClinicaEvent(params: {
+  petId: number
+  alertType: string
+  detail: string
+  veterinarian?: string
+}): ClinicalHistoryEvent {
+  const context = getPetContext(params.petId)
+  const title = ALERTA_CLINICA_TITLES[params.alertType] || "Alerta clínica registrada"
+
+  return {
+    id: `alerta-clinica-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    petId: context.pet.id,
+    clientId: context.client.id,
+    petName: context.petName,
+    clientName: context.clientName,
+    eventType: "Alerta clínica",
+    date: "2026-05-30",
+    veterinarian: params.veterinarian || "Edición de ficha",
+    title,
+    reason: params.detail,
+    notes: `Se registró ${params.alertType === "alergia" ? "alergia a" : params.alertType === "antecedente" ? "antecedente" : params.alertType === "condicion_cronica" ? "condición crónica" : "observación clínica"}: ${params.detail}`,
+    alertType: params.alertType,
+    alertDetail: params.detail,
+    status: "Registrada",
   }
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import type { LucideIcon } from "lucide-react"
 import {
   ClipboardList,
   FileHeart,
@@ -29,6 +30,67 @@ import { NewClientDialog } from "@/components/clientes/new-client-dialog"
 import { clientes, mascotas } from "@/lib/mock-data"
 
 type Client = (typeof clientes)[number]
+
+function ActionCard({ icon: Icon, title, description, buttonLabel, href }: { icon: LucideIcon; title: string; description: string; buttonLabel: string; href: string }) {
+  return (
+    <Link href={href} className="group block">
+      <Card className="h-full transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg">
+        <CardContent className="flex h-full flex-col gap-5 p-5">
+          <div className="flex items-start gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+              <Icon className="h-7 w-7" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold leading-tight">{title}</h2>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
+            </div>
+          </div>
+          <div className="mt-auto flex h-14 items-center justify-center rounded-xl bg-primary px-4 text-base font-bold text-primary-foreground group-hover:bg-primary/90">
+            <span className="text-center leading-tight">{buttonLabel}</span>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
+  )
+}
+
+export function ClientesLandingPage() {
+  return (
+    <div className="space-y-6">
+      <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5">
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-2 rounded-full bg-primary px-3 py-1 text-sm font-bold text-primary-foreground">
+            <Users className="h-4 w-4" />
+            Clientes
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold tracking-normal">Que queres hacer con clientes?</h1>
+            <p className="mt-1 max-w-2xl text-muted-foreground">
+              Busca un cliente existente o agrega uno nuevo con sus mascotas vinculadas.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <ActionCard
+          icon={Search}
+          title="Buscar cliente"
+          description="Busca por nombre, telefono, email o mascota para ver ficha, mascotas y accesos rapidos."
+          buttonLabel="Buscar cliente"
+          href="/clientes/buscar"
+        />
+        <ActionCard
+          icon={UserPlus}
+          title="Agregar cliente"
+          description="Carga un nuevo cliente con sus datos y mascotas vinculadas en un formulario completo."
+          buttonLabel="Agregar cliente"
+          href="/clientes/agregar"
+        />
+      </div>
+    </div>
+  )
+}
 
 export function ClientesPage() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -64,17 +126,6 @@ export function ClientesPage() {
             </p>
           </div>
         </div>
-      </div>
-
-      <div className="flex justify-center">
-        <NewClientDialog
-          trigger={
-            <Button className="min-h-16 w-full max-w-md rounded-xl bg-primary px-6 py-4 text-lg font-bold leading-tight shadow-md shadow-primary/20 hover:bg-primary/90 sm:text-xl">
-              <UserPlus className="mr-3 h-6 w-6 shrink-0" />
-              Agregar cliente
-            </Button>
-          }
-        />
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[380px_minmax(0,1fr)]">
@@ -245,12 +296,12 @@ export function ClientesPage() {
                 <div>
                   <p className="font-semibold">Atencion rapida del cliente seleccionado</p>
                   <p className="text-sm text-muted-foreground">
-                    Elegi una mascota y carga lo ocurrido desde el modulo clinico correspondiente.
+                    Registra una atencion clinica para una de las mascotas de este cliente.
                   </p>
                 </div>
               </div>
               <Button className="h-12 bg-primary px-5 font-bold hover:bg-primary/90" asChild>
-                <Link href="/tratamientos">Iniciar carga clinica</Link>
+                <Link href={`/atencion/nueva?clienteId=${selectedCliente.id}`}>Nueva atencion</Link>
               </Button>
             </CardContent>
           </Card>

@@ -4,15 +4,16 @@ import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
-import { Home, Pill, Scissors, Syringe, Users, ClipboardList, ChevronLeft, ChevronRight, Menu } from "lucide-react"
+import { HeartPulse, Home, Pill, Scissors, Syringe, Users, ClipboardList, ChevronLeft, ChevronRight, Menu } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
 const menuItems = [
   { href: "/", label: "Inicio", icon: Home },
+  { href: "/atencion/nueva", label: "Nueva atencion", icon: HeartPulse },
   { href: "/clientes", label: "Clientes", icon: Users },
-  { href: "/historial-clinico", label: "Historial Clínico", icon: ClipboardList },
+  { href: "/historial-clinico", label: "Historial Clinico", icon: ClipboardList },
   { href: "/vacunas", label: "Vacunas", icon: Syringe },
   { href: "/tratamientos", label: "Tratamientos", icon: Pill },
   { href: "/cirugias", label: "Cirugías", icon: Scissors },

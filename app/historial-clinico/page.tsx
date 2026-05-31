@@ -1,18 +1,15 @@
-import { Suspense } from "react"
 import { AppLayout } from "@/components/layout"
-import { HistorialClinico } from "@/components/historial-clinico"
+import { HistorialClinicoPage } from "@/components/historial-clinico"
 
 export const metadata = {
   title: "Historial Clinico",
   description: "Consulta y registra eventos clinicos de una mascota.",
 }
 
-export default function HistorialClinicoPage() {
+export default function HistorialClinicoPageRoute() {
   return (
     <AppLayout>
-      <Suspense fallback={null}>
-        <HistorialClinico />
-      </Suspense>
+      <HistorialClinicoPage />
     </AppLayout>
   )
 }

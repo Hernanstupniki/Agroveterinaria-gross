@@ -1,13 +1,12 @@
 "use client"
 
-import { useEffect, useState, type ReactNode } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import {
   Activity,
   AlertTriangle,
   ArrowLeft,
-  ChevronRight,
   Clock,
   Download,
   Edit,
@@ -26,37 +25,25 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Textarea } from "@/components/ui/textarea"
+import { ClinicalTimelineItem } from "@/components/clinical/timeline-item"
+import { EditarFichaDialog } from "@/components/mascotas/editar-ficha-dialog"
 import {
   cirugias,
   clientes,
   estudiosArchivos,
-  historialLuna,
-  mascotas,
   recordatoriosProgramados,
   tratamientosActivos,
   vacunasRegistradas,
 } from "@/lib/mock-data"
-import { buildMockClinicalHistory } from "@/lib/clinical-history-workflow"
+import { getMascotaData, type MascotaData } from "@/lib/mascota-store"
 import {
-  createConsultationEvent,
-  readStoredClinicalHistoryEvents,
-  writeStoredClinicalHistoryEvents,
-  type ClinicalHistoryEvent,
-  type ConsultationDraft,
-} from "@/lib/clinical-history-mock"
+  buildClinicalTimeline,
+  searchClinicalTimeline,
+  type ClinicalTimelineEvent,
+} from "@/lib/clinical-history-builder"
 import {
   buildVaccineDisplayList,
   formatOverdueText,
@@ -75,26 +62,6 @@ const estadoColors: Record<string, string> = {
   "Vacuna vencida": "bg-destructive text-destructive-foreground",
   "Control pendiente": "bg-secondary text-secondary-foreground",
   "Cirugía programada": "bg-primary text-primary-foreground",
-}
-
-const tipoEventoIcons: Record<string, typeof Activity> = {
-  Consulta: Stethoscope,
-  Vacuna: Syringe,
-  Estudio: FileText,
-  Cirugía: Scissors,
-  Tratamiento: Pill,
-  Control: Clock,
-  Recordatorio: MessageCircle,
-}
-
-const tipoEventoColors: Record<string, string> = {
-  Consulta: "border-primary/30 bg-primary text-primary-foreground",
-  Vacuna: "border-success/30 bg-success text-success-foreground",
-  Estudio: "border-secondary/40 bg-secondary text-secondary-foreground",
-  Cirugía: "border-destructive/30 bg-destructive text-destructive-foreground",
-  Tratamiento: "border-warning/40 bg-warning text-warning-foreground",
-  Control: "border-primary/20 bg-primary/5 text-primary",
-  Recordatorio: "border-secondary/40 bg-secondary text-secondary-foreground",
 }
 
 const vacunaGroups = getVaccineDisplayGroups()
@@ -125,26 +92,6 @@ interface FichaMascotaProps {
   mascotaId: number
 }
 
-interface TimelineEvent {
-  id: string | number
-  fecha: string
-  tipo: string
-  veterinario: string
-  motivo?: string
-  sintomas?: string
-  diagnostico?: string
-  tratamiento?: string
-  vacuna?: string
-  laboratorio?: string
-  peso?: string
-  temperatura?: string
-  procedimiento?: string
-  proximoControl?: string
-  observaciones?: string
-  estado?: string
-  archivo?: string | null
-}
-
 interface ClinicalNextStep {
   id: string
   label: string
@@ -157,32 +104,6 @@ interface ClinicalNextStep {
 }
 
 const historiaTipoEventos = ["Consulta", "Vacuna", "Tratamiento", "Cirugía", "Estudio", "Control", "Recordatorio"]
-
-function normalizeSearch(value?: string | null) {
-  return (value || "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-}
-
-function buildConsultationDraft(mascotaId: number, clienteId?: number): ConsultationDraft {
-  return {
-    clientId: clienteId || 0,
-    petId: mascotaId,
-    date: "2026-05-30",
-    veterinarian: "Dr. García",
-    reason: "",
-    symptoms: "",
-    diagnosis: "",
-    treatment: "",
-    notes: "",
-    weight: "",
-    temperature: "",
-    nextControlDate: "",
-    status: "Registrada",
-    attachmentName: "",
-  }
-}
 
 function formatDate(date?: string | null) {
   if (!date) return "-"
@@ -226,11 +147,21 @@ function getReminderBucket(status: string, scheduledDate?: string | null): Remin
 }
 
 export function FichaMascota({ mascotaId }: FichaMascotaProps) {
-  const mascota = mascotas.find((item) => item.id === mascotaId) || mascotas[0]
+  const [mascota, setMascota] = useState(() => getMascotaData(mascotaId))
   const cliente = clientes.find((item) => item.id === mascota.clienteId)
-  const [storedClinicalEvents, setStoredClinicalEvents] = useState<ClinicalHistoryEvent[]>([])
   const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "resumen")
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+
+  const handleFichaSaved = () => {
+    setMascota(getMascotaData(mascotaId))
+    setTimelineRefreshKey((k) => k + 1)
+  }
+
+  useEffect(() => {
+    setMascota(getMascotaData(mascotaId))
+    setTimelineRefreshKey((k) => k + 1)
+  }, [mascotaId])
   const [historySearch, setHistorySearch] = useState("")
   const [historyTypeFilter, setHistoryTypeFilter] = useState("todos")
   const [historyVetFilter, setHistoryVetFilter] = useState("todos")
@@ -238,15 +169,13 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
   const [historyDateFrom, setHistoryDateFrom] = useState("")
   const [historyDateTo, setHistoryDateTo] = useState("")
   const [expandedHistoryItems, setExpandedHistoryItems] = useState<Array<string | number>>([])
-  const [isConsultationDialogOpen, setIsConsultationDialogOpen] = useState(false)
-  const [consultationDraft, setConsultationDraft] = useState<ConsultationDraft>(() =>
-    buildConsultationDraft(mascota.id, cliente?.id),
-  )
+  const [expandedResumenItems, setExpandedResumenItems] = useState<Array<string | number>>([])
+  const [expandedTreatmentItems, setExpandedTreatmentItems] = useState<Array<string | number>>([])
+  const [timelineRefreshKey, setTimelineRefreshKey] = useState(0)
 
   useEffect(() => {
-    setStoredClinicalEvents(readStoredClinicalHistoryEvents().filter((event) => event.petId === mascota.id))
-    setConsultationDraft(buildConsultationDraft(mascota.id, cliente?.id))
-  }, [cliente?.id, mascota.id])
+    setTimelineRefreshKey((k) => k + 1)
+  }, [mascota.id])
 
   const vacunasMascota = vacunasRegistradas.filter((item) => item.mascotaId === mascota.id)
   const planVacunasMascota = buildVaccineDisplayList(mascota.id)
@@ -275,133 +204,20 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
     completados: recordatoriosConBucket.filter((item) => item.bucket === "completados"),
   }
 
-  const mockClinicalHistory = buildMockClinicalHistory(mascota.id)
-  const baseTimelineEventos: TimelineEvent[] = (mascota.id === 1
-    ? historialLuna
-    : [
-        ...vacunasMascota.map((vacuna) => ({
-          id: `vacuna-${vacuna.id}`,
-          fecha: vacuna.fechaAplicada,
-          tipo: "Vacuna",
-          veterinario: vacuna.veterinario,
-          motivo: vacuna.vacuna,
-          vacuna: vacuna.vacuna,
-          laboratorio: vacuna.laboratorio,
-          proximoControl: vacuna.proximaFecha,
-        })),
-        ...estudiosMascota.map((estudio) => ({
-          id: `estudio-${estudio.id}`,
-          fecha: estudio.fecha,
-          tipo: "Estudio",
-          veterinario: estudio.profesional,
-          motivo: estudio.descripcion,
-          diagnostico: estudio.estado,
-          archivo: estudio.archivo,
-        })),
-        ...tratamientosMascota.map((tratamiento) => ({
-          id: `tratamiento-${tratamiento.id}`,
-          fecha: tratamiento.fechaInicio,
-          tipo: "Tratamiento",
-          veterinario: "Sistema demo",
-          motivo: tratamiento.diagnostico,
-          tratamiento: `${tratamiento.medicamento} · ${tratamiento.dosis} · ${tratamiento.frecuencia}`,
-          proximoControl: tratamiento.proximoControl,
-        })),
-        ...cirugiasMascota.map((cirugia) => ({
-          id: `cirugia-${cirugia.id}`,
-          fecha: cirugia.fecha,
-          tipo: "Cirugía",
-          veterinario: cirugia.veterinario,
-          motivo: cirugia.tipo,
-          procedimiento: cirugia.registroCirugia?.procedimiento || cirugia.tipo,
-          diagnostico: cirugia.registroCirugia?.diagnosticoPrevio || cirugia.estado,
-          proximoControl: cirugia.postoperatorio?.fechaControl,
-        })),
-      ])
-  const timelineEventos: TimelineEvent[] = [
-    ...baseTimelineEventos,
-    ...storedClinicalEvents.map((event) => ({
-      id: event.id,
-      fecha: event.date,
-      tipo: event.eventType,
-      veterinario: event.veterinarian,
-      motivo: event.title,
-      sintomas: event.symptoms,
-      diagnostico: event.diagnosis || event.status,
-      tratamiento: event.treatment,
-      peso: event.weight,
-      temperatura: event.temperature,
-      proximoControl: event.nextControlDate,
-      observaciones: event.notes,
-      estado: event.status,
-      archivo: event.attachmentName,
-    })),
-    ...mockClinicalHistory.map((event) => ({
-      id: event.id,
-      fecha: event.date,
-      tipo:
-        event.type === "vaccine"
-          ? "Vacuna"
-          : event.type === "treatment"
-            ? "Tratamiento"
-            : event.type === "surgery"
-              ? "Cirugía"
-              : event.type === "control"
-                ? "Control"
-                : event.type === "reminder"
-                  ? "Recordatorio"
-                  : "Consulta",
-      veterinario: "Sistema demo",
-      motivo: event.title,
-      diagnostico: event.status,
-      observaciones: event.description,
-      estado: event.status,
-      proximoControl: event.type === "control" ? event.date : undefined,
-    })),
-  ]
-    .filter((event, index, events) => events.findIndex((item) => item.id === event.id) === index)
-    .sort((a, b) => b.fecha.localeCompare(a.fecha))
-
-  const generatedControlEvents = timelineEventos.filter((event) =>
-    String(event.id).startsWith("history-treatment-control-") || String(event.id).startsWith("history-surgery-control-"),
+  const allTimelineEvents = useMemo(
+    () => buildClinicalTimeline(mascota.id),
+    [mascota.id, timelineRefreshKey],
   )
-  const timelinePreview = timelineEventos
-    .filter((event) => !generatedControlEvents.some((control) => control.id === event.id))
-    .slice(0, 6)
-  const historyVeterinarians = Array.from(
-    new Set(timelineEventos.map((event) => event.veterinario).filter((value): value is string => Boolean(value))),
-  ).sort()
-  const historyStatuses = Array.from(
-    new Set(timelineEventos.map((event) => event.estado || event.diagnostico).filter((value): value is string => Boolean(value))),
-  ).sort()
-  const filteredHistoryEventos = timelineEventos.filter((event) => {
-    const search = normalizeSearch(historySearch)
-    const text = [
-      event.tipo,
-      event.motivo,
-      event.diagnostico,
-      event.tratamiento,
-      event.vacuna,
-      event.procedimiento,
-      event.veterinario,
-      event.observaciones,
-      event.archivo,
-      event.estado,
-    ]
-      .map(normalizeSearch)
-      .join(" ")
-
-    const matchesSearch = !search || text.includes(search)
-    const matchesType = historyTypeFilter === "todos" || event.tipo === historyTypeFilter
-    const matchesVet = historyVetFilter === "todos" || event.veterinario === historyVetFilter
-    const eventStatus = event.estado || event.diagnostico || ""
-    const matchesStatus = historyStatusFilter === "todos" || eventStatus === historyStatusFilter
-    const matchesFrom = !historyDateFrom || event.fecha >= historyDateFrom
-    const matchesTo = !historyDateTo || event.fecha <= historyDateTo
-
-    return matchesSearch && matchesType && matchesVet && matchesStatus && matchesFrom && matchesTo
-  })
-  const treatmentHistoryEventos = timelineEventos.filter((event) => event.tipo === "Tratamiento")
+  const filteredHistoryEventos = useMemo(
+    () =>
+      searchClinicalTimeline(allTimelineEvents, historySearch, historyTypeFilter, historyVetFilter, historyStatusFilter, historyDateFrom, historyDateTo),
+    [allTimelineEvents, historySearch, historyTypeFilter, historyVetFilter, historyStatusFilter, historyDateFrom, historyDateTo],
+  )
+  const treatmentHistoryEventos = allTimelineEvents.filter((event) => event.tipo === "Tratamiento")
+  const timelinePreview = useMemo(
+    () => [...allTimelineEvents].sort((a, b) => b.fecha.localeCompare(a.fecha)).slice(0, 4),
+    [allTimelineEvents],
+  )
   const controlesPostoperatorios = cirugiasMascota.flatMap((cirugia) => {
     if (!cirugia.postoperatorio) return []
     const controls = [] as Array<{ id: string; label: string; fecha: string; detail: string }>
@@ -423,48 +239,6 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
     }
     return controls
   })
-
-  const alertas = [
-    ...mascota.alergias.map((alergia) => ({
-      id: `alergia-${alergia}`,
-      titulo: "Alergia registrada",
-      detalle: alergia,
-      icon: ShieldAlert,
-      className: "border-destructive/25 bg-destructive/10 text-destructive",
-    })),
-    ...(mascota.antecedentes
-      ? [
-          {
-            id: "antecedentes",
-            titulo: "Antecedente importante",
-            detalle: mascota.antecedentes,
-            icon: HeartPulse,
-            className: "border-warning/30 bg-warning/10 text-warning",
-          },
-        ]
-      : []),
-    ...vacunasVencidasMascota.map((vacuna) => ({
-      id: `vacuna-vencida-${vacuna.id}`,
-      titulo: "Vacuna vencida",
-      detalle: `${vacuna.vaccineName}${vacuna.overdueDays ? ` - ${formatOverdueText(vacuna.overdueDays)}` : ""}`,
-      icon: Syringe,
-      className: "border-destructive/25 bg-destructive/10 text-destructive",
-    })),
-    ...tratamientosActivosMascota.map((tratamiento) => ({
-      id: `tratamiento-alerta-${tratamiento.id}`,
-      titulo: "Tratamiento activo",
-      detalle: `${tratamiento.diagnostico}: ${tratamiento.medicamento} ${tratamiento.dosis}, ${tratamiento.frecuencia}`,
-      icon: Pill,
-      className: "border-primary/25 bg-primary/10 text-primary",
-    })),
-    ...cirugiasProgramadas.map((cirugia) => ({
-      id: `cirugia-${cirugia.id}`,
-      titulo: "Cirugía programada",
-      detalle: `${cirugia.tipo} - ${formatDate(cirugia.fecha)} ${cirugia.hora}`,
-      icon: Scissors,
-      className: "border-primary/25 bg-primary/10 text-primary",
-    })),
-  ]
 
   const clinicalNextSteps: ClinicalNextStep[] = [
     ...planVacunasMascota
@@ -519,10 +293,6 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
     return (a.date || "9999-12-31").localeCompare(b.date || "9999-12-31")
   })
 
-  const updateConsultationDraft = <K extends keyof ConsultationDraft>(key: K, value: ConsultationDraft[K]) => {
-    setConsultationDraft((current) => ({ ...current, [key]: value }))
-  }
-
   const clearHistoryFilters = () => {
     setHistorySearch("")
     setHistoryTypeFilter("todos")
@@ -532,32 +302,13 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
     setHistoryDateTo("")
   }
 
-  const saveConsultation = () => {
-    if (!consultationDraft.reason.trim()) return
-
-    const newEvent = createConsultationEvent({
-      ...consultationDraft,
-      clientId: cliente?.id || mascota.clienteId,
-      petId: mascota.id,
-    })
-    const storedEvents = readStoredClinicalHistoryEvents()
-    const nextStoredEvents = [newEvent, ...storedEvents]
-
-    writeStoredClinicalHistoryEvents(nextStoredEvents)
-    setStoredClinicalEvents(nextStoredEvents.filter((event) => event.petId === mascota.id))
-    setExpandedHistoryItems((current) => [newEvent.id, ...current])
-    setConsultationDraft(buildConsultationDraft(mascota.id, cliente?.id))
-    setIsConsultationDialogOpen(false)
-    setActiveTab("historia")
-  }
-
   const quickActions = [
-    { label: "Consulta", icon: FileHeart, onClick: () => setActiveTab("historia") },
+    { label: "Atencion", icon: FileHeart, href: `/atencion/nueva?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}` },
     { label: "Vacuna", icon: Syringe, href: `/vacunas/registrar?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}` },
     { label: "Tratamiento", icon: Pill, href: `/tratamientos/registrar?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}` },
     { label: "Cirugía", icon: Scissors, href: `/cirugias/agendar?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}` },
-    { label: "Estudio", icon: FileText, href: "/estudios" },
-    { label: "Recordatorio", icon: MessageCircle, href: "/recordatorios" },
+{ label: "Estudio", icon: FileText, href: `/estudios?mascotaId=${mascota.id}` },
+  { label: "Recordatorio", icon: MessageCircle, href: `/recordatorios?mascotaId=${mascota.id}` },
   ]
 
   return (
@@ -573,14 +324,16 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
                 </Link>
               </Button>
               <div className="flex flex-wrap gap-2">
-                <Button
+<Button
                   className="h-12 rounded-xl bg-white px-5 text-base font-bold text-primary shadow-sm hover:bg-white/90"
-                  onClick={() => setActiveTab("historia")}
+                  asChild
                 >
+                  <Link href={`/historial-clinico?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}`}>
                     <Plus className="mr-2 h-5 w-5" />
-                    Nueva atención
+                    Nueva atencion
+                  </Link>
                 </Button>
-                <Button variant="secondary" className="h-12 rounded-xl bg-white/14 px-5 text-base font-bold text-white hover:bg-white/22">
+                <Button variant="secondary" className="h-12 rounded-xl bg-white/14 px-5 text-base font-bold text-white hover:bg-white/22" onClick={() => setEditDialogOpen(true)}>
                   <Edit className="mr-2 h-5 w-5" />
                   Editar ficha
                 </Button>
@@ -665,65 +418,79 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
 
         <TabsContent value="resumen" className="space-y-6">
           <Card className="border-destructive/20">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-destructive" />
-                Alertas clínicas importantes
-              </CardTitle>
-              <CardDescription>Lo que el veterinario necesita ver antes de iniciar la atención.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {alertas.length > 0 ? (
-                <div className="grid gap-3 lg:grid-cols-2">
-                  {alertas.map((alerta) => (
-                    <div key={alerta.id} className={`flex gap-3 rounded-xl border p-4 ${alerta.className}`}>
-                      <alerta.icon className="mt-0.5 h-5 w-5 shrink-0" />
-                      <div>
-                        <p className="font-bold">{alerta.titulo}</p>
-                        <p className="mt-1 text-sm text-foreground">{alerta.detalle}</p>
-                      </div>
-                    </div>
-                  ))}
+            <CardHeader className="pb-3">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-destructive" />
+                    Alertas clínicas
+                  </CardTitle>
+                  <CardDescription>Información crítica antes de atender.</CardDescription>
                 </div>
-              ) : (
-                <div className="rounded-xl border border-success/25 bg-success/10 p-4 text-sm font-medium">
-                  Sin alertas clínicas activas.
+                <Button variant="outline" size="sm" className="h-9 rounded-xl" onClick={() => setEditDialogOpen(true)}>
+                  <Edit className="mr-2 h-3.5 w-3.5" />
+                  Editar datos clínicos
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3 pb-4">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  <ShieldAlert className="h-4 w-4 shrink-0 text-destructive" />
+                  <span className="text-sm font-semibold text-destructive">Alergias:</span>
+                  {mascota.alergias.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {mascota.alergias.map((alergia, i) => (
+                        <span key={i} className="inline-flex items-center rounded-full border border-destructive/30 bg-destructive/10 px-2.5 py-0.5 text-xs font-medium text-destructive">
+                          {alergia}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">Sin alergias registradas.</span>
+                  )}
+                </div>
+
+                <div className="flex min-w-0 items-center gap-2">
+                  <HeartPulse className="h-4 w-4 shrink-0 text-warning" />
+                  <span className="text-sm font-semibold text-warning">Antecedentes:</span>
+                  {mascota.antecedentes.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {mascota.antecedentes.map((ant, i) => (
+                        <span key={i} className="inline-flex items-center rounded-full border border-warning/30 bg-warning/10 px-2.5 py-0.5 text-xs font-medium text-warning">
+                          {ant}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">Sin antecedentes registrados.</span>
+                  )}
+                </div>
+
+                <div className="flex min-w-0 items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 shrink-0 text-primary" />
+                  <span className="text-sm font-semibold text-primary">Crónicas:</span>
+                  {mascota.condicionesCronicas.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {mascota.condicionesCronicas.map((cond, i) => (
+                        <span key={i} className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+                          {cond}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">Sin condiciones crónicas.</span>
+                  )}
+                </div>
+              </div>
+
+              {mascota.observacionesClinicas.trim() && (
+                <div className="flex items-start gap-2 rounded-lg border bg-muted/40 p-2.5">
+                  <FileText className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground"><span className="font-semibold text-foreground">Obs. clínicas:</span> {mascota.observacionesClinicas}</p>
                 </div>
               )}
-            </CardContent>
-          </Card>
-
-          <Card className="border-primary/20 bg-primary/5">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Plus className="h-5 w-5 text-primary" />
-                Accesos rápidos clínicos
-              </CardTitle>
-              <CardDescription>Cargar una acción clínica vinculada a esta mascota.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                {quickActions.map((action) =>
-                  "href" in action ? (
-                    <Button key={action.label} asChild className="h-14 rounded-xl bg-primary px-4 text-center font-bold leading-tight hover:bg-primary/90">
-                      <Link href={action.href || "#"}>
-                        <action.icon className="mr-2 h-5 w-5 shrink-0" />
-                        <span className="whitespace-normal">{action.label}</span>
-                      </Link>
-                    </Button>
-                  ) : (
-                    <Button
-                      key={action.label}
-                      className="h-14 rounded-xl bg-primary px-4 text-center font-bold leading-tight hover:bg-primary/90"
-                      onClick={action.onClick}
-                    >
-                      <action.icon className="mr-2 h-5 w-5 shrink-0" />
-                      <span className="whitespace-normal">{action.label}</span>
-                    </Button>
-                  ),
-                )}
-              </div>
-            </CardContent>
+</CardContent>
           </Card>
 
           <Card>
@@ -791,27 +558,64 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
 
           <Card>
             <CardHeader className="border-b">
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5 text-primary" />
-                Últimos eventos relevantes
-              </CardTitle>
-              <CardDescription>Lo más reciente en la historia clínica.</CardDescription>
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="h-5 w-5 text-primary" />
+                    Últimos eventos relevantes
+                  </CardTitle>
+                  <CardDescription>Lo más reciente en la historia clínica.</CardDescription>
+                </div>
+                <Button variant="outline" className="h-11 rounded-xl" asChild>
+                  <Link href={`/mascotas/${mascota.id}?tab=historia`}>Ver historial completo</Link>
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="pt-5">
               {timelinePreview.length > 0 ? (
-                <div className="relative">
-                  <div className="absolute bottom-0 left-4 top-0 w-px bg-border" />
-                  <div className="space-y-4">
-                    {timelinePreview.map((evento) => (
-                      <TimelineItem key={evento.id} evento={evento} />
-                    ))}
-                  </div>
+                <div className="space-y-4">
+                  {timelinePreview.map((evento) => (
+                    <ClinicalTimelineItem
+                      key={evento.id}
+                      event={evento}
+                      isExpanded={expandedResumenItems.includes(evento.id)}
+                      onToggle={() =>
+                        setExpandedResumenItems((current) =>
+                          current.includes(evento.id)
+                            ? current.filter((item) => item !== evento.id)
+                            : [...current, evento.id],
+                        )
+                      }
+                    />
+                  ))}
                 </div>
               ) : (
                 <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
                   Sin eventos recientes registrados.
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          <Card className="border-primary/20 bg-primary/5">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Plus className="h-5 w-5 text-primary" />
+                Accesos rápidos clínicos
+              </CardTitle>
+              <CardDescription>Cargar una acción clínica vinculada a esta mascota.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                {quickActions.map((action) => (
+                    <Button key={action.label} asChild className="h-14 rounded-xl bg-primary px-4 text-center font-bold leading-tight hover:bg-primary/90">
+                      <Link href={action.href || "#"}>
+                        <action.icon className="mr-2 h-5 w-5 shrink-0" />
+                        <span className="whitespace-normal">{action.label}</span>
+                      </Link>
+                    </Button>
+                  ))}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -909,13 +713,21 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
             </CardHeader>
             <CardContent className="pt-5">
               {treatmentHistoryEventos.length > 0 ? (
-                <div className="relative">
-                  <div className="absolute bottom-0 left-4 top-0 w-px bg-border" />
-                  <div className="space-y-4">
-                    {treatmentHistoryEventos.map((evento) => (
-                      <TimelineItem key={evento.id} evento={evento} />
-                    ))}
-                  </div>
+                <div className="space-y-4">
+                  {treatmentHistoryEventos.map((evento) => (
+                    <ClinicalTimelineItem
+                      key={evento.id}
+                      event={evento}
+                      isExpanded={expandedTreatmentItems.includes(evento.id)}
+                      onToggle={() =>
+                        setExpandedTreatmentItems((current) =>
+                          current.includes(evento.id)
+                            ? current.filter((item) => item !== evento.id)
+                            : [...current, evento.id],
+                        )
+                      }
+                    />
+                  ))}
                 </div>
               ) : (
                 <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
@@ -976,7 +788,7 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
                   )}
                 </div>
               ))}
-            </CardContent>
+</CardContent>
           </Card>
 
           <Card>
@@ -1071,84 +883,12 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
                       Consultas, vacunas, tratamientos, estudios, cirugías y controles de esta mascota.
                     </p>
                   </div>
-                  <Dialog open={isConsultationDialogOpen} onOpenChange={setIsConsultationDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button className="min-h-14 rounded-2xl bg-primary px-6 py-3 text-base font-bold leading-tight shadow-md shadow-primary/20 hover:bg-primary/90">
-                        <Plus className="mr-2 h-5 w-5" />
-                        Agregar consulta
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-h-[90vh] max-w-5xl overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle>Agregar consulta para {mascota.nombre}</DialogTitle>
-                        <DialogDescription>Se guarda como registro mock dentro de la historia clínica de esta mascota.</DialogDescription>
-                      </DialogHeader>
-                      <div className="grid gap-5 py-2">
-                        <div className="grid gap-3 rounded-xl border bg-muted/25 p-4 sm:grid-cols-2">
-                          <CompactDetail label="Mascota" value={`${mascota.nombre} · ${mascota.especie}`} />
-                          <CompactDetail label="Dueño" value={cliente?.nombre || mascota.dueno} />
-                        </div>
-                        <div className="grid gap-4 md:grid-cols-3">
-                          <FormField label="Fecha de consulta">
-                            <Input type="date" value={consultationDraft.date} onChange={(event) => updateConsultationDraft("date", event.target.value)} />
-                          </FormField>
-                          <FormField label="Veterinario/responsable">
-                            <Input value={consultationDraft.veterinarian} onChange={(event) => updateConsultationDraft("veterinarian", event.target.value)} placeholder="Dr./Dra." />
-                          </FormField>
-                          <FormField label="Estado">
-                            <Select value={consultationDraft.status} onValueChange={(value) => updateConsultationDraft("status", value)}>
-                              <SelectTrigger className="h-11">
-                                <SelectValue placeholder="Estado" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Registrada">Registrada</SelectItem>
-                                <SelectItem value="En seguimiento">En seguimiento</SelectItem>
-                                <SelectItem value="Resuelta">Resuelta</SelectItem>
-                                <SelectItem value="Control pendiente">Control pendiente</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </FormField>
-                        </div>
-                        <FormField label="Motivo de consulta">
-                          <Input value={consultationDraft.reason} onChange={(event) => updateConsultationDraft("reason", event.target.value)} placeholder="Ej: control general, decaimiento, lesión..." />
-                        </FormField>
-                        <div className="grid gap-4 md:grid-cols-2">
-                          <FormField label="Síntomas">
-                            <Textarea value={consultationDraft.symptoms} onChange={(event) => updateConsultationDraft("symptoms", event.target.value)} placeholder="Síntomas observados o relatados..." />
-                          </FormField>
-                          <FormField label="Diagnóstico">
-                            <Textarea value={consultationDraft.diagnosis} onChange={(event) => updateConsultationDraft("diagnosis", event.target.value)} placeholder="Diagnóstico presuntivo o confirmado..." />
-                          </FormField>
-                          <FormField label="Tratamiento indicado">
-                            <Textarea value={consultationDraft.treatment} onChange={(event) => updateConsultationDraft("treatment", event.target.value)} placeholder="Medicación, dosis, frecuencia, indicaciones..." />
-                          </FormField>
-                          <FormField label="Observaciones">
-                            <Textarea value={consultationDraft.notes} onChange={(event) => updateConsultationDraft("notes", event.target.value)} placeholder="Notas clínicas, conducta en casa, evolución esperada..." />
-                          </FormField>
-                        </div>
-                        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                          <FormField label="Peso">
-                            <Input value={consultationDraft.weight} onChange={(event) => updateConsultationDraft("weight", event.target.value)} placeholder="Kg" />
-                          </FormField>
-                          <FormField label="Temperatura">
-                            <Input value={consultationDraft.temperature} onChange={(event) => updateConsultationDraft("temperature", event.target.value)} placeholder="°C" />
-                          </FormField>
-                          <FormField label="Próximo control">
-                            <Input type="date" value={consultationDraft.nextControlDate} onChange={(event) => updateConsultationDraft("nextControlDate", event.target.value)} />
-                          </FormField>
-                          <FormField label="Archivo mock">
-                            <Input value={consultationDraft.attachmentName} onChange={(event) => updateConsultationDraft("attachmentName", event.target.value)} placeholder="ej: informe.pdf" />
-                          </FormField>
-                        </div>
-                        <div className="flex flex-col gap-2 border-t pt-4 sm:flex-row sm:items-center sm:justify-end">
-                          <Button variant="outline" className="h-12 rounded-xl px-5" onClick={() => setIsConsultationDialogOpen(false)}>Cancelar</Button>
-                          <Button className="h-12 rounded-xl bg-primary px-6 text-base font-bold hover:bg-primary/90" onClick={saveConsultation} disabled={!consultationDraft.reason.trim()}>
-                            Guardar consulta
-                          </Button>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                  <Button className="min-h-14 rounded-2xl bg-primary px-6 py-3 text-base font-bold leading-tight shadow-md shadow-primary/20 hover:bg-primary/90" asChild>
+<Link href={`/atencion/nueva?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}`}>
+                      <Plus className="mr-2 h-5 w-5" />
+                      Registrar atencion
+                    </Link>
+                  </Button>
                 </div>
 
                 <div className="grid gap-3 xl:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(160px,1fr))]">
@@ -1167,14 +907,14 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
                     <SelectTrigger className="h-11"><SelectValue placeholder="Veterinario" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="todos">Todos los veterinarios</SelectItem>
-                      {historyVeterinarians.map((vet) => <SelectItem key={vet} value={vet}>{vet}</SelectItem>)}
+                      {[...new Set(allTimelineEvents.map((e) => e.veterinario).filter(Boolean))].map((vet) => <SelectItem key={vet} value={vet}>{vet}</SelectItem>)}
                     </SelectContent>
                   </Select>
                   <Select value={historyStatusFilter} onValueChange={setHistoryStatusFilter}>
                     <SelectTrigger className="h-11"><SelectValue placeholder="Estado" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="todos">Todos los estados</SelectItem>
-                      {historyStatuses.map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}
+                      {[...new Set(allTimelineEvents.map((e) => e.estado).filter(Boolean))].map((status) => <SelectItem key={status} value={status!}>{status}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -1187,24 +927,21 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
               </div>
 
               {filteredHistoryEventos.length > 0 ? (
-                <div className="relative">
-                  <div className="absolute bottom-0 left-4 top-0 w-px bg-border" />
-                  <div className="space-y-4">
-                    {filteredHistoryEventos.map((evento) => (
-                      <ClinicalHistoryTimelineItem
-                        key={evento.id}
-                        evento={evento}
-                        isExpanded={expandedHistoryItems.includes(evento.id)}
-                        onToggle={() =>
-                          setExpandedHistoryItems((current) =>
-                            current.includes(evento.id)
-                              ? current.filter((item) => item !== evento.id)
-                              : [...current, evento.id],
-                          )
-                        }
-                      />
-                    ))}
-                  </div>
+                <div className="space-y-4">
+                  {filteredHistoryEventos.map((evento) => (
+                    <ClinicalTimelineItem
+                      key={evento.id}
+                      event={evento}
+                      isExpanded={expandedHistoryItems.includes(evento.id)}
+                      onToggle={() =>
+                        setExpandedHistoryItems((current) =>
+                          current.includes(evento.id)
+                            ? current.filter((item) => item !== evento.id)
+                            : [...current, evento.id],
+                        )
+                      }
+                    />
+                  ))}
                 </div>
               ) : (
                 <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
@@ -1264,89 +1001,14 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <EditarFichaDialog
+        mascota={mascota}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onSaved={handleFichaSaved}
+      />
     </div>
-  )
-}
-
-function FormField({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="space-y-2">
-      <Label>{label}</Label>
-      {children}
-    </div>
-  )
-}
-
-function ClinicalHistoryTimelineItem({
-  evento,
-  isExpanded,
-  onToggle,
-}: {
-  evento: TimelineEvent
-  isExpanded: boolean
-  onToggle: () => void
-}) {
-  const Icon = tipoEventoIcons[evento.tipo] || Activity
-  const colorClass = tipoEventoColors[evento.tipo] || "border-muted bg-muted text-muted-foreground"
-
-  return (
-    <article className="relative pl-11">
-      <div className={`absolute left-0 top-1 flex h-8 w-8 items-center justify-center rounded-full border-2 ${colorClass}`}>
-        <Icon className="h-4 w-4" />
-      </div>
-      <div className="rounded-xl border bg-card p-4 shadow-sm">
-        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline">{evento.tipo}</Badge>
-              {evento.estado && <Badge variant="outline">{evento.estado}</Badge>}
-              <span className="text-sm text-muted-foreground">{formatDate(evento.fecha)}</span>
-              <span className="text-sm text-muted-foreground">· {evento.veterinario}</span>
-            </div>
-            <h3 className="mt-2 font-bold">{evento.motivo || evento.procedimiento}</h3>
-            {(evento.diagnostico || evento.tratamiento) && (
-              <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                {evento.diagnostico || evento.tratamiento}
-              </p>
-            )}
-          </div>
-          <Button variant="outline" className="h-10 rounded-xl" onClick={onToggle}>
-            Ver detalle
-            <ChevronRight className={`ml-2 h-4 w-4 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
-          </Button>
-        </div>
-
-        {isExpanded && (
-          <div className="mt-4 border-t pt-4">
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {evento.diagnostico && <TimelineDetail label="Diagnóstico" value={evento.diagnostico} />}
-              {evento.sintomas && evento.sintomas !== "-" && <TimelineDetail label="Síntomas" value={evento.sintomas} />}
-              {evento.tratamiento && evento.tratamiento !== "-" && <TimelineDetail label="Tratamiento" value={evento.tratamiento} />}
-              {evento.vacuna && <TimelineDetail label="Vacuna" value={`${evento.vacuna} · ${evento.laboratorio || "-"}`} />}
-              {evento.peso && <TimelineDetail label="Peso" value={`${evento.peso} kg`} />}
-              {evento.temperatura && <TimelineDetail label="Temperatura" value={`${evento.temperatura} °C`} />}
-              {evento.procedimiento && <TimelineDetail label="Procedimiento" value={evento.procedimiento} />}
-              {evento.proximoControl && <TimelineDetail label="Próximo control" value={formatDate(evento.proximoControl)} />}
-            </div>
-
-            {evento.observaciones && (
-              <div className="mt-3 rounded-lg bg-muted/50 p-3 text-sm">
-                {evento.observaciones}
-              </div>
-            )}
-
-            {evento.archivo && (
-              <div className="mt-3 flex justify-end border-t pt-3">
-                <Button variant="outline" size="sm">
-                  <Download className="mr-2 h-4 w-4" />
-                  Ver archivo
-                </Button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </article>
   )
 }
 
@@ -1559,58 +1221,6 @@ function VaccineDisplayCard({
   )
 }
 
-function TimelineItem({ evento }: { evento: TimelineEvent }) {
-  const Icon = tipoEventoIcons[evento.tipo] || Activity
-  const colorClass = tipoEventoColors[evento.tipo] || "border-muted bg-muted text-muted-foreground"
-
-  return (
-    <article className="relative pl-11">
-      <div className={`absolute left-0 top-1 flex h-8 w-8 items-center justify-center rounded-full border-2 ${colorClass}`}>
-        <Icon className="h-4 w-4" />
-      </div>
-      <div className="rounded-xl border bg-card p-4 shadow-sm">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline">{evento.tipo}</Badge>
-              <span className="text-sm text-muted-foreground">{formatDate(evento.fecha)}</span>
-              <span className="text-sm text-muted-foreground">· {evento.veterinario}</span>
-            </div>
-            <h3 className="mt-2 font-bold">{evento.motivo || evento.procedimiento}</h3>
-          </div>
-          <Button variant="ghost" size="icon" className="h-8 w-8 self-start">
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-
-        <div className="mt-3 grid gap-3 md:grid-cols-2">
-          {evento.diagnostico && <TimelineDetail label="Diagnóstico" value={evento.diagnostico} />}
-          {evento.tratamiento && evento.tratamiento !== "-" && <TimelineDetail label="Tratamiento" value={evento.tratamiento} />}
-          {evento.vacuna && <TimelineDetail label="Vacuna" value={`${evento.vacuna} · ${evento.laboratorio}`} />}
-          {evento.peso && <TimelineDetail label="Peso" value={`${evento.peso} kg`} />}
-          {evento.procedimiento && <TimelineDetail label="Procedimiento" value={evento.procedimiento} />}
-          {evento.proximoControl && <TimelineDetail label="Próximo control" value={formatDate(evento.proximoControl)} />}
-        </div>
-
-        {evento.observaciones && (
-          <div className="mt-3 rounded-lg bg-muted/50 p-3 text-sm">
-            {evento.observaciones}
-          </div>
-        )}
-
-        {evento.archivo && (
-          <div className="mt-3 flex justify-end border-t pt-3">
-            <Button variant="outline" size="sm">
-              <Download className="mr-2 h-4 w-4" />
-              Ver archivo
-            </Button>
-          </div>
-        )}
-      </div>
-    </article>
-  )
-}
-
 function CompactDetail({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg bg-background/70 px-3 py-2">
@@ -1620,11 +1230,4 @@ function CompactDetail({ label, value }: { label: string; value: string }) {
   )
 }
 
-function TimelineDetail({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg bg-muted/35 p-3">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-sm font-medium">{value}</p>
-    </div>
-  )
-}
+

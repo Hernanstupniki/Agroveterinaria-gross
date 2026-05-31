@@ -215,7 +215,7 @@ export function MascotasPage() {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem>
                       <FileHeart className="mr-2 h-4 w-4" />
-                      Nueva consulta
+                      Nueva atencion
                     </DropdownMenuItem>
                     <DropdownMenuItem>
                       <Syringe className="mr-2 h-4 w-4" />

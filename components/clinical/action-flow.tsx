@@ -11,16 +11,16 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { clientes, mascotas } from "@/lib/mock-data"
+import { getMascotaData, type MascotaData } from "@/lib/mascota-store"
 
 type Client = (typeof clientes)[number]
-type Pet = (typeof mascotas)[number]
 
 interface ClinicalActionFlowProps {
   title: string
   description: string
   actionLabel: string
   icon: LucideIcon
-  children: (selection: { client: Client; pet: Pet }) => ReactNode
+  children: (selection: { client: Client; pet: MascotaData }) => ReactNode
 }
 
 export function ClinicalActionFlow({
@@ -42,7 +42,8 @@ export function ClinicalActionFlow({
   const [selectedPetId, setSelectedPetId] = useState<number | null>(initialPet)
 
   const selectedClient = clientes.find((client) => client.id === selectedClientId) || null
-  const selectedPet = mascotas.find((pet) => pet.id === selectedPetId) || null
+  const selectedPetRaw = mascotas.find((pet) => pet.id === selectedPetId) || null
+  const selectedPet = selectedPetRaw ? getMascotaData(selectedPetRaw.id) : null
 
   const filteredClients = useMemo(() => {
     const term = searchTerm.toLowerCase().trim()
@@ -149,7 +150,7 @@ export function ClinicalActionFlow({
               })}
             </div>
 
-            <Button variant="outline" className="h-12 rounded-xl px-4 text-center font-bold leading-tight" asChild>
+            <Button className="h-12 rounded-xl bg-primary px-4 text-center font-bold leading-tight text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90" asChild>
               <Link href="/clientes">
                 <UserPlus className="mr-2 h-4 w-4" />
                 Crear cliente con mascota
@@ -210,33 +211,35 @@ export function ClinicalActionFlow({
 
       {selectedClient && selectedPet && (
         <div className="space-y-4">
-          <Card className="border-primary/20 bg-primary/5">
-            <CardContent className="flex flex-col gap-4 p-4 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-center gap-3">
-                <Avatar className="h-11 w-11">
-                  <AvatarFallback className="bg-primary text-primary-foreground">
-                    {selectedPet.nombre[0]}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="font-semibold">{selectedPet.nombre}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {selectedPet.especie} - {selectedPet.raza} - {selectedClient.nombre}
-                  </p>
-                </div>
+          <div className="flex items-center justify-between rounded-lg border bg-primary/5 px-3 py-2">
+            <div className="flex items-center gap-3 min-w-0">
+              <Avatar className="h-8 w-8">
+                <AvatarFallback className="bg-primary text-primary-foreground text-xs">{selectedPet.nombre[0]}</AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold leading-tight">{selectedPet.nombre}</p>
+                <p className="text-xs text-muted-foreground">{selectedPet.especie} · {selectedPet.raza}</p>
+                <p className="hidden text-xs text-muted-foreground sm:block">Dueño: {selectedClient.nombre}</p>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" className="h-11 rounded-xl px-4 text-center font-semibold leading-tight" onClick={() => setSelectedPetId(null)}>
-                  Cambiar mascota
+            </div>
+
+            <div className="flex flex-col items-end gap-2">
+              <Button variant="outline" size="sm" className="h-8 rounded-lg px-3 text-xs" onClick={() => setSelectedPetId(null)}>
+                Cambiar mascota
+              </Button>
+              <div className="flex items-center gap-2">
+                <span className="sr-only">Accesos de consulta</span>
+                <Button variant="outline" size="sm" className="h-8 rounded-lg px-3 text-xs" asChild>
+                  <a href={`/historial-clinico/ver?clienteId=${selectedClient.id}&mascotaId=${selectedPet.id}`} target="_blank" rel="noopener noreferrer">
+                    Historial
+                  </a>
                 </Button>
-                <Button variant="outline" size="sm" className="h-11 rounded-xl px-4 text-center font-semibold leading-tight" asChild>
-                  <Link href={`/mascotas/${selectedPet.id}`} target="_blank" rel="noopener noreferrer">
-                    Abrir ficha clinica
-                  </Link>
+                <Button variant="outline" size="sm" className="h-8 rounded-lg px-3 text-xs" asChild>
+                  <a href={`/mascotas/${selectedPet.id}`} target="_blank" rel="noopener noreferrer">Ficha</a>
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {children({ client: selectedClient, pet: selectedPet })}
         </div>

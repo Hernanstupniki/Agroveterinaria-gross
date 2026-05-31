@@ -2,29 +2,34 @@
 
 import Link from "next/link"
 import {
-  ClipboardPlus,
+  ClipboardList,
   HeartPulse,
   Pill,
-  Scissors,
   Syringe,
   UserPlus,
   Users,
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
-import { NewClientDialog } from "@/components/clientes/new-client-dialog"
 
 const primaryActions = [
+  {
+    title: "Nueva atencion",
+    description: "Carga una atencion completa: consulta, vacuna, tratamiento, cirugia, estudio o recordatorio.",
+    href: "/atencion/nueva",
+    icon: HeartPulse,
+    className: "border-primary/30 bg-primary text-primary-foreground hover:bg-primary/90",
+  },
   {
     title: "Ingresar cliente",
     description: "Buscar cliente, elegir mascota y cargar una accion frecuente.",
     href: "/clientes",
     icon: Users,
-    className: "border-primary/30 bg-primary text-primary-foreground hover:bg-primary/90",
+    className: "border-primary/20 bg-card hover:border-primary/50 hover:bg-primary/5",
   },
   {
     title: "Agregar cliente",
     description: "Alta rapida con una o mas mascotas vinculadas.",
-    href: null,
+    href: "/clientes/agregar",
     icon: UserPlus,
     className: "border-primary/20 bg-card hover:border-primary/50 hover:bg-primary/5",
   },
@@ -40,13 +45,6 @@ const primaryActions = [
     description: "Registrar, revisar activos o configurar protocolos.",
     href: "/tratamientos",
     icon: Pill,
-    className: "border-primary/20 bg-card hover:border-primary/50 hover:bg-primary/5",
-  },
-  {
-    title: "Cirugías",
-    description: "Agendar o registrar una cirugía ya programada.",
-    href: "/cirugias",
-    icon: Scissors,
     className: "border-primary/20 bg-card hover:border-primary/50 hover:bg-primary/5",
   },
 ]
@@ -70,8 +68,8 @@ export function Dashboard() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        {primaryActions.map((action) => {
-          const card = (
+        {primaryActions.map((action) => (
+          <Link key={action.title} href={action.href!} className="group block min-h-[210px]">
             <Card className={`h-full transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${action.className}`}>
               <CardContent className="flex h-full flex-col justify-between gap-5 p-5">
                 <div className="space-y-4">
@@ -85,31 +83,12 @@ export function Dashboard() {
                 </div>
                 <div className="mt-auto flex min-h-12 items-center justify-center gap-2 rounded-xl bg-primary px-3 py-3 text-center text-sm font-bold leading-tight text-primary-foreground shadow-sm">
                   {action.title}
-                  <ClipboardPlus className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  <ClipboardList className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </div>
               </CardContent>
             </Card>
-          )
-
-          if (!action.href) {
-            return (
-              <NewClientDialog
-                key={action.title}
-                trigger={
-                  <button type="button" className="group block min-h-[210px] w-full text-left">
-                    {card}
-                  </button>
-                }
-              />
-            )
-          }
-
-          return (
-            <Link key={action.title} href={action.href} className="group block min-h-[210px]">
-              {card}
-            </Link>
-          )
-        })}
+          </Link>
+        ))}
       </div>
     </div>
   )

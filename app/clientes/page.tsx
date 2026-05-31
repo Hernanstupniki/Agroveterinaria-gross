@@ -1,10 +1,10 @@
 import { AppLayout } from "@/components/layout"
-import { ClientesPage } from "@/components/clientes"
+import { ClientesLandingPage } from "@/components/clientes"
 
-export default function Clientes() {
+export default function ClientesPage() {
   return (
     <AppLayout>
-      <ClientesPage />
+      <ClientesLandingPage />
     </AppLayout>
   )
 }
