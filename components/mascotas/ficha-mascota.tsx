@@ -604,7 +604,7 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
               <CardDescription>Cargar una acción clínica vinculada a esta mascota.</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                 {quickActions.map((action) => (
                     <div key={action.label} className="min-w-0">
                       <Button asChild className="flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-center font-bold leading-tight hover:bg-primary/90 whitespace-normal">

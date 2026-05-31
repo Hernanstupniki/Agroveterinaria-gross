@@ -78,7 +78,7 @@ export function VacunasPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         <ActionCard
           icon={Syringe}
           title="Registrar vacuna"
@@ -741,13 +741,13 @@ function ActionCard({
   return (
     <Link href={href} className="group block min-w-0">
       <Card className="h-full transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg">
-        <CardContent className="flex h-full flex-col gap-5 p-5">
-          <div className="flex items-start gap-4">
+        <CardContent className="flex h-full flex-col gap-5 p-5 xl:p-4 2xl:p-5">
+          <div className="flex flex-col gap-4 sm:flex-row xl:flex-col 2xl:flex-row">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm sm:h-14 sm:w-14">
               <Icon className="h-6 w-6 shrink-0 sm:h-7 sm:w-7" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-lg font-bold leading-tight sm:text-xl">{title}</h2>
+              <h2 className="text-lg font-bold leading-tight 2xl:text-xl">{title}</h2>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
             </div>
           </div>

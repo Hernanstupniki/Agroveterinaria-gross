@@ -67,17 +67,17 @@ export function Dashboard() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {primaryActions.map((action) => (
-          <Link key={action.title} href={action.href!} className="group block min-h-[220px] min-w-0">
+          <Link key={action.title} href={action.href!} className="group block min-h-[220px] min-w-0 xl:min-h-[240px] 2xl:min-h-[220px]">
             <Card className={`h-full transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${action.className}`}>
-              <CardContent className="flex h-full flex-col justify-between gap-5 p-5">
+              <CardContent className="flex h-full flex-col justify-between gap-5 p-5 xl:p-4 2xl:p-5">
                 <div className="space-y-4">
                   <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-background/90 text-primary shadow-sm sm:h-14 sm:w-14">
                     <action.icon className="h-6 w-6 shrink-0 sm:h-7 sm:w-7" />
                   </div>
                   <div className="space-y-2">
-                    <h2 className="text-lg font-bold leading-tight sm:text-xl">{action.title}</h2>
+                    <h2 className="text-lg font-bold leading-tight 2xl:text-xl">{action.title}</h2>
                     <p className="text-sm leading-relaxed opacity-80">{action.description}</p>
                   </div>
                 </div>
