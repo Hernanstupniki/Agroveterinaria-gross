@@ -93,6 +93,7 @@ export function AtencionLandingPage() {
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
         <ActionCard icon={Stethoscope} title="Nueva atención" description="Seleccioná cliente y mascota para registrar una atención clínica." buttonLabel="Comenzar" href="/atencion/nueva" />
+        <ActionCard icon={ClipboardList} title="Ver historial clínico" description="Consultá el historial completo de una mascota con todos los eventos clínicos." buttonLabel="Ver historial" href="/historial-clinico/ver" />
       </div>
     </div>
   )
@@ -259,7 +260,7 @@ function NuevaAtencionContent({ client, pet }: ClinicalActionSelection) {
               <Link href={`/mascotas/${pet.id}`}>Ver ficha de {pet.nombre}</Link>
             </Button>
             <Button variant="outline" className="h-12 rounded-xl px-6 font-bold" asChild>
-              <Link href={`/mascotas/${pet.id}?tab=historia`}>Ver historia clínica</Link>
+              <Link href={`/historial-clinico/ver?clienteId=${client.id}&mascotaId=${pet.id}`}>Ver historia clínica</Link>
             </Button>
             <Button variant="outline" className="h-12 rounded-xl px-6 font-bold" onClick={() => {
               setStep("atencion"); setSavedResult(null)
@@ -317,7 +318,7 @@ function NuevaAtencionContent({ client, pet }: ClinicalActionSelection) {
               </div>
               <div className="flex flex-shrink-0 gap-1">
                 <Button variant="outline" size="sm" className="h-8 rounded-lg px-3 text-xs hover:text-[#7A004A] hover:border-[#7A004A]" asChild>
-                  <Link href={`/mascotas/${pet.id}?tab=historia`} target="_blank" rel="noopener noreferrer">
+                  <Link href={`/historial-clinico/ver?clienteId=${client.id}&mascotaId=${pet.id}`} target="_blank" rel="noopener noreferrer">
                     <ClipboardList className="mr-1 h-3.5 w-3.5" />Historia clínica
                   </Link>
                 </Button>
