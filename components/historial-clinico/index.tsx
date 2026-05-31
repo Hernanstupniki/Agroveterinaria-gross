@@ -171,18 +171,10 @@ function HistorialContent({ client, pet, initialMode = "timeline" }: { client: C
 
   return (
     <div className="space-y-4">
-      <Button
-        className="h-14 w-full rounded-xl bg-primary px-6 text-base font-bold shadow-md shadow-primary/15 hover:bg-primary/90"
-        onClick={() => setMode("consulta")}
-      >
-        <Plus className="mr-2 h-5 w-5" />
-        Registrar atencion clinica
-      </Button>
-
-      <Button variant="outline" className="h-12 w-full rounded-xl text-base font-semibold" asChild>
+      <Button className="h-14 w-full rounded-xl bg-primary px-6 text-base font-bold shadow-md shadow-primary/15 hover:bg-primary/90" asChild>
         <Link href={`/atencion/nueva?clienteId=${client.id}&mascotaId=${pet.id}`}>
           <HeartPulse className="mr-2 h-5 w-5" />
-          Nueva atencion
+          Nueva atención
         </Link>
       </Button>
 

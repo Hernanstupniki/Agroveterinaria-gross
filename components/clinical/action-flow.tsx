@@ -4,7 +4,7 @@ import { useMemo, useState, type ReactNode } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import type { LucideIcon } from "lucide-react"
-import { ArrowLeft, FileText, PawPrint, Search, UserPlus, Users } from "lucide-react"
+import { ArrowLeft, ClipboardList, FileText, PawPrint, Search, UserPlus, Users } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -212,29 +212,29 @@ export function ClinicalActionFlow({
 
       {selectedClient && selectedPet && (
         <div className="space-y-4">
-          <Card className="border-primary/25 bg-primary/5 shadow-sm">
-            <CardContent className="p-4">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div className="flex min-w-0 flex-1 gap-3">
-                  <Avatar className="h-12 w-12 shrink-0">
-                    <AvatarFallback className="bg-primary text-base font-bold text-primary-foreground">
+          <Card className="overflow-hidden border-primary/25 bg-gradient-to-br from-primary/8 via-card to-yellow-50/60 shadow-sm">
+            <CardContent className="p-5">
+              <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_240px] xl:items-start">
+                <div className="flex min-w-0 flex-1 gap-4">
+                  <Avatar className="h-14 w-14 shrink-0 ring-4 ring-primary/10">
+                    <AvatarFallback className="bg-primary text-lg font-bold text-primary-foreground">
                       {selectedPet.nombre[0]}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="min-w-0 space-y-1.5">
+                  <div className="min-w-0 space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="text-xl font-bold leading-tight">{selectedPet.nombre}</h2>
-                      <Badge className="bg-success text-success-foreground">
+                      <h2 className="text-2xl font-bold leading-tight">{selectedPet.nombre}</h2>
+                      <Badge className="rounded-full bg-success px-3 py-1 text-success-foreground">
                         {selectedPet.estadoGeneral}
                       </Badge>
                     </div>
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-sm font-semibold text-foreground">
                       {selectedPet.especie} · {selectedPet.raza}
                     </p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm leading-relaxed text-muted-foreground">
                       {selectedPet.edad} · {selectedPet.sexo} · {selectedPet.peso} kg · {selectedPet.esterilizado ? "Esterilizado" : "No esterilizado"}
                     </p>
-                    <p className="break-words text-sm text-muted-foreground">
+                    <p className="break-words rounded-2xl border border-primary/10 bg-card/70 px-4 py-3 text-sm leading-relaxed text-muted-foreground shadow-sm">
                       <span className="font-semibold text-foreground">Dueño:</span> {selectedClient.nombre} · {selectedClient.telefono} · {selectedClient.email}
                     </p>
                     {(selectedPet.alergias.length > 0 || selectedPet.antecedentes.length > 0) && (
@@ -252,7 +252,7 @@ export function ClinicalActionFlow({
                         )}
                       </p>
                     )}
-                    <p className="break-words text-sm text-muted-foreground">
+                    <p className="break-words text-sm leading-relaxed text-muted-foreground">
                       <span className="font-semibold text-foreground">Última consulta:</span> {selectedPet.ultimaConsulta || "-"}
                       <span className="mx-1">·</span>
                       <span className="font-semibold text-foreground">Último diagnóstico:</span> {selectedPet.ultimoDiagnostico || "-"}
@@ -260,16 +260,22 @@ export function ClinicalActionFlow({
                   </div>
                 </div>
 
-                <div className="grid gap-2 sm:grid-cols-2 lg:w-56 lg:grid-cols-1">
-                  <Button variant="outline" className="h-11 rounded-xl font-bold" onClick={() => setSelectedPetId(null)}>
+                <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-1">
+                  <Button className="h-12 rounded-xl bg-primary px-4 text-center font-bold leading-tight shadow-sm shadow-primary/20 hover:bg-primary/90" onClick={() => setSelectedPetId(null)}>
                     <UserPlus className="mr-2 h-4 w-4" />
                     Cambiar mascota
                   </Button>
-                  <Button variant="outline" className="h-11 rounded-xl font-bold" asChild>
+                  <Button variant="outline" className="h-12 rounded-xl px-4 text-center font-semibold leading-tight" asChild>
                     <a href={`/mascotas/${selectedPet.id}`} target="_blank" rel="noopener noreferrer">
                       <FileText className="mr-2 h-4 w-4" />
                       Ver ficha clínica
                     </a>
+                  </Button>
+                  <Button variant="outline" className="h-12 rounded-xl px-4 text-center font-semibold leading-tight" asChild>
+                    <Link href={`/historial-clinico/ver?clienteId=${selectedClient.id}&mascotaId=${selectedPet.id}`}>
+                      <ClipboardList className="mr-2 h-4 w-4" />
+                      Ver historia clínica
+                    </Link>
                   </Button>
                 </div>
               </div>
