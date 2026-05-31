@@ -50,7 +50,7 @@ export function Principal() {
         </div>
         <h1 className="text-3xl font-semibold tracking-tight text-foreground">Principal</h1>
         <p className="text-muted-foreground">
-          Seleccioná qué querés ver o cargar para continuar el flujo clínico.
+          Elegí un módulo para ver información o cargar datos clínicos.
         </p>
       </header>
 
