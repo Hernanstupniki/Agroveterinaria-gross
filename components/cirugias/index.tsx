@@ -85,7 +85,7 @@ export default function CirugiasScreen() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
         <ActionCard icon={CalendarClock} title="Agendar cirugía" description="Crear el evento quirúrgico antes de registrar la realización." buttonLabel="Agendar cirugía" href="/cirugias/agendar" />
         <ActionCard icon={ClipboardList} title="Cirugías pendientes" description="Ver agendadas, próximas, en preparación o reprogramadas." buttonLabel="Ver pendientes" href="/cirugias/pendientes" />
         <ActionCard icon={ShieldCheck} title="Registrar cirugía agendada" description="Registrar como realizada solo si existe agenda previa." buttonLabel="Registrar cirugía" href="/cirugias/registrar" />
@@ -217,17 +217,17 @@ export function PendingSurgeries() {
                   <Info label="Observaciones" value={cirugia.prequirurgico?.observaciones || "A completar"} />
                 </div>
 
-                <div className="mt-4 grid gap-2 sm:grid-cols-3">
-                  <Button className="h-12 rounded-xl bg-primary px-3 text-center font-bold leading-tight hover:bg-primary/90" asChild>
+                <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                  <Button className="min-h-12 rounded-xl bg-primary px-3 py-3 text-center font-bold leading-tight hover:bg-primary/90 whitespace-normal" asChild>
                     <Link href={`/cirugias/registrar?clienteId=${client?.id || ""}&mascotaId=${pet?.id || ""}`}>
                       Registrar como realizada
                     </Link>
                   </Button>
-                  <Button variant="outline" className="h-12 rounded-xl px-3 text-center font-bold leading-tight">
+                  <Button variant="outline" className="min-h-12 rounded-xl px-3 py-3 text-center font-bold leading-tight whitespace-normal">
                     <RotateCcw className="mr-2 h-4 w-4" />
                     Reprogramar
                   </Button>
-                  <Button variant="destructive" className="h-12 rounded-xl px-3 text-center font-bold leading-tight">
+                  <Button variant="destructive" className="min-h-12 rounded-xl px-3 py-3 text-center font-bold leading-tight whitespace-normal">
                     <XCircle className="mr-2 h-4 w-4" />
                     Cancelar
                   </Button>
@@ -479,19 +479,19 @@ function ActionCard({
   href: string
 }) {
   return (
-    <Link href={href} className="group block">
+    <Link href={href} className="group block min-w-0">
       <Card className="h-full transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg">
         <CardContent className="flex h-full flex-col gap-5 p-5">
           <div className="flex items-start gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-              <Icon className="h-7 w-7" />
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm sm:h-14 sm:w-14">
+              <Icon className="h-6 w-6 shrink-0 sm:h-7 sm:w-7" />
             </div>
-            <div>
-              <h2 className="text-xl font-bold leading-tight">{title}</h2>
+            <div className="min-w-0">
+              <h2 className="text-lg font-bold leading-tight sm:text-xl">{title}</h2>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
             </div>
           </div>
-          <div className="mt-auto flex h-14 items-center justify-center rounded-xl bg-primary px-4 text-base font-bold text-primary-foreground group-hover:bg-primary/90">
+          <div className="mt-auto inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-4 py-3 text-center text-base font-bold leading-tight text-primary-foreground group-hover:bg-primary/90 whitespace-normal">
             <span className="text-center leading-tight">{buttonLabel}</span>
           </div>
         </CardContent>

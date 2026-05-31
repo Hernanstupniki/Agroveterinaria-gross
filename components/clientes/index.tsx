@@ -33,19 +33,19 @@ type Client = (typeof clientes)[number]
 
 function ActionCard({ icon: Icon, title, description, buttonLabel, href }: { icon: LucideIcon; title: string; description: string; buttonLabel: string; href: string }) {
   return (
-    <Link href={href} className="group block">
+    <Link href={href} className="group block min-w-0">
       <Card className="h-full transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg">
         <CardContent className="flex h-full flex-col gap-5 p-5">
           <div className="flex items-start gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-              <Icon className="h-7 w-7" />
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm sm:h-14 sm:w-14">
+              <Icon className="h-6 w-6 shrink-0 sm:h-7 sm:w-7" />
             </div>
-            <div>
-              <h2 className="text-xl font-bold leading-tight">{title}</h2>
+            <div className="min-w-0">
+              <h2 className="text-lg font-bold leading-tight sm:text-xl">{title}</h2>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
             </div>
           </div>
-          <div className="mt-auto flex h-14 items-center justify-center rounded-xl bg-primary px-4 text-base font-bold text-primary-foreground group-hover:bg-primary/90">
+          <div className="mt-auto inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-4 py-3 text-center text-base font-bold leading-tight text-primary-foreground group-hover:bg-primary/90 whitespace-normal">
             <span className="text-center leading-tight">{buttonLabel}</span>
           </div>
         </CardContent>
@@ -201,7 +201,7 @@ export function ClientesPage() {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <CardContent className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
               <ContactItem icon={Phone} label="Telefono" value={selectedCliente.telefono} />
               <ContactItem icon={Mail} label="Email" value={selectedCliente.email} />
               <ContactItem icon={MapPin} label="Direccion" value={selectedCliente.direccion} />
@@ -248,34 +248,34 @@ export function ClientesPage() {
                     </div>
 
                     <div className="mt-4 space-y-3">
-                      <Button className="h-14 w-full rounded-xl bg-primary px-5 text-base font-bold shadow-md shadow-primary/15 hover:bg-primary/90" asChild>
+                      <Button className="min-h-14 w-full rounded-xl bg-primary px-5 py-3 text-center text-base font-bold leading-tight shadow-md shadow-primary/15 hover:bg-primary/90 whitespace-normal" asChild>
                         <Link href={`/mascotas/${mascota.id}`}>
-                          <FileHeart className="mr-2 h-5 w-5" />
+                          <FileHeart className="mr-2 h-5 w-5 shrink-0" />
                           Ver ficha
                         </Link>
                       </Button>
-                      <Button variant="outline" className="h-11 w-full rounded-xl font-semibold" asChild>
+                      <Button variant="outline" className="min-h-12 w-full rounded-xl px-4 py-3 text-center font-semibold leading-tight whitespace-normal" asChild>
                         <Link href={`/mascotas/${mascota.id}?tab=historia`}>
-                          <ClipboardList className="mr-2 h-4 w-4" />
+                          <ClipboardList className="mr-2 h-4 w-4 shrink-0" />
                           Historia clínica
                         </Link>
                       </Button>
-                      <div className="grid grid-cols-3 gap-2">
-                        <Button variant="outline" className="h-11 rounded-xl font-semibold" asChild>
+                      <div className="grid gap-2 sm:grid-cols-2 2xl:grid-cols-3">
+                        <Button variant="outline" className="min-h-12 rounded-xl px-3 py-3 text-center font-semibold leading-tight whitespace-normal" asChild>
                           <Link href={`/mascotas/${mascota.id}?tab=vacunas`}>
-                            <Syringe className="mr-1.5 h-4 w-4" />
+                            <Syringe className="mr-1.5 h-4 w-4 shrink-0" />
                             Vacunas
                           </Link>
                         </Button>
-                        <Button variant="outline" className="h-11 rounded-xl font-semibold" asChild>
+                        <Button variant="outline" className="min-h-12 rounded-xl px-3 py-3 text-center font-semibold leading-tight whitespace-normal" asChild>
                           <Link href={`/mascotas/${mascota.id}?tab=tratamientos`}>
-                            <Pill className="mr-1.5 h-4 w-4" />
+                            <Pill className="mr-1.5 h-4 w-4 shrink-0" />
                             Tratamientos
                           </Link>
                         </Button>
-                        <Button variant="outline" className="h-11 rounded-xl font-semibold" asChild>
+                        <Button variant="outline" className="min-h-12 rounded-xl px-3 py-3 text-center font-semibold leading-tight whitespace-normal" asChild>
                           <Link href={`/mascotas/${mascota.id}?tab=cirugias`}>
-                            <Scissors className="mr-1.5 h-4 w-4" />
+                            <Scissors className="mr-1.5 h-4 w-4 shrink-0" />
                             Cirugías
                           </Link>
                         </Button>
@@ -327,7 +327,7 @@ function ContactItem({ icon: Icon, label, value }: { icon: typeof Phone; label: 
         <Icon className="h-4 w-4 text-primary" />
         {label}
       </div>
-      <p className="mt-1 truncate text-sm font-semibold">{value}</p>
+      <p className="mt-1 break-words text-sm font-semibold leading-tight">{value}</p>
     </div>
   )
 }

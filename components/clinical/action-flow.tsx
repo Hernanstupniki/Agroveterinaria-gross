@@ -260,20 +260,20 @@ export function ClinicalActionFlow({
                   </div>
                 </div>
 
-                <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-1">
-                  <Button className="h-12 rounded-xl bg-primary px-4 text-center font-bold leading-tight shadow-sm shadow-primary/20 hover:bg-primary/90" onClick={() => setSelectedPetId(null)}>
-                    <UserPlus className="mr-2 h-4 w-4" />
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-1">
+                  <Button className="min-h-12 rounded-xl bg-primary px-4 py-3 text-center font-bold leading-tight shadow-sm shadow-primary/20 hover:bg-primary/90 whitespace-normal" onClick={() => setSelectedPetId(null)}>
+                    <UserPlus className="mr-2 h-4 w-4 shrink-0" />
                     Cambiar mascota
                   </Button>
-                  <Button variant="outline" className="h-12 rounded-xl px-4 text-center font-semibold leading-tight" asChild>
+                  <Button variant="outline" className="min-h-12 rounded-xl px-4 py-3 text-center font-semibold leading-tight whitespace-normal" asChild>
                     <a href={`/mascotas/${selectedPet.id}`} target="_blank" rel="noopener noreferrer">
-                      <FileText className="mr-2 h-4 w-4" />
+                      <FileText className="mr-2 h-4 w-4 shrink-0" />
                       Ver ficha clínica
                     </a>
                   </Button>
-                  <Button variant="outline" className="h-12 rounded-xl px-4 text-center font-semibold leading-tight" asChild>
+                  <Button variant="outline" className="min-h-12 rounded-xl px-4 py-3 text-center font-semibold leading-tight whitespace-normal" asChild>
                     <Link href={`/historial-clinico/ver?clienteId=${selectedClient.id}&mascotaId=${selectedPet.id}`}>
-                      <ClipboardList className="mr-2 h-4 w-4" />
+                      <ClipboardList className="mr-2 h-4 w-4 shrink-0" />
                       Ver historia clínica
                     </Link>
                   </Button>

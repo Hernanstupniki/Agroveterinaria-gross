@@ -78,7 +78,7 @@ export function VacunasPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
         <ActionCard
           icon={Syringe}
           title="Registrar vacuna"
@@ -739,19 +739,19 @@ function ActionCard({
   href: string
 }) {
   return (
-    <Link href={href} className="group block">
+    <Link href={href} className="group block min-w-0">
       <Card className="h-full transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg">
         <CardContent className="flex h-full flex-col gap-5 p-5">
           <div className="flex items-start gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-              <Icon className="h-7 w-7" />
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm sm:h-14 sm:w-14">
+              <Icon className="h-6 w-6 shrink-0 sm:h-7 sm:w-7" />
             </div>
-            <div>
-              <h2 className="text-xl font-bold leading-tight">{title}</h2>
+            <div className="min-w-0">
+              <h2 className="text-lg font-bold leading-tight sm:text-xl">{title}</h2>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
             </div>
           </div>
-          <div className="mt-auto flex h-14 items-center justify-center rounded-xl bg-primary px-4 text-base font-bold text-primary-foreground group-hover:bg-primary/90">
+          <div className="mt-auto inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-4 py-3 text-center text-base font-bold leading-tight text-primary-foreground group-hover:bg-primary/90 whitespace-normal">
             <span className="text-center leading-tight">{buttonLabel}</span>
           </div>
         </CardContent>
