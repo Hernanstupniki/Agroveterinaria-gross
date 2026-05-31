@@ -52,10 +52,14 @@ export function TratamientosPage() {
   const [petDialogOpen, setPetDialogOpen] = useState(false)
   const [petInitialCliente, setPetInitialCliente] = useState<number | null>(null)
 
-  // Auto-open the new-treatment flow when arriving from Principal (?nuevo=1).
+  // Deep-links from Principal: ?tab=plantillas opens the Plantillas tab;
+  // ?nuevo=1 (on the treatments tab) opens the new-treatment flow.
   useEffect(() => {
     if (typeof window === "undefined") return
-    if (new URLSearchParams(window.location.search).get("nuevo") === "1") {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get("tab") === "plantillas") {
+      setActiveTab("plantillas")
+    } else if (params.get("nuevo") === "1") {
       setTreatmentDialogOpen(true)
     }
   }, [])

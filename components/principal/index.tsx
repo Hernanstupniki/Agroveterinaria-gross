@@ -1,5 +1,5 @@
 import { Calendar, Syringe, Clock, MessageCircle, ClipboardList, Scissors } from "lucide-react"
-import { ActionGrid } from "./action-grid"
+import { PrincipalActions } from "./principal-actions"
 import { TodayAttention } from "./today-attention"
 import { KpiStrip, type KpiItem } from "@/components/shared/kpi-strip"
 import {
@@ -50,16 +50,16 @@ export function Principal() {
         </div>
         <h1 className="text-3xl font-semibold tracking-tight text-foreground">Principal</h1>
         <p className="text-muted-foreground">
-          Elegí una acción para comenzar el flujo de atención clínica.
+          Seleccioná qué querés ver o cargar para continuar el flujo clínico.
         </p>
       </header>
 
-      {/* Quick actions */}
-      <section className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Acciones rápidas
+      {/* Actions hub — VER... and CREAR / CARGAR... */}
+      <section className="space-y-4">
+        <h2 className="text-base font-bold uppercase tracking-[0.12em] text-foreground">
+          Acciones
         </h2>
-        <ActionGrid />
+        <PrincipalActions />
       </section>
 
       {/* Operative attention */}
