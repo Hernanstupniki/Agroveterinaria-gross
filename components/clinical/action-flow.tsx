@@ -212,33 +212,35 @@ export function ClinicalActionFlow({
 
       {selectedClient && selectedPet && (
         <div className="space-y-4">
-          <Card className="overflow-hidden border-primary/25 bg-gradient-to-br from-primary/8 via-card to-yellow-50/60 shadow-sm">
-            <CardContent className="p-5">
-              <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_240px] xl:items-start">
-                <div className="flex min-w-0 flex-1 gap-4">
-                  <Avatar className="h-14 w-14 shrink-0 ring-4 ring-primary/10">
-                    <AvatarFallback className="bg-primary text-lg font-bold text-primary-foreground">
+          <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-primary/6 via-card to-yellow-50/40 shadow-sm">
+            <CardContent className="p-3 sm:p-4">
+              <div className="grid gap-3 xl:grid-cols-[minmax(230px,0.9fr)_minmax(340px,1.25fr)_210px] xl:items-start">
+                <div className="flex min-w-0 gap-3">
+                  <Avatar className="h-11 w-11 shrink-0 ring-2 ring-primary/10">
+                    <AvatarFallback className="bg-primary text-base font-bold text-primary-foreground">
                       {selectedPet.nombre[0]}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="min-w-0 space-y-2">
+                  <div className="min-w-0 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="text-2xl font-bold leading-tight">{selectedPet.nombre}</h2>
-                      <Badge className="rounded-full bg-success px-3 py-1 text-success-foreground">
-                        {selectedPet.estadoGeneral}
-                      </Badge>
+                      <h2 className="text-xl font-bold leading-tight">{selectedPet.nombre}</h2>
+                      {selectedPet.estadoGeneral !== "Saludable" && (
+                        <Badge className="rounded-full bg-destructive px-2.5 py-0.5 text-xs text-destructive-foreground">
+                          {selectedPet.estadoGeneral}
+                        </Badge>
+                      )}
                     </div>
                     <p className="text-sm font-semibold text-foreground">
                       {selectedPet.especie} · {selectedPet.raza}
                     </p>
-                    <p className="text-sm leading-relaxed text-muted-foreground">
+                    <p className="text-xs leading-relaxed text-muted-foreground sm:text-sm">
                       {selectedPet.edad} · {selectedPet.sexo} · {selectedPet.peso} kg · {selectedPet.esterilizado ? "Esterilizado" : "No esterilizado"}
                     </p>
-                    <p className="break-words rounded-2xl border border-primary/10 bg-card/70 px-4 py-3 text-sm leading-relaxed text-muted-foreground shadow-sm">
+                    <p className="hidden">
                       <span className="font-semibold text-foreground">Dueño:</span> {selectedClient.nombre} · {selectedClient.telefono} · {selectedClient.email}
                     </p>
                     {(selectedPet.alergias.length > 0 || selectedPet.antecedentes.length > 0) && (
-                      <p className="break-words text-sm text-muted-foreground">
+                      <p className="hidden">
                         {selectedPet.alergias.length > 0 && (
                           <>
                             <span className="font-semibold text-destructive">Alergias:</span> {selectedPet.alergias.join(", ")}
@@ -252,7 +254,7 @@ export function ClinicalActionFlow({
                         )}
                       </p>
                     )}
-                    <p className="break-words text-sm leading-relaxed text-muted-foreground">
+                    <p className="hidden">
                       <span className="font-semibold text-foreground">Última consulta:</span> {selectedPet.ultimaConsulta || "-"}
                       <span className="mx-1">·</span>
                       <span className="font-semibold text-foreground">Último diagnóstico:</span> {selectedPet.ultimoDiagnostico || "-"}
@@ -260,19 +262,45 @@ export function ClinicalActionFlow({
                   </div>
                 </div>
 
-                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-1">
-                  <Button className="min-h-12 rounded-xl bg-primary px-4 py-3 text-center font-bold leading-tight shadow-sm shadow-primary/20 hover:bg-primary/90 whitespace-normal" onClick={() => setSelectedPetId(null)}>
+                <div className="min-w-0 space-y-2 text-sm">
+                  <p className="break-words text-muted-foreground">
+                    <span className="font-semibold text-foreground">Dueño:</span> {selectedClient.nombre} · {selectedClient.telefono} · <span className="text-xs sm:text-sm">{selectedClient.email}</span>
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedPet.alergias.length > 0 && (
+                      <span className="rounded-full border border-destructive/25 bg-destructive/10 px-3 py-1 text-xs font-bold text-destructive sm:text-sm">
+                        Alergia: {selectedPet.alergias.join(", ")}
+                      </span>
+                    )}
+                    {selectedPet.antecedentes.length > 0 && (
+                      <span className="rounded-full border border-warning/30 bg-warning/10 px-3 py-1 text-xs font-semibold text-warning sm:text-sm">
+                        Antecedente: {selectedPet.antecedentes.join(", ")}
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <p className="rounded-xl bg-muted/45 px-3 py-2 text-xs leading-tight text-muted-foreground sm:text-sm">
+                      <span className="font-semibold text-foreground">Última consulta:</span> {selectedPet.ultimaConsulta || "-"}
+                    </p>
+                    <p className="rounded-xl bg-muted/45 px-3 py-2 text-xs leading-tight text-muted-foreground sm:text-sm">
+                      <span className="font-semibold text-foreground">Último diagnóstico:</span> {selectedPet.ultimoDiagnostico || "-"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-1">
+                  <Button className="min-h-10 rounded-xl bg-primary px-3 py-2 text-center text-sm font-bold leading-tight shadow-sm shadow-primary/15 hover:bg-primary/90 whitespace-normal" onClick={() => setSelectedPetId(null)}>
                     <UserPlus className="mr-2 h-4 w-4 shrink-0" />
                     Cambiar mascota
                   </Button>
-                  <Button variant="outline" className="min-h-12 rounded-xl px-4 py-3 text-center font-semibold leading-tight whitespace-normal" asChild>
+                  <Button variant="outline" className="min-h-10 rounded-xl px-3 py-2 text-center text-sm font-semibold leading-tight whitespace-normal" asChild>
                     <a href={`/mascotas/${selectedPet.id}`} target="_blank" rel="noopener noreferrer">
                       <FileText className="mr-2 h-4 w-4 shrink-0" />
                       Ver ficha clínica
                     </a>
                   </Button>
-                  <Button variant="outline" className="min-h-12 rounded-xl px-4 py-3 text-center font-semibold leading-tight whitespace-normal" asChild>
-                    <Link href={`/historial-clinico/ver?clienteId=${selectedClient.id}&mascotaId=${selectedPet.id}`}>
+                  <Button variant="outline" className="min-h-10 rounded-xl px-3 py-2 text-center text-sm font-semibold leading-tight whitespace-normal" asChild>
+                    <Link href={`/historial-clinico/ver?clienteId=${selectedClient.id}&mascotaId=${selectedPet.id}`} target="_blank" rel="noopener noreferrer">
                       <ClipboardList className="mr-2 h-4 w-4 shrink-0" />
                       Ver historia clínica
                     </Link>
