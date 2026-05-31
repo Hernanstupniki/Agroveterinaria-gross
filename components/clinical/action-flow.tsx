@@ -235,24 +235,26 @@ export function ClinicalActionFlow({
                   <Badge variant="outline" className="text-xs">Antecedente: {selectedPet.antecedentes[0]}</Badge>
                 )}
               </div>
-              <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-                {selectedPet.peso && <div>Peso: <span className="font-medium text-foreground">{selectedPet.peso} kg</span></div>}
-                {selectedPet.ultimoDiagnostico && <div>Último diagnóstico: <span className="font-medium text-foreground">{selectedPet.ultimoDiagnostico}</span></div>}
-                {selectedPet.ultimaConsulta && <div>Última consulta: <span className="font-medium text-foreground">{selectedPet.ultimaConsulta}</span></div>}
+              <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+                <div className="flex gap-4 items-center">
+                  {selectedPet.peso && <div>Peso: <span className="font-medium text-foreground">{selectedPet.peso} kg</span></div>}
+                  {selectedPet.ultimaConsulta && <div>Última consulta: <span className="font-medium text-foreground">{selectedPet.ultimaConsulta}</span></div>}
+                </div>
+                {selectedPet.ultimoDiagnostico && (
+                  <div className="whitespace-normal text-xs">Diagnóstico: <span className="font-medium text-foreground">{selectedPet.ultimoDiagnostico}</span></div>
+                )}
               </div>
             </div>
 
             {/* Right: actions */}
-            <div className="flex items-center justify-end gap-2">
-              <Button variant="outline" size="sm" className="h-9 rounded-lg px-3 text-sm" onClick={() => setSelectedPetId(null)}>
+            <div className="flex flex-col items-end justify-center gap-2">
+              <Button variant="outline" size="sm" className="h-10 rounded-lg px-4 text-sm font-semibold" onClick={() => setSelectedPetId(null)}>
                 Cambiar mascota
               </Button>
-              <Button variant="outline" size="sm" className="h-9 rounded-lg px-3 text-sm" asChild>
-                <a href={`/historial-clinico/ver?clienteId=${selectedClient.id}&mascotaId=${selectedPet.id}`} target="_blank" rel="noopener noreferrer">Historial clínico</a>
-              </Button>
-              <Button variant="outline" size="sm" className="h-9 rounded-lg px-3 text-sm" asChild>
-                <a href={`/mascotas/${selectedPet.id}`} target="_blank" rel="noopener noreferrer">Ficha clínica</a>
-              </Button>
+              <div className="flex gap-2">
+                <a className="text-sm text-muted-foreground hover:text-primary" href={`/historial-clinico/ver?clienteId=${selectedClient.id}&mascotaId=${selectedPet.id}`} target="_blank" rel="noopener noreferrer">Historial clínico</a>
+                <a className="text-sm text-muted-foreground hover:text-primary" href={`/mascotas/${selectedPet.id}`} target="_blank" rel="noopener noreferrer">Ficha clínica</a>
+              </div>
             </div>
           </div>
 
