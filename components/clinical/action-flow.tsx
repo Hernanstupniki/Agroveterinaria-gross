@@ -266,7 +266,6 @@ export function ClinicalActionFlow({
           {children({ client: selectedClient, pet: selectedPet })}
         </div>
       )}
-      )}
     </div>
   )
 }
