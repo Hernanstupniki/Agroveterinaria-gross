@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, type ReactNode } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import {
@@ -16,11 +16,13 @@ import {
   MessageCircle,
   Pill,
   Plus,
+  Search,
   Scissors,
   ShieldAlert,
   Stethoscope,
   Syringe,
 } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -169,6 +171,21 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
   const [historyStatusFilter, setHistoryStatusFilter] = useState("todos")
   const [historyDateFrom, setHistoryDateFrom] = useState("")
   const [historyDateTo, setHistoryDateTo] = useState("")
+  const [vaccineSearch, setVaccineSearch] = useState("")
+  const [vaccineStatusFilter, setVaccineStatusFilter] = useState("todos")
+  const [vaccineTypeFilter, setVaccineTypeFilter] = useState("todos")
+  const [vaccineDateFrom, setVaccineDateFrom] = useState("")
+  const [vaccineDateTo, setVaccineDateTo] = useState("")
+  const [treatmentSearch, setTreatmentSearch] = useState("")
+  const [treatmentStatusFilter, setTreatmentStatusFilter] = useState("todos")
+  const [treatmentProtocolFilter, setTreatmentProtocolFilter] = useState("todos")
+  const [surgerySearch, setSurgerySearch] = useState("")
+  const [surgeryStatusFilter, setSurgeryStatusFilter] = useState("todos")
+  const [surgeryProcedureFilter, setSurgeryProcedureFilter] = useState("todos")
+  const [reminderSearch, setReminderSearch] = useState("")
+  const [reminderStatusFilter, setReminderStatusFilter] = useState("todos")
+  const [reminderTypeFilter, setReminderTypeFilter] = useState("todos")
+  const [reminderDateFilter, setReminderDateFilter] = useState("")
   const [estudiosMascota, setEstudiosMascota] = useState<StudyFileRecord[]>(() => getStudyFilesForPet(mascota.id))
   const [expandedHistoryItems, setExpandedHistoryItems] = useState<Array<string | number>>([])
   const [expandedResumenItems, setExpandedResumenItems] = useState<Array<string | number>>([])
@@ -215,6 +232,66 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
       searchClinicalTimeline(allTimelineEvents, historySearch, historyTypeFilter, historyVetFilter, historyStatusFilter, historyDateFrom, historyDateTo),
     [allTimelineEvents, historySearch, historyTypeFilter, historyVetFilter, historyStatusFilter, historyDateFrom, historyDateTo],
   )
+  const orderedVaccineRows = useMemo(
+    () => vacunaGroups.flatMap((status) => planVacunasMascota.filter((vacuna) => vacuna.status === status)),
+    [planVacunasMascota],
+  )
+  const filteredVaccineRows = useMemo(() => {
+    const term = vaccineSearch.toLowerCase().trim()
+    return orderedVaccineRows.filter((item) => {
+      const rowDate = item.appliedAt || item.estimatedAt || ""
+      const matchesSearch =
+        !term ||
+        item.vaccineName.toLowerCase().includes(term) ||
+        item.doseName?.toLowerCase().includes(term) ||
+        item.observations?.toLowerCase().includes(term)
+      const matchesStatus = vaccineStatusFilter === "todos" || item.status === vaccineStatusFilter
+      const matchesType = vaccineTypeFilter === "todos" || item.vaccineName === vaccineTypeFilter
+      const matchesDateFrom = !vaccineDateFrom || rowDate >= vaccineDateFrom
+      const matchesDateTo = !vaccineDateTo || rowDate <= vaccineDateTo
+      return matchesSearch && matchesStatus && matchesType && matchesDateFrom && matchesDateTo
+    })
+  }, [orderedVaccineRows, vaccineSearch, vaccineStatusFilter, vaccineTypeFilter, vaccineDateFrom, vaccineDateTo])
+  const filteredTreatmentRows = useMemo(() => {
+    const term = treatmentSearch.toLowerCase().trim()
+    return tratamientosMascota.filter((item) => {
+      const matchesSearch =
+        !term ||
+        item.medicamento.toLowerCase().includes(term) ||
+        item.diagnostico.toLowerCase().includes(term) ||
+        item.indicaciones.toLowerCase().includes(term)
+      const matchesStatus = treatmentStatusFilter === "todos" || item.estado === treatmentStatusFilter
+      const matchesProtocol = treatmentProtocolFilter === "todos" || item.medicamento === treatmentProtocolFilter
+      return matchesSearch && matchesStatus && matchesProtocol
+    })
+  }, [tratamientosMascota, treatmentSearch, treatmentStatusFilter, treatmentProtocolFilter])
+  const filteredSurgeryRows = useMemo(() => {
+    const term = surgerySearch.toLowerCase().trim()
+    return cirugiasMascota.filter((item) => {
+      const matchesSearch =
+        !term ||
+        item.tipo.toLowerCase().includes(term) ||
+        item.veterinario.toLowerCase().includes(term) ||
+        item.estado.toLowerCase().includes(term)
+      const matchesStatus = surgeryStatusFilter === "todos" || item.estado === surgeryStatusFilter
+      const matchesProcedure = surgeryProcedureFilter === "todos" || item.tipo === surgeryProcedureFilter
+      return matchesSearch && matchesStatus && matchesProcedure
+    })
+  }, [cirugiasMascota, surgerySearch, surgeryStatusFilter, surgeryProcedureFilter])
+  const filteredReminderRows = useMemo(() => {
+    const term = reminderSearch.toLowerCase().trim()
+    return recordatoriosConBucket.filter((item) => {
+      const matchesSearch =
+        !term ||
+        item.tipo.toLowerCase().includes(term) ||
+        item.destinatario.toLowerCase().includes(term) ||
+        item.mensaje.toLowerCase().includes(term)
+      const matchesStatus = reminderStatusFilter === "todos" || item.bucket === reminderStatusFilter || item.estado === reminderStatusFilter
+      const matchesType = reminderTypeFilter === "todos" || item.tipo === reminderTypeFilter
+      const matchesDate = !reminderDateFilter || item.fechaProgramada === reminderDateFilter
+      return matchesSearch && matchesStatus && matchesType && matchesDate
+    })
+  }, [recordatoriosConBucket, reminderSearch, reminderStatusFilter, reminderTypeFilter, reminderDateFilter])
   const treatmentHistoryEventos = allTimelineEvents.filter((event) => event.tipo === "Tratamiento")
   const timelinePreview = useMemo(
     () => [...allTimelineEvents].sort((a, b) => b.fecha.localeCompare(a.fecha)).slice(0, 4),
@@ -541,7 +618,35 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="pt-5">
+            <CardContent className="space-y-4 pt-5">
+              <div className="grid gap-3 lg:grid-cols-3">
+                <CompactSearchInput value={treatmentSearch} onChange={setTreatmentSearch} placeholder="Buscar tratamiento, motivo o medicacion..." />
+                <Select value={treatmentStatusFilter} onValueChange={setTreatmentStatusFilter}>
+                  <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="Estado" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos los estados</SelectItem>
+                    {[...new Set(tratamientosMascota.map((item) => item.estado))].map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={treatmentProtocolFilter} onValueChange={setTreatmentProtocolFilter}>
+                  <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="Tratamiento" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos los tratamientos</SelectItem>
+                    {[...new Set(tratamientosMascota.map((item) => item.medicamento))].map((name) => <SelectItem key={name} value={name}>{name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <CompactGridHeader columns="md:grid-cols-[1fr_0.8fr_1fr_1fr_1fr_1fr_1fr]" labels={["Tratamiento", "Estado", "Motivo", "Medicacion", "Dosis/frecuencia", "Proximo control", "Acciones"]} />
+              {filteredTreatmentRows.length > 0 ? (
+                <div className="space-y-2">
+                  {filteredTreatmentRows.map((tratamiento) => (
+                    <TreatmentCompactRow key={tratamiento.id} tratamiento={tratamiento} clienteId={cliente?.id} mascotaId={mascota.id} />
+                  ))}
+                </div>
+              ) : (
+                <CompactEmptyState icon={Pill} title="Sin tratamientos para los filtros actuales" description="Registra un tratamiento o ajusta los filtros." />
+              )}
+              {false && (<>
               {tratamientosActivosMascota.length > 0 ? (
                 <div className="grid gap-4 lg:grid-cols-2">
                   {tratamientosActivosMascota.map((tratamiento) => (
@@ -553,6 +658,7 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
                   Sin tratamientos activos.
                 </div>
               )}
+              </>)}
             </CardContent>
           </Card>
 
@@ -641,7 +747,37 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="space-y-6 pt-5">
+            <CardContent className="space-y-4 pt-5">
+              <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-[minmax(0,1.3fr)_160px_190px_160px_160px]">
+                <CompactSearchInput value={vaccineSearch} onChange={setVaccineSearch} placeholder="Buscar vacuna, dosis u observacion..." />
+                <Select value={vaccineStatusFilter} onValueChange={setVaccineStatusFilter}>
+                  <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="Estado" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos los estados</SelectItem>
+                    {vacunaGroups.map((status) => <SelectItem key={status} value={status}>{vacunaGroupLabels[status]}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={vaccineTypeFilter} onValueChange={setVaccineTypeFilter}>
+                  <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="Vacuna" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todas las vacunas</SelectItem>
+                    {[...new Set(orderedVaccineRows.map((item) => item.vaccineName))].map((name) => <SelectItem key={name} value={name}>{name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Input type="date" className="h-11 rounded-xl" value={vaccineDateFrom} onChange={(event) => setVaccineDateFrom(event.target.value)} aria-label="Fecha desde" />
+                <Input type="date" className="h-11 rounded-xl" value={vaccineDateTo} onChange={(event) => setVaccineDateTo(event.target.value)} aria-label="Fecha hasta" />
+              </div>
+              <CompactGridHeader columns="md:grid-cols-[1.2fr_0.9fr_0.8fr_0.9fr_0.9fr_0.9fr_1fr]" labels={["Vacuna", "Dosis", "Estado", "Aplicada", "Proxima", "Recordatorio", "Acciones"]} />
+              {filteredVaccineRows.length > 0 ? (
+                <div className="space-y-2">
+                  {filteredVaccineRows.map((vacuna) => (
+                    <VaccineDisplayRow key={vacuna.id} item={vacuna} clienteId={cliente?.id} mascotaId={mascota.id} />
+                  ))}
+                </div>
+              ) : (
+                <CompactEmptyState icon={Syringe} title="Sin vacunas para los filtros actuales" description="Registra una vacuna o ajusta los filtros para revisar el plan." />
+              )}
+              {false && (<>
               {planVacunasMascota.length > 0 ? (
                 vacunaGroups.map((estado) => {
                   const vacunasPorEstado = planVacunasMascota.filter((vacuna) => vacuna.status === estado)
@@ -667,6 +803,7 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
                   <p className="text-sm text-muted-foreground">Registrá la primera vacuna o una fecha recomendada para este paciente.</p>
                 </div>
               )}
+              </>)}
             </CardContent>
           </Card>
         </TabsContent>
@@ -690,7 +827,35 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="pt-5">
+            <CardContent className="space-y-4 pt-5">
+              <div className="grid gap-3 lg:grid-cols-3">
+                <CompactSearchInput value={treatmentSearch} onChange={setTreatmentSearch} placeholder="Buscar tratamiento, motivo o medicacion..." />
+                <Select value={treatmentStatusFilter} onValueChange={setTreatmentStatusFilter}>
+                  <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="Estado" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos los estados</SelectItem>
+                    {[...new Set(tratamientosMascota.map((item) => item.estado))].map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={treatmentProtocolFilter} onValueChange={setTreatmentProtocolFilter}>
+                  <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="Tratamiento" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos los tratamientos</SelectItem>
+                    {[...new Set(tratamientosMascota.map((item) => item.medicamento))].map((name) => <SelectItem key={name} value={name}>{name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <CompactGridHeader columns="md:grid-cols-[1fr_0.8fr_1fr_1fr_1fr_1fr_1fr]" labels={["Tratamiento", "Estado", "Motivo", "Medicacion", "Dosis/frecuencia", "Proximo control", "Acciones"]} />
+              {filteredTreatmentRows.length > 0 ? (
+                <div className="space-y-2">
+                  {filteredTreatmentRows.map((tratamiento) => (
+                    <TreatmentCompactRow key={tratamiento.id} tratamiento={tratamiento} clienteId={cliente?.id} mascotaId={mascota.id} />
+                  ))}
+                </div>
+              ) : (
+                <CompactEmptyState icon={Pill} title="Sin tratamientos para los filtros actuales" description="Registra un tratamiento o ajusta los filtros." />
+              )}
+              {false && (<>
               {tratamientosActivosMascota.length > 0 ? (
                 <div className="grid gap-4 lg:grid-cols-2">
                   {tratamientosActivosMascota.map((tratamiento) => (
@@ -702,6 +867,7 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
                   Sin tratamientos activos.
                 </div>
               )}
+              </>)}
             </CardContent>
           </Card>
 
@@ -766,7 +932,35 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-6 pt-5">
+            <CardContent className="space-y-4 pt-5">
+              <div className="grid gap-3 lg:grid-cols-3">
+                <CompactSearchInput value={surgerySearch} onChange={setSurgerySearch} placeholder="Buscar cirugia, profesional o estado..." />
+                <Select value={surgeryStatusFilter} onValueChange={setSurgeryStatusFilter}>
+                  <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="Estado" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos los estados</SelectItem>
+                    {[...new Set(cirugiasMascota.map((item) => item.estado))].map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={surgeryProcedureFilter} onValueChange={setSurgeryProcedureFilter}>
+                  <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="Procedimiento" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos los procedimientos</SelectItem>
+                    {[...new Set(cirugiasMascota.map((item) => item.tipo))].map((name) => <SelectItem key={name} value={name}>{name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <CompactGridHeader columns="md:grid-cols-[1.2fr_0.8fr_0.8fr_1fr_1fr_1fr]" labels={["Procedimiento", "Estado", "Fecha", "Profesional", "Seguimiento", "Acciones"]} />
+              {filteredSurgeryRows.length > 0 ? (
+                <div className="space-y-2">
+                  {filteredSurgeryRows.map((cirugia) => (
+                    <SurgeryCompactRow key={cirugia.id} cirugia={cirugia} />
+                  ))}
+                </div>
+              ) : (
+                <CompactEmptyState icon={Scissors} title="Sin cirugias para los filtros actuales" description="Agenda una cirugia o ajusta los filtros." />
+              )}
+              {false && (<>
               {[
                 { key: "agendadas", label: "Cirugías agendadas", items: cirugiasAgendadas },
                 { key: "pendientes", label: "Cirugías pendientes", items: cirugiasPendientes },
@@ -790,6 +984,7 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
                   )}
                 </div>
               ))}
+              </>)}
 </CardContent>
           </Card>
 
@@ -803,13 +998,10 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
             </CardHeader>
             <CardContent className="pt-5">
               {controlesPostoperatorios.length > 0 ? (
-                <div className="grid gap-3 md:grid-cols-2">
+                <div className="space-y-2">
+                  <CompactGridHeader columns="md:grid-cols-[1.2fr_0.9fr_1.4fr_0.8fr]" labels={["Control", "Fecha", "Detalle", "Acciones"]} />
                   {controlesPostoperatorios.map((control) => (
-                    <div key={control.id} className="rounded-xl border bg-card p-4">
-                      <p className="text-sm text-muted-foreground">{control.label}</p>
-                      <p className="mt-2 text-lg font-bold">{formatDate(control.fecha)}</p>
-                      <p className="text-sm text-muted-foreground">{control.detail}</p>
-                    </div>
+                    <PostOpCompactRow key={control.id} control={control} />
                   ))}
                 </div>
               ) : (
@@ -938,20 +1130,10 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
               </div>
 
               {filteredHistoryEventos.length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-2">
+                  <CompactGridHeader columns="md:grid-cols-[0.8fr_0.8fr_2fr_1fr_0.9fr_0.8fr]" labels={["Fecha", "Tipo", "Evento", "Profesional", "Estado", "Acciones"]} />
                   {filteredHistoryEventos.map((evento) => (
-                    <ClinicalTimelineItem
-                      key={evento.id}
-                      event={evento}
-                      isExpanded={expandedHistoryItems.includes(evento.id)}
-                      onToggle={() =>
-                        setExpandedHistoryItems((current) =>
-                          current.includes(evento.id)
-                            ? current.filter((item) => item !== evento.id)
-                            : [...current, evento.id],
-                        )
-                      }
-                    />
+                    <HistoryCompactRow key={evento.id} event={evento} />
                   ))}
                 </div>
               ) : (
@@ -982,7 +1164,37 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="space-y-6 pt-5">
+            <CardContent className="space-y-4 pt-5">
+              <div className="grid gap-3 lg:grid-cols-4">
+                <CompactSearchInput value={reminderSearch} onChange={setReminderSearch} placeholder="Buscar recordatorio, destinatario o mensaje..." />
+                <Select value={reminderStatusFilter} onValueChange={setReminderStatusFilter}>
+                  <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="Estado" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos los estados</SelectItem>
+                    {reminderBucketOrder.map((bucket) => <SelectItem key={bucket} value={bucket}>{reminderBucketLabels[bucket]}</SelectItem>)}
+                    {[...new Set(recordatoriosMascota.map((item) => item.estado))].map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={reminderTypeFilter} onValueChange={setReminderTypeFilter}>
+                  <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="Tipo" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos los tipos</SelectItem>
+                    {[...new Set(recordatoriosMascota.map((item) => item.tipo))].map((type) => <SelectItem key={type} value={type}>{type}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Input type="date" className="h-11 rounded-xl" value={reminderDateFilter} onChange={(event) => setReminderDateFilter(event.target.value)} aria-label="Fecha" />
+              </div>
+              <CompactGridHeader columns="md:grid-cols-[1.2fr_1.4fr_0.9fr_0.9fr_1fr]" labels={["Recordatorio", "Relacion", "Fecha", "Estado", "Acciones"]} />
+              {filteredReminderRows.length > 0 ? (
+                <div className="space-y-2">
+                  {filteredReminderRows.map((reminder) => (
+                    <ReminderCompactRow key={reminder.id} reminder={reminder} />
+                  ))}
+                </div>
+              ) : (
+                <CompactEmptyState icon={MessageCircle} title="Sin recordatorios para los filtros actuales" description="Crea un recordatorio o ajusta los filtros." />
+              )}
+              {false && (<>
               {recordatoriosMascota.length > 0 ? (
                 reminderBucketOrder.map((bucket) => (
                   <div key={bucket} className="space-y-3">
@@ -1008,6 +1220,7 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
                   Sin recordatorios asociados a esta mascota.
                 </div>
               )}
+              </>)}
             </CardContent>
           </Card>
         </TabsContent>
@@ -1020,6 +1233,181 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
         onSaved={handleFichaSaved}
       />
     </div>
+  )
+}
+
+function CompactSearchInput({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string
+  onChange: (value: string) => void
+  placeholder: string
+}) {
+  return (
+    <div className="relative">
+      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <Input className="h-11 rounded-xl pl-10" value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} />
+    </div>
+  )
+}
+
+function CompactGridHeader({ columns, labels }: { columns: string; labels: string[] }) {
+  return (
+    <div className={`hidden rounded-t-xl border bg-muted/35 px-3 py-2 text-xs font-bold text-muted-foreground md:grid ${columns}`}>
+      {labels.map((label) => (
+        <span key={label}>{label}</span>
+      ))}
+    </div>
+  )
+}
+
+function CompactEmptyState({ icon: Icon, title, description }: { icon: LucideIcon; title: string; description: string }) {
+  return (
+    <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
+      <Icon className="mx-auto h-8 w-8" />
+      <p className="mt-2 font-semibold text-foreground">{title}</p>
+      <p>{description}</p>
+    </div>
+  )
+}
+
+function CompactRow({ columns, children, className = "" }: { columns: string; children: ReactNode; className?: string }) {
+  return (
+    <article className={`rounded-xl border bg-card px-3 py-2 shadow-sm transition-colors hover:border-primary/35 ${className}`}>
+      <div className={`grid gap-3 md:items-center ${columns}`}>{children}</div>
+    </article>
+  )
+}
+
+function VaccineDisplayRow({
+  item,
+  clienteId,
+  mascotaId,
+}: {
+  item: VaccineDisplayItem
+  clienteId?: number
+  mascotaId: number
+}) {
+  const style = getVaccineStatusBadgeStyle(item.status)
+  const actionHref = `/vacunas/registrar?clienteId=${clienteId || ""}&mascotaId=${mascotaId}`
+  const statusLabelMap: Record<VaccineDisplayStatus, string> = {
+    aplicada: "Aplicada",
+    proxima: "Proxima",
+    pendiente: "Pendiente",
+    vencida: "Vencida",
+    historial_desconocido: "Historial desconocido",
+  }
+
+  return (
+    <CompactRow columns="md:grid-cols-[1.2fr_0.9fr_0.8fr_0.9fr_0.9fr_0.9fr_1fr]" className={style.card}>
+      <div className="min-w-0">
+        <p className="break-words text-sm font-semibold">{item.vaccineName}</p>
+        {item.observations && <p className="line-clamp-1 text-xs text-muted-foreground">{item.observations}</p>}
+      </div>
+      <span className="text-sm text-muted-foreground">{item.doseName || "-"}</span>
+      <Badge className={style.badge}>{statusLabelMap[item.status]}</Badge>
+      <span className="text-sm">{formatDate(item.appliedAt)}</span>
+      <span className="text-sm">{formatDate(item.estimatedAt)}</span>
+      <span className="text-sm">{formatDate(item.reminderDate)}</span>
+      <div className="flex flex-wrap gap-1 md:justify-end">
+        <Button size="sm" className="h-8 rounded-lg bg-primary px-3 text-xs font-bold hover:bg-primary/90" asChild>
+          <Link href={actionHref}>{item.canRegister ? item.actionLabel : "Ver detalle"}</Link>
+        </Button>
+      </div>
+    </CompactRow>
+  )
+}
+
+function TreatmentCompactRow({
+  tratamiento,
+  clienteId,
+  mascotaId,
+}: {
+  tratamiento: (typeof tratamientosActivos)[number]
+  clienteId?: number
+  mascotaId: number
+}) {
+  return (
+    <CompactRow columns="md:grid-cols-[1fr_0.8fr_1fr_1fr_1fr_1fr_1fr]">
+      <p className="break-words text-sm font-semibold">{tratamiento.medicamento}</p>
+      <Badge className="w-fit bg-primary text-primary-foreground">{tratamiento.estado}</Badge>
+      <p className="break-words text-sm text-muted-foreground">{tratamiento.diagnostico}</p>
+      <p className="break-words text-sm">{tratamiento.medicamento}</p>
+      <p className="break-words text-sm">{tratamiento.dosis} / {tratamiento.frecuencia}</p>
+      <p className="text-sm">{formatDate(tratamiento.proximoControl)}</p>
+      <div className="flex flex-wrap gap-1 md:justify-end">
+        <Button size="sm" className="h-8 rounded-lg bg-primary px-3 text-xs font-bold hover:bg-primary/90" asChild>
+          <Link href={`/tratamientos/registrar?clienteId=${clienteId || ""}&mascotaId=${mascotaId}`}>Actualizar</Link>
+        </Button>
+        <Button size="sm" variant="outline" className="h-8 rounded-lg px-3 text-xs font-semibold">Finalizar</Button>
+      </div>
+    </CompactRow>
+  )
+}
+
+function SurgeryCompactRow({ cirugia }: { cirugia: (typeof cirugias)[number] }) {
+  return (
+    <CompactRow columns="md:grid-cols-[1.2fr_0.8fr_0.8fr_1fr_1fr_1fr]">
+      <p className="break-words text-sm font-semibold">{cirugia.tipo}</p>
+      <Badge variant="outline" className="w-fit">{cirugia.estado}</Badge>
+      <p className="text-sm">{formatDate(cirugia.fecha)} {cirugia.hora}</p>
+      <p className="break-words text-sm">{cirugia.veterinario}</p>
+      <p className="break-words text-sm text-muted-foreground">{cirugia.postoperatorio?.fechaControl ? `Control ${formatDate(cirugia.postoperatorio.fechaControl)}` : "Sin seguimiento cargado"}</p>
+      <div className="flex flex-wrap gap-1 md:justify-end">
+        <Button size="sm" variant="outline" className="h-8 rounded-lg px-3 text-xs font-semibold">Ver detalle</Button>
+        <Button size="sm" className="h-8 rounded-lg bg-primary px-3 text-xs font-bold hover:bg-primary/90">Registrar</Button>
+      </div>
+    </CompactRow>
+  )
+}
+
+function HistoryCompactRow({ event }: { event: ClinicalTimelineEvent }) {
+  const title = event.diagnostico || event.vacuna || event.tratamiento || event.procedimiento || event.motivo || event.tipo
+  const detail = event.observaciones || event.sintomas || event.laboratorio || event.archivo || event.proximoControl || "Evento clinico registrado"
+
+  return (
+    <CompactRow columns="md:grid-cols-[0.8fr_0.8fr_2fr_1fr_0.9fr_0.8fr]">
+      <p className="text-sm">{formatDate(event.fecha)}</p>
+      <Badge variant="outline" className="w-fit">{event.tipo}</Badge>
+      <div className="min-w-0">
+        <p className="break-words text-sm font-semibold">{title}</p>
+        <p className="line-clamp-1 text-xs text-muted-foreground">{detail}</p>
+      </div>
+      <p className="break-words text-sm">{event.veterinario || "-"}</p>
+      <Badge variant="outline" className="w-fit">{event.estado || "Registrado"}</Badge>
+      <Button size="sm" variant="outline" className="h-8 rounded-lg px-3 text-xs font-semibold">Ver detalle</Button>
+    </CompactRow>
+  )
+}
+
+function ReminderCompactRow({ reminder }: { reminder: (typeof recordatoriosProgramados)[number] & { bucket: ReminderBucket } }) {
+  return (
+    <CompactRow columns="md:grid-cols-[1.2fr_1.4fr_0.9fr_0.9fr_1fr]">
+      <div className="min-w-0">
+        <p className="break-words text-sm font-semibold">{reminder.tipo}</p>
+        <p className="line-clamp-1 text-xs text-muted-foreground">{reminder.mensaje}</p>
+      </div>
+      <p className="break-words text-sm">{reminder.destinatario}</p>
+      <p className="text-sm">{formatDate(reminder.fechaProgramada)}</p>
+      <Badge variant="outline" className="w-fit">{reminder.estado}</Badge>
+      <div className="flex flex-wrap gap-1 md:justify-end">
+        <Button size="sm" variant="outline" className="h-8 rounded-lg px-3 text-xs font-semibold">Ver detalle</Button>
+        <Button size="sm" className="h-8 rounded-lg bg-primary px-3 text-xs font-bold hover:bg-primary/90">Completar</Button>
+      </div>
+    </CompactRow>
+  )
+}
+
+function PostOpCompactRow({ control }: { control: { id: string; label: string; fecha: string; detail: string } }) {
+  return (
+    <CompactRow columns="md:grid-cols-[1.2fr_0.9fr_1.4fr_0.8fr]">
+      <p className="break-words text-sm font-semibold">{control.label}</p>
+      <p className="text-sm">{formatDate(control.fecha)}</p>
+      <p className="break-words text-sm text-muted-foreground">{control.detail}</p>
+      <Button size="sm" variant="outline" className="h-8 rounded-lg px-3 text-xs font-semibold">Ver detalle</Button>
+    </CompactRow>
   )
 }
 

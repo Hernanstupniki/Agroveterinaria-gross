@@ -590,7 +590,8 @@ export function StudyFilesCompleteView({
   pet,
   scope = "pet",
   defaultShowUpload = false,
-}: Partial<ClinicalActionSelection> & { scope?: "global" | "pet"; defaultShowUpload?: boolean }) {
+  showFilters = true,
+}: Partial<ClinicalActionSelection> & { scope?: "global" | "pet"; defaultShowUpload?: boolean; showFilters?: boolean }) {
   const [records, setRecords] = useState<StudyFileRecord[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [tipoFilter, setTipoFilter] = useState("todos")
@@ -705,7 +706,7 @@ export function StudyFilesCompleteView({
             )}
           </div>
         </CardHeader>
-        {isGlobal && (
+        {showFilters && (
         <CardContent className="space-y-4 pt-5">
           <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-[minmax(0,1.5fr)_160px_180px_180px_160px_160px]">
             <div className="relative">
@@ -1013,7 +1014,7 @@ export function BuscarEstudiosFlow() {
       actionLabel="Buscar archivos"
       icon={FileText}
     >
-      {({ client, pet }) => <StudyFilesCompleteView client={client} pet={pet} />}
+      {({ client, pet }) => <StudyFilesCompleteView client={client} pet={pet} showFilters={false} />}
     </ClinicalActionFlow>
   )
 }
