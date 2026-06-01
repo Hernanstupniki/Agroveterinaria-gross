@@ -1,9 +1,9 @@
 services:
-  agroveterinaria-gross-web-dokploy:
+  agroveterinaria-gross-web-prototipo01:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: agroveterinaria-gross-web-dokploy
+    container_name: agroveterinaria-gross-web-prototipo01
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -25,12 +25,14 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=proxy
-      - traefik.http.routers.agroveterinaria-gross-dokploy.rule=Host(`agroveterinariagross.${DOMAIN_NAME:-zubuagency.com}`)
-      - traefik.http.routers.agroveterinaria-gross-dokploy.entrypoints=web,websecure
-      - traefik.http.routers.agroveterinaria-gross-dokploy.tls=true
-      - traefik.http.routers.agroveterinaria-gross-dokploy.tls.certresolver=mytlschallenge
-      - traefik.http.routers.agroveterinaria-gross-dokploy.priority=10
-      - traefik.http.services.agroveterinaria-gross-dokploy.loadbalancer.server.port=3000
+
+      - traefik.http.routers.agroveterinaria-gross-prototipo01.rule=Host(`agroveterinariagross-prototipo01.${DOMAIN_NAME:-zubuagency.com}`)
+      - traefik.http.routers.agroveterinaria-gross-prototipo01.entrypoints=websecure
+      - traefik.http.routers.agroveterinaria-gross-prototipo01.tls=true
+      - traefik.http.routers.agroveterinaria-gross-prototipo01.tls.certresolver=mytlschallenge
+      - traefik.http.routers.agroveterinaria-gross-prototipo01.priority=10
+
+      - traefik.http.services.agroveterinaria-gross-prototipo01.loadbalancer.server.port=3000
 
 networks:
   proxy:

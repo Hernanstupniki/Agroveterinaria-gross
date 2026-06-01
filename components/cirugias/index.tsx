@@ -1,27 +1,24 @@
 "use client"
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import Link from "next/link"
+import { useMemo, useState } from "react"
+import type { LucideIcon } from "lucide-react"
+import {
+  AlertTriangle,
+  CalendarClock,
+  ClipboardList,
+  Plus,
+  RotateCcw,
+  Scissors,
+  Settings,
+  ShieldCheck,
+  XCircle,
+} from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import {
   Select,
   SelectContent,
@@ -29,316 +26,543 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
+import { ClinicalActionFlow } from "@/components/clinical/action-flow"
+import { ProtocolSearchFilter, defaultFilterState, filterProtocols, type ProtocolSearchFilterState } from "@/components/clinical/protocol-search-filter"
+import { ApplicabilityBadges, PetTaxonomySummary, TaxonomyApplicabilityEditor } from "@/components/clinical/taxonomy-controls"
+import { getPetTaxonomy, protocolMatchesPet } from "@/lib/animal-taxonomy"
+import { controlFrequencyPresets, reminderPresets, surgeryDurationPresets, surgeryFollowUpDurationPresets } from "@/lib/clinical-presets"
+import { cirugias, clientes, mascotas, profesionales } from "@/lib/mock-data"
 import {
-  Search,
-  Plus,
-  Calendar,
-  Clock,
-  Stethoscope,
-  AlertTriangle,
-  CheckCircle2,
-  Timer,
-  FileText,
-} from "lucide-react"
-import { cirugias, mascotas, profesionales } from "@/lib/mock-data"
+  buildSurgeryFollowUps,
+  getSurgeryFollowUpDurationPreset,
+  getSurgeryFrequencyPreset,
+  getSurgeryProcedureDurationPreset,
+  getSurgeryProtocolsForPet,
+  getSurgeryReminderPreset,
+  inferSurgeryProtocol,
+  surgeryProtocols,
+} from "@/lib/surgery-workflow"
 
-const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: React.ReactNode }> = {
-  "Programada": { label: "Programada", variant: "secondary", icon: <Calendar className="h-3 w-3" /> },
-  "En curso": { label: "En Curso", variant: "default", icon: <Timer className="h-3 w-3" /> },
-  "Completada": { label: "Completada", variant: "outline", icon: <CheckCircle2 className="h-3 w-3" /> },
-  "Cancelada": { label: "Cancelada", variant: "destructive", icon: <AlertTriangle className="h-3 w-3" /> },
-  "Pendiente confirmación": { label: "Pendiente", variant: "secondary", icon: <Clock className="h-3 w-3" /> },
+const scheduledStates = ["Programada", "Pendiente confirmacion", "Pendiente confirmación", "En preparacion", "En preparación", "Reprogramada"]
+
+const statusStyles: Record<string, string> = {
+  Programada: "bg-primary text-primary-foreground",
+  "Pendiente confirmacion": "bg-warning text-warning-foreground",
+  "Pendiente confirmación": "bg-warning text-warning-foreground",
+  "En preparacion": "bg-secondary text-secondary-foreground",
+  "En preparación": "bg-secondary text-secondary-foreground",
+  Realizada: "bg-success text-success-foreground",
+  Cancelada: "bg-destructive text-destructive-foreground",
+  Reprogramada: "bg-muted text-muted-foreground",
 }
 
-const riskConfig: Record<string, { label: string; color: string }> = {
-  "Bajo": { label: "Bajo", color: "bg-green-100 text-green-800" },
-  "Moderado": { label: "Moderado", color: "bg-yellow-100 text-yellow-800" },
-  "Alto": { label: "Alto", color: "bg-red-100 text-red-800" },
+function normalizeText(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+}
+
+function isScheduled(status: string) {
+  const normalized = normalizeText(status)
+  return scheduledStates.some((state) => normalizeText(state) === normalized)
 }
 
 export default function CirugiasScreen() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-
-  const filteredCirugias = cirugias.filter((cirugia) => {
-    const matchesSearch =
-      cirugia.tipo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      cirugia.mascota.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      cirugia.dueno.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = statusFilter === "all" || cirugia.estado === statusFilter
-    return matchesSearch && matchesStatus
-  })
-
-  const getMascotaInfo = (mascotaId: number) => mascotas.find((m) => m.id === mascotaId)
-  const veterinarios = profesionales.filter((p) => p.rol === "Veterinario")
-
-  const programadasCount = cirugias.filter((c) => c.estado === "Programada").length
-  const enCursoCount = cirugias.filter((c) => c.estado === "En curso").length
-  const completadasCount = cirugias.filter((c) => c.estado === "Completada").length
-
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Cirugías</h1>
-          <p className="text-muted-foreground">
-            Gestión de procedimientos quirúrgicos
-          </p>
-        </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-primary hover:bg-primary/90">
-              <Plus className="mr-2 h-4 w-4" />
-              Programar Cirugía
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Programar Nueva Cirugía</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Mascota</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar mascota" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {mascotas.map((mascota) => (
-                        <SelectItem key={mascota.id} value={String(mascota.id)}>
-                          {mascota.nombre} - {mascota.especie}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Veterinario</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar veterinario" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {veterinarios.map((vet) => (
-                        <SelectItem key={vet.id} value={String(vet.id)}>
-                          {vet.nombre}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Tipo de Cirugía</Label>
-                <Input placeholder="Ej: Castración, Extracción dental..." />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Fecha</Label>
-                  <Input type="date" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Hora</Label>
-                  <Input type="time" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Duración Estimada</Label>
-                  <Input placeholder="Ej: 45 minutos" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Nivel de Riesgo</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar riesgo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Bajo">Bajo</SelectItem>
-                      <SelectItem value="Moderado">Moderado</SelectItem>
-                      <SelectItem value="Alto">Alto</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Notas Preoperatorias</Label>
-                <Textarea placeholder="Instrucciones especiales, ayuno previo, etc." />
-              </div>
-              <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button className="bg-primary hover:bg-primary/90" onClick={() => setIsDialogOpen(false)}>
-                  Programar Cirugía
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="rounded-full bg-blue-100 p-3">
-                <Calendar className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Programadas</p>
-                <p className="text-2xl font-bold">{programadasCount}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="rounded-full bg-primary/10 p-3">
-                <Timer className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">En Curso</p>
-                <p className="text-2xl font-bold">{enCursoCount}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="rounded-full bg-green-100 p-3">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Completadas</p>
-                <p className="text-2xl font-bold">{completadasCount}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="rounded-full bg-orange-100 p-3">
-                <Stethoscope className="h-5 w-5 text-orange-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total</p>
-                <p className="text-2xl font-bold">{cirugias.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col gap-4 sm:flex-row">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por tipo, mascota o dueño..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Estado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los estados</SelectItem>
-                <SelectItem value="Programada">Programada</SelectItem>
-                <SelectItem value="En curso">En Curso</SelectItem>
-                <SelectItem value="Completada">Completada</SelectItem>
-                <SelectItem value="Cancelada">Cancelada</SelectItem>
-                <SelectItem value="Pendiente confirmación">Pendiente</SelectItem>
-              </SelectContent>
-            </Select>
+      <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5">
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-2 rounded-full bg-primary px-3 py-1 text-sm font-bold text-primary-foreground">
+            <Scissors className="h-4 w-4" />
+            Cirugías
           </div>
-        </CardContent>
-      </Card>
+          <div>
+            <h1 className="text-3xl font-bold tracking-normal">Que querés hacer con cirugías?</h1>
+            <p className="mt-1 max-w-2xl text-muted-foreground">
+              Agenda, pendientes, registro de cirugías ya agendadas y protocolos quirúrgicos en pantallas separadas.
+            </p>
+          </div>
+        </div>
+      </div>
 
-      {/* Surgery Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Lista de Cirugías</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Mascota</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Hora</TableHead>
-                  <TableHead>Veterinario</TableHead>
-                  <TableHead>Riesgo</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredCirugias.map((cirugia) => {
-                  const mascotaInfo = getMascotaInfo(cirugia.mascotaId)
-                  const status = statusConfig[cirugia.estado] || statusConfig["Programada"]
-                  const riesgo = cirugia.prequirurgico?.riesgoQuirurgico || "Bajo"
-                  const risk = riskConfig[riesgo] || riskConfig["Bajo"]
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        <ActionCard icon={CalendarClock} title="Agendar cirugía" description="Crear el evento quirúrgico antes de registrar la realización." buttonLabel="Agendar cirugía" href="/cirugias/agendar" />
+        <ActionCard icon={ClipboardList} title="Cirugías pendientes" description="Ver agendadas, próximas, en preparación o reprogramadas." buttonLabel="Ver pendientes" href="/cirugias/pendientes" />
+        <ActionCard icon={ShieldCheck} title="Registrar cirugía agendada" description="Registrar como realizada solo si existe agenda previa." buttonLabel="Registrar cirugía" href="/cirugias/registrar" />
+        <ActionCard icon={ClipboardList} title="Ver protocolos creados" description="Consultar los protocolos quirúrgicos ya configurados en el sistema." buttonLabel="Ver protocolos" href="/cirugias/esquemas" />
+        <ActionCard icon={Settings} title="Crear protocolo" description="Configurar un nuevo procedimiento frecuente y criterios clínicos." buttonLabel="Crear protocolo" href="/cirugias/esquemas/crear" />
+      </div>
+    </div>
+  )
+}
+
+export function ScheduleSurgeryFlow() {
+  return (
+    <ClinicalActionFlow
+      title="Agendar cirugía"
+      description="Elegí cliente y mascota para crear un turno quirúrgico antes del registro."
+      actionLabel="Agendar cirugía"
+      icon={Scissors}
+    >
+      {({ client, pet }) => <ScheduleSurgeryForm key={pet.id} client={client} pet={pet} />}
+    </ClinicalActionFlow>
+  )
+}
+
+export function RegisterScheduledSurgeryFlow() {
+  return (
+    <ClinicalActionFlow
+      title="Registrar cirugía agendada"
+      description="Seleccioná una cirugía ya agendada para marcarla como realizada."
+      actionLabel="Registrar cirugía"
+      icon={ShieldCheck}
+    >
+      {({ client, pet }) => {
+        const scheduledSurgeries = cirugias.filter((cirugia) => cirugia.mascotaId === pet.id && isScheduled(cirugia.estado))
+
+        return (
+          <Card className={scheduledSurgeries.length ? "border-success/25 bg-success/5" : "border-destructive/30 bg-destructive/5"}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                {scheduledSurgeries.length ? <ShieldCheck className="h-5 w-5 text-success" /> : <AlertTriangle className="h-5 w-5 text-destructive" />}
+                Registrar cirugía ya agendada
+              </CardTitle>
+              <CardDescription>
+                Cliente: {client.nombre}. Mascota: {pet.nombre}. La agenda quirúrgica es obligatoria.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {scheduledSurgeries.length > 0 ? (
+                scheduledSurgeries.map((cirugia) => {
+                  const protocol = inferSurgeryProtocol(cirugia.tipo)
+                  const followUps = buildSurgeryFollowUps(protocol.id, cirugia.fecha)
 
                   return (
-                    <TableRow key={cirugia.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-lg">
-                            {mascotaInfo?.especie === "Perro" ? "🐕" : mascotaInfo?.especie === "Gato" ? "🐈" : "🐾"}
-                          </div>
-                          <div>
-                            <p className="font-medium">{cirugia.mascota}</p>
-                            <p className="text-sm text-muted-foreground">{cirugia.dueno}</p>
-                          </div>
+                    <div key={cirugia.id} className="rounded-lg border bg-card p-4">
+                      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                        <div>
+                          <p className="font-semibold">{cirugia.tipo}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Turno quirúrgico: {cirugia.fecha} - {cirugia.hora}
+                          </p>
                         </div>
-                      </TableCell>
-                      <TableCell className="font-medium">{cirugia.tipo}</TableCell>
-                      <TableCell>{cirugia.fecha}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3 text-muted-foreground" />
-                          {cirugia.hora}
-                        </div>
-                      </TableCell>
-                      <TableCell>{cirugia.veterinario}</TableCell>
-                      <TableCell>
-                        <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${risk.color}`}>
-                          {risk.label}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={status.variant} className="gap-1">
-                          {status.icon}
-                          {status.label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="sm">
-                          <FileText className="h-4 w-4" />
+                        <Button className="h-12 rounded-xl bg-primary px-5 text-center font-bold leading-tight hover:bg-primary/90" asChild>
+                          <Link href="/">Registrar realizada y volver al inicio</Link>
                         </Button>
-                      </TableCell>
-                    </TableRow>
+                      </div>
+                      <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 p-3">
+                        <p className="text-sm font-semibold text-primary">Seguimiento postoperatorio mock</p>
+                        <div className="mt-2 grid gap-2 md:grid-cols-2">
+                          {followUps.slice(0, 4).map((control) => (
+                            <Info key={control.id} label={control.title} value={`${control.dueDate} / aviso ${control.reminderDate || "-"}`} />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                   )
-                })}
-              </TableBody>
-            </Table>
+                })
+              ) : (
+                <div className="rounded-lg border border-destructive/30 bg-background p-4">
+                  <p className="font-semibold text-destructive">Para registrar una cirugía primero debe estar agendada.</p>
+                  <p className="mt-1 text-sm text-muted-foreground">Usá Agendar cirugía para crear el turno quirúrgico de {pet.nombre}.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )
+      }}
+    </ClinicalActionFlow>
+  )
+}
+
+export function PendingSurgeries() {
+  const pendingSurgeries = cirugias.filter((cirugia) => isScheduled(cirugia.estado))
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <ClipboardList className="h-5 w-5 text-primary" />
+          Cirugías pendientes
+        </CardTitle>
+        <CardDescription>Agendadas, próximas, en preparación y reprogramadas con acciones clínicas directas.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-3 xl:grid-cols-2">
+          {pendingSurgeries.map((cirugia) => {
+            const pet = mascotas.find((item) => item.id === cirugia.mascotaId)
+            const client = pet ? clientes.find((item) => item.id === pet.clienteId) : null
+
+            return (
+              <article key={cirugia.id} className="rounded-xl border bg-card p-4">
+                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-bold">{cirugia.tipo}</h3>
+                      <Badge className={statusStyles[cirugia.estado] || "bg-muted"}>{cirugia.estado}</Badge>
+                    </div>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {client?.nombre || cirugia.dueno} - {pet?.nombre || cirugia.mascota}
+                    </p>
+                  </div>
+                  <Badge variant="outline">{cirugia.fecha} - {cirugia.hora}</Badge>
+                </div>
+
+                <div className="mt-4 grid gap-2 text-sm md:grid-cols-3">
+                  <Info label="Cliente" value={client?.nombre || cirugia.dueno} />
+                  <Info label="Mascota" value={pet?.nombre || cirugia.mascota} />
+                  <Info label="Veterinario" value={cirugia.veterinario} />
+                  <Info label="Estado" value={cirugia.estado} />
+                  <Info label="Consentimiento" value={cirugia.consentimiento.firmado ? "Firmado" : "Pendiente"} />
+                  <Info label="Observaciones" value={cirugia.prequirurgico?.observaciones || "A completar"} />
+                </div>
+
+                <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                  <Button className="min-h-12 rounded-xl bg-primary px-3 py-3 text-center font-bold leading-tight hover:bg-primary/90 whitespace-normal" asChild>
+                    <Link href={`/cirugias/registrar?clienteId=${client?.id || ""}&mascotaId=${pet?.id || ""}`}>
+                      Registrar como realizada
+                    </Link>
+                  </Button>
+                  <Button variant="outline" className="min-h-12 rounded-xl px-3 py-3 text-center font-bold leading-tight whitespace-normal">
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Reprogramar
+                  </Button>
+                  <Button variant="destructive" className="min-h-12 rounded-xl px-3 py-3 text-center font-bold leading-tight whitespace-normal">
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Cancelar
+                  </Button>
+                </div>
+              </article>
+            )
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+export function SurgeryProtocols() {
+  return <SurgeryProtocolsList />
+}
+
+export function SurgeryProtocolsList() {
+  const [filter, setFilter] = useState<ProtocolSearchFilterState>(defaultFilterState())
+  const filtered = useMemo(() => filterProtocols(surgeryProtocols, filter), [filter])
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <ClipboardList className="h-5 w-5 text-primary" />
+              Protocolos de cirugía creados
+            </CardTitle>
+            <CardDescription>Protocolos quirúrgicos configurados con requisitos y seguimiento postoperatorio.</CardDescription>
+          </div>
+          <Button className="h-12 rounded-xl bg-primary px-5 font-bold hover:bg-primary/90" asChild>
+            <Link href="/cirugias/esquemas/crear">
+              <Plus className="mr-2 h-4 w-4" />
+              Crear protocolo
+            </Link>
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <ProtocolSearchFilter
+          filter={filter}
+          onFilterChange={setFilter}
+          totalCount={surgeryProtocols.length}
+          filteredCount={filtered.length}
+        />
+        {filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <p className="text-lg font-medium text-muted-foreground">No se encontraron protocolos con esos filtros.</p>
+            <Button variant="outline" className="mt-3 h-10 rounded-xl" onClick={() => setFilter(defaultFilterState())}>
+              Limpiar filtros
+            </Button>
+          </div>
+        ) : (
+          <div className="grid gap-3 lg:grid-cols-2">
+            {filtered.map((protocol) => (
+              <article key={protocol.id} className="rounded-lg border bg-card p-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="font-semibold">{protocol.name}</h3>
+                  <Badge className={protocol.active ? "bg-success text-success-foreground" : "bg-muted text-muted-foreground"}>
+                    {protocol.active ? "Activo" : "Inactivo"}
+                  </Badge>
+                </div>
+                <ApplicabilityBadges protocol={protocol} />
+                <div className="mt-3 grid gap-2 text-sm md:grid-cols-2">
+                  <Info label="Duración" value={getSurgeryProcedureDurationPreset(protocol).label} />
+                  <Info label="Seguimiento" value={getSurgeryFollowUpDurationPreset(protocol).label} />
+                  <Info label="Controles" value={getSurgeryFrequencyPreset(protocol).label} />
+                  <Info label="Recordatorio" value={getSurgeryReminderPreset(protocol).label} />
+                  <Info label="Requisitos" value={protocol.requirements} />
+                  <Info label="Postoperatorio" value={protocol.postInstructions} />
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button variant="outline" className="h-11 rounded-xl px-4 font-bold">
+                    Desactivar
+                  </Button>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+export function SurgeryProtocolCreator() {
+  const [editingProtocolId, setEditingProtocolId] = useState<string | null>(null)
+  const editingProtocol = surgeryProtocols.find((protocol) => protocol.id === editingProtocolId)
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Settings className="h-5 w-5 text-primary" />
+          Crear protocolo de cirugía
+        </CardTitle>
+        <CardDescription>Configuración del sistema para procedimientos frecuentes, requisitos y seguimiento postoperatorio.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        <div className="rounded-xl border border-primary/25 bg-primary/5 p-4">
+          {editingProtocol && (
+            <div className="mb-4 rounded-lg border border-primary/30 bg-background p-3 text-sm">
+              Editando protocolo mock: <span className="font-semibold">{editingProtocol.name}</span>.
+            </div>
+          )}
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Field label="Nombre del procedimiento" placeholder="Ej: Castración" value={editingProtocol?.name} />
+            <PresetSelect label="Duracion del procedimiento" items={surgeryDurationPresets} />
+            <PresetSelect label="Seguimiento postoperatorio" items={surgeryFollowUpDurationPresets} />
+            <PresetSelect label="Frecuencia de controles" items={controlFrequencyPresets} />
+            <PresetSelect label="Recordatorio" items={reminderPresets} />
+            <Field label="Requisitos previos" placeholder="Ayuno, estudios, consentimiento..." />
+          </div>
+          <div className="mt-4">
+            <TaxonomyApplicabilityEditor initial={editingProtocol} />
+          </div>
+          <div className="mt-4 space-y-2">
+            <Label>Indicaciones y observaciones</Label>
+            <Textarea className="bg-background" placeholder="Indicaciones prequirurgicas, materiales, alertas y seguimiento..." />
+          </div>
+          <Button className="mt-4 inline-flex h-14 items-center justify-center rounded-xl bg-primary px-6 text-center text-base font-bold leading-tight shadow-md shadow-primary/15 hover:bg-primary/90">
+            <Plus className="mr-2 h-4 w-4" />
+            {editingProtocol ? "Guardar cambios del protocolo" : "Crear protocolo de cirugía"}
+          </Button>
+          {editingProtocol && (
+            <Button variant="outline" className="ml-2 mt-4 h-14 rounded-xl px-6 text-base font-bold" onClick={() => setEditingProtocolId(null)}>
+              Cancelar edición
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+export function ScheduleSurgeryForm({
+  client,
+  pet,
+  mode = "page",
+  onInlineSaved,
+}: {
+  client: { id?: number; nombre: string }
+  pet: { id?: number; nombre: string; especie: string; raza?: string; edad?: string; animalTypeId?: string; breedId?: string | null; lifeStage?: any }
+  mode?: "page" | "inline"
+  onInlineSaved?: (draft: { surgeryType: string; status: string; notes: string }) => void
+}) {
+  const petTaxonomy = useMemo(() => getPetTaxonomy(pet), [pet])
+  const availableProtocols = useMemo(() => getSurgeryProtocolsForPet(pet), [pet])
+  const compatibleCount = availableProtocols.filter((protocol) => protocolMatchesPet(protocol, petTaxonomy)).length
+  const [selectedProtocolId, setSelectedProtocolId] = useState(availableProtocols[0]?.id || "")
+  const [procedureDurationId, setProcedureDurationId] = useState(availableProtocols[0]?.procedureDurationPresetId || "1-hour")
+  const [scheduledDate, setScheduledDate] = useState("2026-06-01")
+  const selectedProtocol = surgeryProtocols.find((protocol) => protocol.id === selectedProtocolId)
+  const followUps = useMemo(
+    () => (selectedProtocol ? buildSurgeryFollowUps(selectedProtocol.id, scheduledDate) : []),
+    [scheduledDate, selectedProtocol],
+  )
+
+  return (
+    <Card className="border-primary/30 bg-primary/5 shadow-sm">
+      <CardHeader className="text-center">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+          <Plus className="h-7 w-7" />
+        </div>
+        <CardTitle className="text-2xl">Agendar cirugía</CardTitle>
+        <CardDescription>Crea el evento de agenda antes de permitir el registro quirúrgico.</CardDescription>
+      </CardHeader>
+      <CardContent className="mx-auto grid w-full max-w-5xl gap-4">
+        <div className="rounded-lg border bg-background p-3 text-sm">
+          <p className="font-semibold">{client.nombre}</p>
+          <p className="text-muted-foreground">
+            {pet.nombre} - {pet.especie}
+          </p>
+        </div>
+        <PetTaxonomySummary pet={pet} />
+        {compatibleCount === 0 && (
+          <div className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-sm text-warning">
+            No hay protocolos quirúrgicos compatibles para esta mascota. Podés crear uno desde Protocolos de cirugía o elegir uno no compatible como demo.
+          </div>
+        )}
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <PresetSelect
+            label="Tipo de cirugía"
+            value={selectedProtocolId}
+            onValueChange={(value) => {
+              setSelectedProtocolId(value)
+              const protocol = surgeryProtocols.find((item) => item.id === value)
+              setProcedureDurationId(protocol?.procedureDurationPresetId || "1-hour")
+            }}
+            items={availableProtocols.map((protocol) => ({
+              id: protocol.id,
+              label: `${protocol.name} - ${protocolMatchesPet(protocol, petTaxonomy) ? "compatible" : "no compatible"}`,
+            }))}
+          />
+          <div className="space-y-2">
+            <Label>Fecha</Label>
+            <Input type="date" className="h-12 bg-background" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label>Hora</Label>
+            <Input type="time" className="h-12 bg-background" />
+          </div>
+          <PresetSelect
+            label="Duración estimada"
+            value={procedureDurationId}
+            onValueChange={setProcedureDurationId}
+            items={surgeryDurationPresets}
+          />
+          <Field label="Riesgo" placeholder="Bajo / Moderado / Alto" />
+        </div>
+        <div className="space-y-2">
+          <Label>Notas preoperatorias</Label>
+          <Textarea className="bg-white" placeholder="Ayuno, estudios requeridos, consentimiento, observaciones..." />
+        </div>
+
+        {mode === "inline" ? (
+          <Button
+            className="h-14 w-full bg-primary text-center text-base font-bold leading-tight hover:bg-primary/90"
+            onClick={() =>
+              onInlineSaved?.({
+                surgeryType: selectedProtocol?.name || "Cirugía programada",
+                status: "Programada",
+                notes: `Fecha sugerida: ${scheduledDate}. Seguimiento preparado desde protocolo.`,
+              })
+            }
+          >
+            Guardar cirugía en la atención
+          </Button>
+        ) : (
+          <Button className="h-14 w-full bg-primary text-center text-base font-bold leading-tight hover:bg-primary/90" asChild>
+            <Link href="/">Agendar cirugía y volver al inicio</Link>
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function ActionCard({
+  icon: Icon,
+  title,
+  description,
+  buttonLabel,
+  href,
+}: {
+  icon: LucideIcon
+  title: string
+  description: string
+  buttonLabel: string
+  href: string
+}) {
+  return (
+    <Link href={href} className="group block min-w-0">
+      <Card className="h-full transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg">
+        <CardContent className="flex h-full flex-col gap-5 p-5 xl:p-4 2xl:p-5">
+          <div className="flex flex-col gap-4 sm:flex-row xl:flex-col 2xl:flex-row">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm sm:h-14 sm:w-14">
+              <Icon className="h-6 w-6 shrink-0 sm:h-7 sm:w-7" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-lg font-bold leading-tight 2xl:text-xl">{title}</h2>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
+            </div>
+          </div>
+          <div className="mt-auto inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-4 py-3 text-center text-base font-bold leading-tight text-primary-foreground group-hover:bg-primary/90 whitespace-normal">
+            <span className="text-center leading-tight">{buttonLabel}</span>
           </div>
         </CardContent>
       </Card>
+    </Link>
+  )
+}
+
+function Field({
+  label,
+  placeholder,
+  value,
+  onChange,
+}: {
+  label: string
+  placeholder: string
+  value?: string
+  onChange?: (value: string) => void
+}) {
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <Input
+        className="bg-background"
+        placeholder={placeholder}
+        value={onChange ? value || "" : undefined}
+        defaultValue={!onChange ? value : undefined}
+        onChange={(event) => onChange?.(event.target.value)}
+      />
+    </div>
+  )
+}
+
+function PresetSelect({
+  label,
+  value,
+  onValueChange,
+  items,
+}: {
+  label: string
+  value?: string
+  onValueChange?: (value: string) => void
+  items: { id: string; label: string }[]
+}) {
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <Select value={value} defaultValue={items[0]?.id} onValueChange={onValueChange}>
+        <SelectTrigger className="h-12 bg-background">
+          <SelectValue placeholder={label} />
+        </SelectTrigger>
+        <SelectContent>
+          {items.map((item) => (
+            <SelectItem key={item.id} value={item.id}>
+              {item.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+}
+
+function Info({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md bg-muted/35 px-3 py-2">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="break-words font-medium leading-tight">{value}</p>
     </div>
   )
 }

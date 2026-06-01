@@ -87,7 +87,7 @@ export function MascotasPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
         <Card>
           <CardContent className="flex items-center gap-4 pt-6">
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
@@ -147,9 +147,9 @@ export function MascotasPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div className="flex gap-2">
+            <div className="grid w-full gap-2 sm:grid-cols-2 md:w-auto">
               <Select value={especieFilter} onValueChange={setEspecieFilter}>
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger className="w-full md:w-[140px]">
                   <SelectValue placeholder="Especie" />
                 </SelectTrigger>
                 <SelectContent>
@@ -159,7 +159,7 @@ export function MascotasPage() {
                 </SelectContent>
               </Select>
               <Select value={estadoFilter} onValueChange={setEstadoFilter}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full md:w-[180px]">
                   <SelectValue placeholder="Estado" />
                 </SelectTrigger>
                 <SelectContent>
@@ -215,7 +215,7 @@ export function MascotasPage() {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem>
                       <FileHeart className="mr-2 h-4 w-4" />
-                      Nueva consulta
+                      Nueva atención
                     </DropdownMenuItem>
                     <DropdownMenuItem>
                       <Syringe className="mr-2 h-4 w-4" />
@@ -230,7 +230,7 @@ export function MascotasPage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
                 <div>
                   <p className="text-muted-foreground">Edad</p>
                   <p className="font-medium">{mascota.edad}</p>
@@ -245,13 +245,13 @@ export function MascotasPage() {
                 </div>
                 <div>
                   <p className="text-muted-foreground">Dueño</p>
-                  <p className="font-medium truncate">{mascota.dueno}</p>
+                  <p className="break-words font-medium leading-tight">{mascota.dueno}</p>
                 </div>
               </div>
               
               <div className="pt-2 border-t">
                 <p className="text-xs text-muted-foreground mb-1">Última consulta: {mascota.ultimaConsulta}</p>
-                <p className="text-sm truncate">{mascota.ultimoDiagnostico}</p>
+                <p className="break-words text-sm leading-tight">{mascota.ultimoDiagnostico}</p>
               </div>
 
               <div className="flex items-center justify-between pt-2">
