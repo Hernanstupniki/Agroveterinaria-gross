@@ -30,7 +30,7 @@ function SidebarContent({ collapsed, onToggle }: { collapsed: boolean; onToggle?
         className={cn(
           "relative flex items-center overflow-hidden border-b border-white/40 bg-[radial-gradient(circle_at_18%_28%,rgba(201,217,47,0.16),transparent_38%),radial-gradient(circle_at_84%_72%,rgba(179,0,122,0.075),transparent_36%),linear-gradient(145deg,#fffff7_0%,#fffefe_48%,#fff7fc_100%)] shadow-[inset_0_-1px_0_rgba(179,0,122,0.09)] after:absolute after:inset-x-0 after:bottom-0 after:h-1 after:bg-[linear-gradient(90deg,#c9d92f,#b3007a)]",
           "cursor-pointer transition-all duration-200 hover:brightness-[1.03] hover:shadow-[inset_0_-1px_0_rgba(179,0,122,0.09),0_8px_24px_rgba(179,0,122,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
-          collapsed ? "h-16 justify-center px-2 py-2" : "h-24 px-5 py-4",
+          collapsed ? "h-14 justify-center px-2 py-2" : "h-20 px-4 py-3",
         )}
         title="Ir al inicio"
         aria-label="Ir al inicio"
@@ -47,8 +47,8 @@ function SidebarContent({ collapsed, onToggle }: { collapsed: boolean; onToggle?
         </div>
       </Link>
 
-      <nav className="flex-1 overflow-y-auto sidebar-scrollbar px-2 py-4">
-        <ul className="space-y-2">
+      <nav className="flex-1 overflow-hidden px-2 py-3">
+        <ul className="space-y-1">
           {menuItems.map((item) => {
             const isActive = item.href === "/" ? pathname === "/" : pathname === item.href || pathname.startsWith(`${item.href}/`)
 
@@ -57,7 +57,7 @@ function SidebarContent({ collapsed, onToggle }: { collapsed: boolean; onToggle?
                 <Link
                   href={item.href}
                   className={cn(
-                    "flex min-h-[3.25rem] items-center gap-3.5 rounded-lg px-4 py-4 text-base font-medium transition-colors",
+                    "flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
                     collapsed && "justify-center px-2",
                     isActive
                       ? "bg-sidebar-accent text-sidebar-accent-foreground"
@@ -65,7 +65,7 @@ function SidebarContent({ collapsed, onToggle }: { collapsed: boolean; onToggle?
                   )}
                   title={collapsed ? item.label : undefined}
                 >
-                  <item.icon className={cn("h-6 w-6 shrink-0", isActive && "text-secondary")} />
+                  <item.icon className={cn("h-5 w-5 shrink-0", isActive && "text-secondary")} />
                   {!collapsed && <span>{item.label}</span>}
                 </Link>
               </li>
