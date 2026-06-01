@@ -705,6 +705,7 @@ export function StudyFilesCompleteView({
             )}
           </div>
         </CardHeader>
+        {isGlobal && (
         <CardContent className="space-y-4 pt-5">
           <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-[minmax(0,1.5fr)_160px_180px_180px_160px_160px]">
             <div className="relative">
@@ -748,6 +749,7 @@ export function StudyFilesCompleteView({
             </div>
           )}
         </CardContent>
+        )}
       </Card>
 
       {canUploadInline && (showUpload || editingRecord) && (
@@ -776,6 +778,15 @@ export function StudyFilesCompleteView({
           </div>
         </CardHeader>
         <CardContent className="space-y-3 pt-5">
+          <div className={`hidden rounded-t-xl border bg-muted/35 px-3 py-2 text-xs font-bold text-muted-foreground md:grid ${isGlobal ? "md:grid-cols-[1.1fr_1.1fr_2fr_0.8fr_1fr_1fr_1fr]" : "md:grid-cols-[1.1fr_2fr_0.8fr_1fr_1fr_1fr]"}`}>
+            {isGlobal && <span>Mascota</span>}
+            <span>Tipo</span>
+            <span>Descripcion</span>
+            <span>Fecha</span>
+            <span>Profesional</span>
+            <span>Estado</span>
+            <span className="text-center">Archivo</span>
+          </div>
           {filteredRecords.map((record) => (
             <StudyRecordCard
               key={record.id}
@@ -851,78 +862,61 @@ function StudyRecordCard({
   const fileMeta = record.archivoSize ? formatFileSize(record.archivoSize) : record.archivoTipo || "Archivo demo"
 
   return (
-    <article className={`rounded-2xl border bg-card p-4 shadow-sm transition-colors hover:border-primary/35 ${isArchived ? "bg-muted/20" : ""}`}>
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,2fr)_minmax(180px,0.7fr)_auto] lg:items-center">
+    <article className={`rounded-xl border bg-card px-3 py-2 shadow-sm transition-colors hover:border-primary/35 ${isArchived ? "bg-muted/20" : ""}`}>
+      <div className={`grid gap-3 md:items-center ${showPatient ? "md:grid-cols-[1.1fr_1.1fr_2fr_0.8fr_1fr_1fr_1fr]" : "md:grid-cols-[1.1fr_2fr_0.8fr_1fr_1fr_1fr]"}`}>
         {showPatient && (
-          <div className="flex min-w-0 items-center gap-3">
-            <Avatar className="h-11 w-11 shrink-0">
+          <div className="flex min-w-0 items-center gap-2">
+            <Avatar className="h-8 w-8 shrink-0">
               <AvatarFallback className="bg-primary/10 text-sm font-bold text-primary">
                 {record.petName[0]}
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0">
-              <Link href={`/mascotas/${record.petId}`} className="font-bold leading-tight hover:text-primary">
+              <Link href={`/mascotas/${record.petId}`} className="text-sm font-semibold leading-tight hover:text-primary">
                 {record.petName}
               </Link>
-              <p className="break-words text-sm text-muted-foreground">{record.clientName}</p>
+              <p className="break-words text-xs text-muted-foreground">{record.clientName}</p>
             </div>
           </div>
         )}
 
-        <div className={`min-w-0 ${showPatient ? "" : "lg:col-span-2"}`}>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <Icon className="h-5 w-5" />
-            </span>
-            <div className="min-w-0">
-              <h3 className="break-words text-base font-bold leading-tight">{record.tipo}</h3>
-              <p className="text-sm text-muted-foreground">{formatDate(record.fecha)} - {record.profesional}</p>
-            </div>
-          </div>
-          <p className="mt-3 break-words text-sm leading-relaxed text-muted-foreground">{record.descripcion}</p>
+        <div className="flex min-w-0 items-center gap-2">
+          <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <span className="break-words text-sm font-medium">{record.tipo}</span>
         </div>
 
-        <div className="min-w-0 space-y-2">
+        <p className="min-w-0 break-words text-sm leading-snug">{record.descripcion}</p>
+        <p className="text-sm text-muted-foreground">{formatDate(record.fecha)}</p>
+        <p className="break-words text-sm">{record.profesional}</p>
+        <div>
           <Badge className={estadoColors[record.estado] || "bg-muted text-muted-foreground"}>
             {record.estado}
           </Badge>
-          <div className="rounded-xl bg-muted/35 px-3 py-2">
-            <p className="break-words text-sm font-semibold">{fileLabel}</p>
-            <p className="text-xs text-muted-foreground">{fileMeta}</p>
-          </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 lg:w-48 lg:justify-end">
-          <Button variant="outline" className="h-10 rounded-xl px-3 font-semibold" onClick={onPreview}>
-            <Eye className="mr-2 h-4 w-4 shrink-0" />
-            Ver
+        <div className="flex flex-wrap items-center gap-1 md:justify-center">
+          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={onPreview} title={fileLabel}>
+            <Eye className="h-4 w-4" />
           </Button>
           {record.archivoUrl ? (
-            <Button variant="outline" className="h-10 rounded-xl px-3 font-semibold" asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" asChild title={`Descargar ${fileMeta}`}>
               <a href={record.archivoUrl} download={record.archivoNombre || "archivo"}>
-                <Download className="mr-2 h-4 w-4 shrink-0" />
-                Descargar
+                <Download className="h-4 w-4" />
               </a>
             </Button>
           ) : (
-            <Button variant="outline" className="h-10 rounded-xl px-3 font-semibold" disabled title="Archivo demo sin URL real">
-              <Download className="mr-2 h-4 w-4 shrink-0" />
-              Descargar
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" disabled title="Archivo demo sin URL real">
+              <Download className="h-4 w-4" />
             </Button>
           )}
           {showPatient && (
-            <Button variant="outline" className="h-10 rounded-xl px-3 font-semibold" asChild>
-              <Link href={`/mascotas/${record.petId}`}>Ver ficha</Link>
-            </Button>
-          )}
-          {showPatient && (
-            <Button variant="ghost" className="h-10 rounded-xl px-3 font-semibold" asChild>
-              <Link href={`/historial-clinico/ver?clienteId=${record.clientId}&mascotaId=${record.petId}`}>Historia</Link>
+            <Button variant="ghost" className="h-8 rounded-lg px-2 text-xs font-semibold" asChild>
+              <Link href={`/mascotas/${record.petId}`}>Ficha</Link>
             </Button>
           )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl">
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg">
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -1012,8 +1006,6 @@ export function EstudiosPage() {
 }
 
 export function BuscarEstudiosFlow() {
-  return <StudyFilesCompleteView scope="global" />
-
   return (
     <ClinicalActionFlow
       title="Buscar Estudio"
