@@ -308,7 +308,7 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
     { label: "Vacuna", icon: Syringe, href: `/vacunas/registrar?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}` },
     { label: "Tratamiento", icon: Pill, href: `/tratamientos/registrar?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}` },
     { label: "Cirugía", icon: Scissors, href: `/cirugias/agendar?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}` },
-    { label: "Estudio", icon: FileText, href: `/estudios?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}` },
+    { label: "Estudio", icon: FileText, href: `/estudios/agregar?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}` },
   { label: "Recordatorio", icon: MessageCircle, href: `/recordatorios?mascotaId=${mascota.id}` },
   ]
 
@@ -832,7 +832,7 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
                   <CardDescription>Documentación secundaria asociada al paciente.</CardDescription>
                 </div>
                 <Button className="h-12 rounded-xl bg-primary px-5 font-bold hover:bg-primary/90" asChild>
-                  <Link href={`/estudios?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}`}>
+                  <Link href={`/estudios/agregar?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}`}>
                     <Plus className="mr-2 h-4 w-4" />
                     Cargar estudio
                   </Link>

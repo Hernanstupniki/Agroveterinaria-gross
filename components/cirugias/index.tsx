@@ -365,12 +365,16 @@ export function SurgeryProtocolCreator() {
   )
 }
 
-function ScheduleSurgeryForm({
+export function ScheduleSurgeryForm({
   client,
   pet,
+  mode = "page",
+  onInlineSaved,
 }: {
-  client: { nombre: string }
-  pet: { nombre: string; especie: string; raza?: string; edad?: string; animalTypeId?: string; breedId?: string | null; lifeStage?: any }
+  client: { id?: number; nombre: string }
+  pet: { id?: number; nombre: string; especie: string; raza?: string; edad?: string; animalTypeId?: string; breedId?: string | null; lifeStage?: any }
+  mode?: "page" | "inline"
+  onInlineSaved?: (draft: { surgeryType: string; status: string; notes: string }) => void
 }) {
   const veterinarios = profesionales.filter((profesional) => profesional.rol === "Veterinario")
   const petTaxonomy = useMemo(() => getPetTaxonomy(pet), [pet])
@@ -457,9 +461,24 @@ function ScheduleSurgeryForm({
           )}
         </div>
 
-        <Button className="h-14 w-full bg-primary text-center text-base font-bold leading-tight hover:bg-primary/90" asChild>
-          <Link href="/">Agendar cirugía y volver al inicio</Link>
-        </Button>
+        {mode === "inline" ? (
+          <Button
+            className="h-14 w-full bg-primary text-center text-base font-bold leading-tight hover:bg-primary/90"
+            onClick={() =>
+              onInlineSaved?.({
+                surgeryType: selectedProtocol?.name || "Cirugía programada",
+                status: "Programada",
+                notes: `Fecha sugerida: ${scheduledDate}. Seguimiento preparado desde protocolo.`,
+              })
+            }
+          >
+            Guardar cirugía en la atención
+          </Button>
+        ) : (
+          <Button className="h-14 w-full bg-primary text-center text-base font-bold leading-tight hover:bg-primary/90" asChild>
+            <Link href="/">Agendar cirugía y volver al inicio</Link>
+          </Button>
+        )}
       </CardContent>
     </Card>
   )

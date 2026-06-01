@@ -17,8 +17,10 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
 import { ClinicalActionFlow, type ClinicalActionSelection } from "@/components/clinical/action-flow"
-import { VacunaInlineForm } from "@/components/atencion/vacuna-inline-form"
-import { TratamientoInlineForm } from "@/components/atencion/tratamiento-inline-form"
+import { VaccineRegistrationForm } from "@/components/vacunas"
+import { TreatmentRegistrationForm } from "@/components/tratamientos"
+import { ScheduleSurgeryForm } from "@/components/cirugias"
+import { StudyUploadForm } from "@/components/estudios"
 import {
   guardarAtencionCompleta, CLASIFICACIONES, ACCIONES_CLINICAS,
   type ClasificacionAtencion, type AtencionBase, type AccionesActivas,
@@ -501,10 +503,76 @@ function NuevaAtencionContent({ client, pet }: ClinicalActionSelection) {
                   </button>
                   {isActive && isExpanded && (
                     <div className="border-t-2 border-primary/10 px-5 pb-5 pt-5">
-                      {key === "vacuna" && <VacunaInlineForm petId={pet.id} clientId={client.id} onSaved={(draft) => { setAcciones((prev) => ({ ...prev, vacuna: { activa: true, data: { vaccineName: draft.vaccineName, doseLabel: draft.doseLabel || "", observations: draft.observations || "" } } })); setExpandedAccion(null) }} onCancel={() => setExpandedAccion(null)} />}
-                      {key === "tratamiento" && <TratamientoInlineForm petId={pet.id} clientId={client.id} onSaved={(draft) => { setAcciones((prev) => ({ ...prev, tratamiento: { activa: true, data: { diagnosis: draft.diagnosis, medicamento: draft.medicamento, dosis: draft.dosis, frecuencia: draft.frecuencia, duracion: draft.duracion, indicaciones: draft.indicaciones || "", nextControlDate: draft.nextControlDate || "" } } })); setExpandedAccion(null) }} onCancel={() => setExpandedAccion(null)} />}
-                      {key === "cirugia" && <CirugiaAccionForm acciones={acciones} setAcciones={setAcciones} />}
-                      {key === "estudio" && <EstudioAccionForm acciones={acciones} setAcciones={setAcciones} />}
+                      {key === "vacuna" && (
+                        <VaccineRegistrationForm
+                          client={client}
+                          pet={pet}
+                          mode="inline"
+                          onInlineSaved={(draft) => {
+                            setAcciones((prev) => ({
+                              ...prev,
+                              vacuna: { activa: true, data: { vaccineName: draft.vaccineName, doseLabel: draft.doseLabel || "", observations: draft.observations || "" } },
+                            }))
+                            setExpandedAccion(null)
+                          }}
+                        />
+                      )}
+                      {key === "tratamiento" && (
+                        <TreatmentRegistrationForm
+                          client={client}
+                          pet={pet}
+                          mode="inline"
+                          onInlineSaved={(draft) => {
+                            setAcciones((prev) => ({
+                              ...prev,
+                              tratamiento: {
+                                activa: true,
+                                data: {
+                                  diagnosis: draft.diagnosis,
+                                  medicamento: draft.medicamento,
+                                  dosis: draft.dosis,
+                                  frecuencia: draft.frecuencia,
+                                  duracion: draft.duracion,
+                                  indicaciones: draft.indicaciones || "",
+                                  nextControlDate: draft.nextControlDate || "",
+                                },
+                              },
+                            }))
+                            setExpandedAccion(null)
+                          }}
+                        />
+                      )}
+                      {key === "cirugia" && (
+                        <ScheduleSurgeryForm
+                          client={client}
+                          pet={pet}
+                          mode="inline"
+                          onInlineSaved={(draft) => {
+                            setAcciones((prev) => ({
+                              ...prev,
+                              cirugia: { activa: true, data: { surgeryType: draft.surgeryType, status: draft.status, notes: draft.notes } },
+                            }))
+                            setExpandedAccion(null)
+                          }}
+                        />
+                      )}
+                      {key === "estudio" && (
+                        <StudyUploadForm
+                          clientId={client.id}
+                          petId={pet.id}
+                          mode="inline"
+                          onDraftSaved={(draft) => {
+                            setAcciones((prev) => ({
+                              ...prev,
+                              estudio: {
+                                activa: true,
+                                data: { studyType: draft.studyType, description: draft.description, estado: draft.estado, files: draft.files },
+                              },
+                            }))
+                            setExpandedAccion(null)
+                          }}
+                        />
+                      )}
                       {key === "recordatorio" && <RecordatorioAccionForm acciones={acciones} setAcciones={setAcciones} />}
                     </div>
                   )}

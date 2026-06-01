@@ -125,12 +125,21 @@ export function VaccineRegistrationFlow() {
   )
 }
 
-function VaccineRegistrationForm({
+export function VaccineRegistrationForm({
   client,
   pet,
+  mode = "page",
+  onInlineSaved,
 }: {
   client: { id: number; nombre: string }
   pet: { id: number; nombre: string; especie: string; raza: string; edad?: string; animalTypeId?: string; breedId?: string | null; lifeStage?: any }
+  mode?: "page" | "inline"
+  onInlineSaved?: (draft: {
+    vaccineName: string
+    doseLabel?: string
+    observations?: string
+    appliedAt: string
+  }) => void
 }) {
   const petTaxonomy = useMemo(() => getPetTaxonomy(pet), [pet])
   const availableVaccines = useMemo(() => getVaccinesForPet(pet), [pet])
@@ -292,9 +301,27 @@ function VaccineRegistrationForm({
           )}
 
           {canSave ? (
+            mode === "inline" ? (
+              <Button
+                className="h-14 w-full bg-primary text-base font-bold hover:bg-primary/90"
+                onClick={() =>
+                  selectedVaccine &&
+                  selectedDose &&
+                  onInlineSaved?.({
+                    vaccineName: selectedVaccine.name,
+                    doseLabel: selectedDose.name,
+                    observations: `Origen: ${origin === "carga_historica" ? "Carga historica" : "Aplicada hoy"}`,
+                    appliedAt,
+                  })
+                }
+              >
+                Guardar vacuna en la atención
+              </Button>
+            ) : (
             <Button className="h-14 w-full bg-primary text-base font-bold hover:bg-primary/90" asChild>
               <Link href="/">Guardar vacuna y volver al inicio</Link>
             </Button>
+            )
           ) : (
             <Button className="h-14 w-full text-base font-bold" disabled>
               Completar validaciones para guardar

@@ -4,7 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
-import { HeartPulse, Home, Pill, Scissors, Syringe, Users, ClipboardList, ChevronLeft, ChevronRight, Menu } from "lucide-react"
+import { FileText, HeartPulse, Home, Pill, Scissors, Syringe, Users, ClipboardList, ChevronLeft, ChevronRight, Menu } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -17,6 +17,7 @@ const menuItems = [
   { href: "/vacunas", label: "Vacunas", icon: Syringe },
   { href: "/tratamientos", label: "Tratamientos", icon: Pill },
   { href: "/cirugias", label: "Cirugías", icon: Scissors },
+  { href: "/estudios", label: "Estudios y Archivos", icon: FileText },
 ]
 
 function SidebarContent({ collapsed, onToggle }: { collapsed: boolean; onToggle?: () => void }) {

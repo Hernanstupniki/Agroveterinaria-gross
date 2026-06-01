@@ -116,12 +116,24 @@ export function TreatmentRegistrationFlow() {
   )
 }
 
-function TreatmentRegistrationForm({
+export function TreatmentRegistrationForm({
   client,
   pet,
+  mode = "page",
+  onInlineSaved,
 }: {
   client: { id: number; nombre: string }
   pet: { id: number; nombre: string; especie: string; raza?: string; edad?: string; animalTypeId?: string; breedId?: string | null; lifeStage?: any }
+  mode?: "page" | "inline"
+  onInlineSaved?: (draft: {
+    diagnosis: string
+    medicamento: string
+    dosis: string
+    frecuencia: string
+    duracion: string
+    indicaciones?: string
+    nextControlDate?: string
+  }) => void
 }) {
   const petTaxonomy = useMemo(() => getPetTaxonomy(pet), [pet])
   const availableProtocols = useMemo(() => getTreatmentProtocolsForPet(pet), [pet])
@@ -253,9 +265,29 @@ function TreatmentRegistrationForm({
         </div>
 
         {canSave ? (
+          mode === "inline" ? (
+            <Button
+              className="h-14 w-full bg-primary text-base font-bold hover:bg-primary/90"
+              onClick={() =>
+                selectedProtocol &&
+                onInlineSaved?.({
+                  diagnosis: selectedProtocol.name,
+                  medicamento: "Medicamento no especificado",
+                  dosis: "Dosis a completar",
+                  frecuencia: formatControlFrequency(selectedProtocol),
+                  duracion: getTreatmentDurationPreset(selectedProtocol).label,
+                  indicaciones: "Seguimiento preparado desde protocolo.",
+                  nextControlDate: nextControl || "",
+                })
+              }
+            >
+              Guardar tratamiento en la atención
+            </Button>
+          ) : (
           <Button className="h-14 w-full bg-primary text-base font-bold hover:bg-primary/90" asChild>
             <Link href="/">Guardar tratamiento y volver al inicio</Link>
           </Button>
+          )
         ) : (
           <Button className="h-14 w-full text-base font-bold" disabled>
             Completar datos para guardar

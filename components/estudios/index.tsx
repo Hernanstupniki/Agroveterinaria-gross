@@ -9,10 +9,12 @@ import {
   Eye,
   FileText,
   Image as ImageIcon,
+  Plus,
   RotateCcw,
   Search,
   Upload,
 } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -46,6 +48,7 @@ import {
   STUDY_STATUS_OPTIONS,
   STUDY_TYPE_OPTIONS,
   updateStudyFileRecord,
+  type StudyFileAttachment,
   type StudyFileRecord,
   type StudyFileStatus,
 } from "@/lib/study-files-store"
@@ -73,18 +76,27 @@ function isPdf(record: StudyFileRecord) {
   return record.archivoTipo === "application/pdf" || Boolean(record.archivoNombre?.toLowerCase().endsWith(".pdf"))
 }
 
-function StudyUploadForm({
+export function StudyUploadForm({
   clientId,
   petId,
   initialRecord,
   onSaved,
   onCancel,
+  mode = "page",
+  onDraftSaved,
 }: {
   clientId: number
   petId: number
   initialRecord?: StudyFileRecord | null
-  onSaved: (updatedRecord?: StudyFileRecord) => void
+  onSaved?: (updatedRecord?: StudyFileRecord) => void
   onCancel?: () => void
+  mode?: "page" | "inline"
+  onDraftSaved?: (draft: {
+    studyType: string
+    description: string
+    estado: StudyFileStatus
+    files: StudyFileAttachment[]
+  }) => void
 }) {
   const [tipo, setTipo] = useState(initialRecord?.tipo || STUDY_TYPE_OPTIONS[0])
   const [descripcion, setDescripcion] = useState(initialRecord?.descripcion || "")
@@ -95,6 +107,18 @@ function StudyUploadForm({
   const isEditing = Boolean(initialRecord)
 
   async function handleSubmit() {
+    if (mode === "inline") {
+      const attachments = await Promise.all(files.map((file) => fileToStudyAttachment(file)))
+      onDraftSaved?.({
+        studyType: tipo,
+        description: descripcion,
+        estado,
+        files: attachments,
+      })
+      onSaved?.()
+      return
+    }
+
     if (isEditing && initialRecord) {
       const updates = {
         tipo,
@@ -104,7 +128,7 @@ function StudyUploadForm({
         estado,
       }
       if (initialRecord.source === "local") updateStudyFileRecord(initialRecord.id, updates)
-      onSaved({ ...initialRecord, ...updates })
+      onSaved?.({ ...initialRecord, ...updates })
       return
     }
 
@@ -120,7 +144,7 @@ function StudyUploadForm({
         attachment: null,
       })
       addStudyRecordToClinicalHistory(record)
-      onSaved()
+      onSaved?.()
       return
     }
 
@@ -139,7 +163,7 @@ function StudyUploadForm({
       addStudyRecordToClinicalHistory(record)
     })
     setFiles([])
-    onSaved()
+    onSaved?.()
   }
 
   return (
@@ -251,12 +275,12 @@ function StudyUploadForm({
   )
 }
 
-function StudyFilesPanel({ client, pet }: ClinicalActionSelection) {
+export function StudyFilesPanel({ client, pet, defaultShowUpload = false }: ClinicalActionSelection & { defaultShowUpload?: boolean }) {
   const [records, setRecords] = useState<StudyFileRecord[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [tipoFilter, setTipoFilter] = useState("todos")
   const [estadoFilter, setEstadoFilter] = useState("todos")
-  const [showUpload, setShowUpload] = useState(false)
+  const [showUpload, setShowUpload] = useState(defaultShowUpload)
   const [previewRecord, setPreviewRecord] = useState<StudyFileRecord | null>(null)
   const [editingRecord, setEditingRecord] = useState<StudyFileRecord | null>(null)
 
@@ -278,6 +302,7 @@ function StudyFilesPanel({ client, pet }: ClinicalActionSelection) {
 
   useEffect(() => {
     refreshRecords()
+    setShowUpload(defaultShowUpload)
   }, [pet.id])
 
   const filteredRecords = useMemo(() => {
@@ -491,15 +516,89 @@ function StudyFilesPanel({ client, pet }: ClinicalActionSelection) {
   )
 }
 
+function ActionCard({
+  icon: Icon,
+  title,
+  description,
+  buttonLabel,
+  href,
+}: {
+  icon: LucideIcon
+  title: string
+  description: string
+  buttonLabel: string
+  href: string
+}) {
+  return (
+    <Link href={href} className="group block min-w-0">
+      <Card className="h-full transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg">
+        <CardContent className="flex h-full flex-col gap-5 p-5 xl:p-4 2xl:p-5">
+          <div className="flex flex-col gap-4 sm:flex-row xl:flex-col 2xl:flex-row">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm sm:h-14 sm:w-14">
+              <Icon className="h-6 w-6 shrink-0 sm:h-7 sm:w-7" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-lg font-bold leading-tight 2xl:text-xl">{title}</h2>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
+            </div>
+          </div>
+          <div className="mt-auto inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-4 py-3 text-center text-base font-bold leading-tight text-primary-foreground group-hover:bg-primary/90 whitespace-normal">
+            <span className="text-center leading-tight">{buttonLabel}</span>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
+  )
+}
+
 export function EstudiosPage() {
   return (
+    <div className="space-y-6">
+      <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5">
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-2 rounded-full bg-primary px-3 py-1 text-sm font-bold text-primary-foreground">
+            <FileText className="h-4 w-4" />
+            Estudios y Archivos
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold tracking-normal">Que querés hacer con estudios?</h1>
+            <p className="mt-1 max-w-2xl text-muted-foreground">
+              Buscá documentación clínica o agregá nuevos archivos eligiendo cliente y mascota.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <ActionCard icon={Search} title="Buscar Estudio" description="Elegí cliente y mascota para ver archivos, filtrar, visualizar, descargar o archivar." buttonLabel="Buscar Estudio" href="/estudios/buscar" />
+        <ActionCard icon={Plus} title="Agregar Estudio" description="Elegí cliente y mascota para cargar estudios, imágenes, PDFs o documentos clínicos." buttonLabel="Agregar Estudio" href="/estudios/agregar" />
+      </div>
+    </div>
+  )
+}
+
+export function BuscarEstudiosFlow() {
+  return (
     <ClinicalActionFlow
-      title="Estudios y Archivos"
-      description="Selecciona cliente y mascota para cargar, ver, descargar, editar o archivar estudios del paciente."
-      actionLabel="Gestionar archivos"
+      title="Buscar Estudio"
+      description="Seleccioná cliente y mascota para consultar estudios y archivos ya cargados."
+      actionLabel="Buscar archivos"
       icon={FileText}
     >
       {({ client, pet }) => <StudyFilesPanel client={client} pet={pet} />}
+    </ClinicalActionFlow>
+  )
+}
+
+export function AgregarEstudioFlow() {
+  return (
+    <ClinicalActionFlow
+      title="Agregar Estudio"
+      description="Seleccioná cliente y mascota para cargar un estudio o archivo clínico."
+      actionLabel="Agregar archivo"
+      icon={Upload}
+    >
+      {({ client, pet }) => <StudyFilesPanel client={client} pet={pet} defaultShowUpload />}
     </ClinicalActionFlow>
   )
 }
