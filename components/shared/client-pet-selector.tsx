@@ -16,24 +16,21 @@ import {
 } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
-import { clientes, mascotas } from "@/lib/mock-data"
+import { useFlowStore } from "@/components/layout/flow-store"
 
 interface ClientPetSelectorProps {
   clienteId: number | null
   mascotaId?: number | null
   onClienteChange: (id: number | null) => void
   onMascotaChange?: (id: number | null) => void
-  /** Open the quick-create-client flow. */
   onCreateCliente?: () => void
-  /** Open the quick-create-pet flow for the given client. */
   onCreateMascota?: (clienteId: number | null) => void
-  /** Also require selecting a pet (shows the pet picker). */
   withMascota?: boolean
 }
 
 /**
- * Scalable client → pet picker with inline creation. Lets a clinical flow pick
- * (or create) the owner and patient without leaving the form. (AGENTS.md §UX.)
+ * Client → pet picker. Reads from FlowStore (mock + locally created entities).
+ * "Crear nuevo" appears at the TOP of each list.
  */
 export function ClientPetSelector({
   clienteId,
@@ -46,6 +43,8 @@ export function ClientPetSelector({
 }: ClientPetSelectorProps) {
   const [clientOpen, setClientOpen] = useState(false)
   const [petOpen, setPetOpen] = useState(false)
+
+  const { clientes, mascotas } = useFlowStore()
 
   const cliente = clientes.find((c) => c.id === clienteId)
   const mascotasDelCliente = mascotas.filter((m) => m.clienteId === clienteId)
@@ -74,6 +73,25 @@ export function ClientPetSelector({
             <Command>
               <CommandInput placeholder="Buscar por nombre o teléfono..." />
               <CommandList>
+                {/* "Crear nuevo" always at the TOP */}
+                {onCreateCliente && (
+                  <>
+                    <CommandGroup>
+                      <CommandItem
+                        value="__crear-cliente"
+                        onSelect={() => {
+                          setClientOpen(false)
+                          onCreateCliente()
+                        }}
+                        className="font-medium text-primary"
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Crear nuevo cliente
+                      </CommandItem>
+                    </CommandGroup>
+                    <CommandSeparator />
+                  </>
+                )}
                 <CommandEmpty>No se encontró el cliente.</CommandEmpty>
                 <CommandGroup heading="Clientes">
                   {clientes.map((c) => (
@@ -98,24 +116,6 @@ export function ClientPetSelector({
                     </CommandItem>
                   ))}
                 </CommandGroup>
-                {onCreateCliente && (
-                  <>
-                    <CommandSeparator />
-                    <CommandGroup>
-                      <CommandItem
-                        value="__crear-cliente"
-                        onSelect={() => {
-                          setClientOpen(false)
-                          onCreateCliente()
-                        }}
-                        className="text-primary"
-                      >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Crear nuevo cliente
-                      </CommandItem>
-                    </CommandGroup>
-                  </>
-                )}
               </CommandList>
             </Command>
           </PopoverContent>
@@ -150,6 +150,25 @@ export function ClientPetSelector({
               <Command>
                 <CommandInput placeholder="Buscar mascota..." />
                 <CommandList>
+                  {/* "Crear nueva" always at the TOP */}
+                  {onCreateMascota && (
+                    <>
+                      <CommandGroup>
+                        <CommandItem
+                          value="__crear-mascota"
+                          onSelect={() => {
+                            setPetOpen(false)
+                            onCreateMascota(clienteId)
+                          }}
+                          className="font-medium text-primary"
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          Crear mascota para este cliente
+                        </CommandItem>
+                      </CommandGroup>
+                      <CommandSeparator />
+                    </>
+                  )}
                   <CommandEmpty>Este cliente no tiene mascotas.</CommandEmpty>
                   {mascotasDelCliente.length > 0 && (
                     <CommandGroup heading="Mascotas del cliente">
@@ -171,24 +190,6 @@ export function ClientPetSelector({
                         </CommandItem>
                       ))}
                     </CommandGroup>
-                  )}
-                  {onCreateMascota && (
-                    <>
-                      <CommandSeparator />
-                      <CommandGroup>
-                        <CommandItem
-                          value="__crear-mascota"
-                          onSelect={() => {
-                            setPetOpen(false)
-                            onCreateMascota(clienteId)
-                          }}
-                          className="text-primary"
-                        >
-                          <Plus className="mr-2 h-4 w-4" />
-                          Crear mascota para este cliente
-                        </CommandItem>
-                      </CommandGroup>
-                    </>
                   )}
                 </CommandList>
               </Command>

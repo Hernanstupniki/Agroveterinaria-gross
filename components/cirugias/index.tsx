@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,21 +14,16 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { NewSurgeryDialog } from "./new-surgery-dialog"
+import { QuickCreateClientDialog } from "@/components/shared/quick-create-client-dialog"
+import { QuickCreatePetDialog } from "@/components/shared/quick-create-pet-dialog"
+import { LargePrimaryAction } from "@/components/shared/large-primary-action"
 import {
   Search,
   Plus,
@@ -40,7 +35,7 @@ import {
   Timer,
   FileText,
 } from "lucide-react"
-import { cirugias, mascotas, profesionales } from "@/lib/mock-data"
+import { cirugias, mascotas } from "@/lib/mock-data"
 import { StatusBadge } from "@/components/shared/status-badge"
 import { EmptyState } from "@/components/shared/empty-state"
 import { KpiStrip, type KpiItem } from "@/components/shared/kpi-strip"
@@ -62,7 +57,18 @@ const riskConfig: Record<string, { label: string; color: string }> = {
 export default function CirugiasScreen() {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [surgeryDialogOpen, setSurgeryDialogOpen] = useState(false)
+  const [clientDialogOpen, setClientDialogOpen] = useState(false)
+  const [petDialogOpen, setPetDialogOpen] = useState(false)
+  const [petInitialCliente, setPetInitialCliente] = useState<number | null>(null)
+
+  // Auto-open the new-surgery flow when arriving from another flow (?nueva=1).
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    if (new URLSearchParams(window.location.search).get("nueva") === "1") {
+      setSurgeryDialogOpen(true)
+    }
+  }, [])
 
   const filteredCirugias = cirugias.filter((cirugia) => {
     const matchesSearch =
@@ -74,7 +80,6 @@ export default function CirugiasScreen() {
   })
 
   const getMascotaInfo = (mascotaId: number) => mascotas.find((m) => m.id === mascotaId)
-  const veterinarios = profesionales.filter((p) => p.rol === "Veterinario")
 
   const programadasCount = cirugias.filter((c) => c.estado === "Programada").length
   const enCursoCount = cirugias.filter((c) => c.estado === "En curso").length
@@ -96,98 +101,7 @@ export default function CirugiasScreen() {
             Programá cirugías, requisitos prequirúrgicos y seguí su estado.
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="h-12 gap-2 rounded-xl px-5 text-base font-semibold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98]">
-              <Plus className="h-5 w-5" />
-              Agendar cirugía
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Programar Nueva Cirugía</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Mascota</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar mascota" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {mascotas.map((mascota) => (
-                        <SelectItem key={mascota.id} value={String(mascota.id)}>
-                          {mascota.nombre} - {mascota.especie}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Veterinario</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar veterinario" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {veterinarios.map((vet) => (
-                        <SelectItem key={vet.id} value={String(vet.id)}>
-                          {vet.nombre}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Tipo de Cirugía</Label>
-                <Input placeholder="Ej: Castración, Extracción dental..." />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Fecha</Label>
-                  <Input type="date" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Hora</Label>
-                  <Input type="time" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Duración Estimada</Label>
-                  <Input placeholder="Ej: 45 minutos" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Nivel de Riesgo</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar riesgo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Bajo">Bajo</SelectItem>
-                      <SelectItem value="Moderado">Moderado</SelectItem>
-                      <SelectItem value="Alto">Alto</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Notas Preoperatorias</Label>
-                <Textarea placeholder="Instrucciones especiales, ayuno previo, etc." />
-              </div>
-              <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button className="bg-primary hover:bg-primary/90" onClick={() => setIsDialogOpen(false)}>
-                  Programar Cirugía
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <LargePrimaryAction label="Agendar cirugía" icon={Plus} onClick={() => setSurgeryDialogOpen(true)} />
       </div>
 
       {/* Filters */}
@@ -304,6 +218,34 @@ export default function CirugiasScreen() {
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Resumen</h2>
         <KpiStrip items={kpis} className="lg:grid-cols-4 xl:grid-cols-4" />
       </div>
+
+      <NewSurgeryDialog
+        open={surgeryDialogOpen}
+        onOpenChange={setSurgeryDialogOpen}
+        onCreateClient={() => {
+          setSurgeryDialogOpen(false)
+          setClientDialogOpen(true)
+        }}
+        onCreatePet={(clienteId) => {
+          setSurgeryDialogOpen(false)
+          setPetInitialCliente(clienteId)
+          setPetDialogOpen(true)
+        }}
+      />
+      <QuickCreateClientDialog
+        open={clientDialogOpen}
+        onOpenChange={setClientDialogOpen}
+        onNextPet={() => {
+          setPetInitialCliente(null)
+          setPetDialogOpen(true)
+        }}
+      />
+      <QuickCreatePetDialog
+        open={petDialogOpen}
+        onOpenChange={setPetDialogOpen}
+        initialClienteId={petInitialCliente}
+        onCreateClient={() => setClientDialogOpen(true)}
+      />
     </div>
   )
 }

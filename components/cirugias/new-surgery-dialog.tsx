@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { BookOpen, Scissors, CalendarDays, FileStack, ClipboardList } from "lucide-react"
+import { CalendarDays, ClipboardList, BookOpen, Scissors } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -22,43 +22,41 @@ import {
 } from "@/components/ui/select"
 import { ClientPetSelector } from "@/components/shared/client-pet-selector"
 import { FormFlowFooter } from "@/components/shared/form-flow-footer"
-import { plantillasTratamiento } from "@/lib/mock-data"
+import { profesionales } from "@/lib/mock-data"
 
-interface NewTreatmentDialogProps {
+interface NewSurgeryDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   initialClienteId?: number | null
   initialMascotaId?: number | null
   onCreateClient?: () => void
   onCreatePet?: (clienteId: number | null) => void
-  onNextSurgery?: (clienteId: number | null, mascotaId: number | null) => void
+  onNextTreatment?: (clienteId: number | null, mascotaId: number | null) => void
   onNextTurno?: (clienteId: number | null, mascotaId: number | null) => void
 }
 
 const emptyForm = {
-  nombre: "",
-  medicamento: "",
-  dosis: "",
-  frecuencia: "",
+  tipo: "",
+  veterinario: "Dr. García",
+  fecha: "",
+  hora: "",
   duracion: "",
-  fechaInicio: "",
-  fechaFin: "",
-  observaciones: "",
+  riesgo: "Bajo",
+  notas: "",
 }
 
-export function NewTreatmentDialog({
+export function NewSurgeryDialog({
   open,
   onOpenChange,
   initialClienteId = null,
   initialMascotaId = null,
   onCreateClient,
   onCreatePet,
-  onNextSurgery,
+  onNextTreatment,
   onNextTurno,
-}: NewTreatmentDialogProps) {
+}: NewSurgeryDialogProps) {
   const [clienteId, setClienteId] = useState<number | null>(initialClienteId)
   const [mascotaId, setMascotaId] = useState<number | null>(initialMascotaId)
-  const [plantillaId, setPlantillaId] = useState<string>("")
   const [form, setForm] = useState(emptyForm)
   const [saved, setSaved] = useState(false)
 
@@ -73,7 +71,6 @@ export function NewTreatmentDialog({
 
   const reset = () => {
     setForm(emptyForm)
-    setPlantillaId("")
     setSaved(false)
   }
 
@@ -82,46 +79,31 @@ export function NewTreatmentDialog({
     onOpenChange(next)
   }
 
-  const applyTemplate = (id: string) => {
-    setPlantillaId(id)
-    const t = plantillasTratamiento.find((p) => p.id === id)
-    if (!t) return
-    setForm((f) => ({
-      ...f,
-      nombre: t.nombre,
-      medicamento: t.medicamentoBase,
-      dosis: t.dosisSugerida,
-      frecuencia: t.frecuenciaSugerida,
-      duracion: t.duracionSugerida,
-      observaciones: t.notas,
-    }))
-  }
-
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto rounded-3xl">
         <DialogHeader>
-          <DialogTitle>Nuevo tratamiento</DialogTitle>
+          <DialogTitle>Nueva cirugía</DialogTitle>
           <DialogDescription>
-            Elegí cliente y mascota, aplicá una plantilla si querés, y ajustá los datos.
+            Queda programada y registrada en la historia clínica del paciente.
           </DialogDescription>
         </DialogHeader>
 
         {saved ? (
           <FormFlowFooter
-            title={`Tratamiento ${form.nombre || ""} guardado`}
-            description="Quedó registrado en la historia clínica y entre los tratamientos activos."
+            title={`Cirugía ${form.tipo || ""} agendada`}
+            description="Quedó programada en la historia clínica."
             onNavigate={() => handleOpenChange(false)}
             actions={[
+              {
+                label: "Cargar tratamiento postoperatorio",
+                icon: ClipboardList,
+                onClick: () => onNextTreatment?.(clienteId, mascotaId),
+              },
               {
                 label: "Agendar turno de control",
                 icon: CalendarDays,
                 onClick: () => onNextTurno?.(clienteId, mascotaId),
-              },
-              {
-                label: "Agendar cirugía",
-                icon: Scissors,
-                onClick: () => onNextSurgery?.(clienteId, mascotaId),
               },
             ]}
             sectionLink={{ label: "Ver historia clínica", icon: BookOpen, href: "/historial" }}
@@ -143,51 +125,48 @@ export function NewTreatmentDialog({
               onCreateMascota={(id) => onCreatePet?.(id)}
             />
 
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <FileStack className="h-4 w-4 text-primary" />
-                Plantilla de tratamiento
-              </Label>
-              <Select value={plantillaId} onValueChange={applyTemplate}>
-                <SelectTrigger className="rounded-xl">
-                  <SelectValue placeholder="Sin plantilla (cargar manual)" />
-                </SelectTrigger>
-                <SelectContent>
-                  {plantillasTratamiento.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="nt-nombre">Tratamiento / diagnóstico *</Label>
-                <Input id="nt-nombre" required value={form.nombre} onChange={(e) => set("nombre", e.target.value)} className="rounded-xl" placeholder="Ej: Leishmaniasis" />
+                <Label htmlFor="ns-tipo">Tipo de cirugía *</Label>
+                <Input id="ns-tipo" required value={form.tipo} onChange={(e) => set("tipo", e.target.value)} className="rounded-xl" placeholder="Ej: Castración, Extracción dental..." />
               </div>
               <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="nt-med">Medicamento</Label>
-                <Input id="nt-med" value={form.medicamento} onChange={(e) => set("medicamento", e.target.value)} className="rounded-xl" />
+                <Label>Veterinario</Label>
+                <Select value={form.veterinario} onValueChange={(v) => set("veterinario", v)}>
+                  <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {profesionales.filter((p) => p.rol === "Veterinario").map((p) => (
+                      <SelectItem key={p.id} value={p.nombre}>{p.nombre}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="nt-dosis">Dosis</Label>
-                <Input id="nt-dosis" value={form.dosis} onChange={(e) => set("dosis", e.target.value)} className="rounded-xl" />
+                <Label htmlFor="ns-fecha">Fecha *</Label>
+                <Input id="ns-fecha" type="date" required value={form.fecha} onChange={(e) => set("fecha", e.target.value)} className="rounded-xl" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="nt-frec">Frecuencia</Label>
-                <Input id="nt-frec" value={form.frecuencia} onChange={(e) => set("frecuencia", e.target.value)} className="rounded-xl" />
+                <Label htmlFor="ns-hora">Hora</Label>
+                <Input id="ns-hora" type="time" value={form.hora} onChange={(e) => set("hora", e.target.value)} className="rounded-xl" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="nt-ini">Fecha de inicio</Label>
-                <Input id="nt-ini" type="date" value={form.fechaInicio} onChange={(e) => set("fechaInicio", e.target.value)} className="rounded-xl" />
+                <Label htmlFor="ns-dur">Duración estimada</Label>
+                <Input id="ns-dur" value={form.duracion} onChange={(e) => set("duracion", e.target.value)} className="rounded-xl" placeholder="Ej: 45 minutos" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="nt-fin">Fecha de fin</Label>
-                <Input id="nt-fin" type="date" value={form.fechaFin} onChange={(e) => set("fechaFin", e.target.value)} className="rounded-xl" />
+                <Label>Nivel de riesgo</Label>
+                <Select value={form.riesgo} onValueChange={(v) => set("riesgo", v)}>
+                  <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Bajo">Bajo</SelectItem>
+                    <SelectItem value="Moderado">Moderado</SelectItem>
+                    <SelectItem value="Alto">Alto</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="nt-obs">Observaciones / controles</Label>
-                <Textarea id="nt-obs" value={form.observaciones} onChange={(e) => set("observaciones", e.target.value)} className="rounded-xl" rows={3} />
+                <Label htmlFor="ns-notas">Notas preoperatorias</Label>
+                <Textarea id="ns-notas" value={form.notas} onChange={(e) => set("notas", e.target.value)} className="rounded-xl" rows={2} placeholder="Ayuno previo, instrucciones especiales..." />
               </div>
             </div>
 
@@ -195,8 +174,8 @@ export function NewTreatmentDialog({
               <Button type="button" variant="outline" className="rounded-xl" onClick={() => handleOpenChange(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" className="rounded-xl" disabled={!clienteId || !mascotaId}>
-                Guardar tratamiento
+              <Button type="submit" className="rounded-xl" disabled={!clienteId || !mascotaId || !form.tipo}>
+                Agendar cirugía
               </Button>
             </div>
           </form>

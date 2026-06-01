@@ -2,34 +2,35 @@
 
 import type { ComponentType } from "react"
 import { useRouter } from "next/navigation"
-import { Home, CheckCircle2 } from "lucide-react"
+import { ArrowRight, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
 
 export interface FlowAction {
   label: string
   icon?: ComponentType<{ className?: string }>
   onClick?: () => void
   href?: string
-  tone?: "primary" | "outline"
 }
 
 /**
  * Shown after a clinical entity is saved. Confirms the save and offers the
- * natural next steps in the flow, always including "Volver a Principal".
- * (Flows A/B/C in AGENTS.md.)
+ * natural next steps in priority order — stacked **vertically**, first one
+ * highlighted, the rest secondary. The final `sectionLink` ("Ir a …") replaces
+ * the old "Volver a Principal": creation now happens from Principal via dialogs,
+ * so closing the dialog already returns there. (Flows A/B/C in AGENTS.md.)
  */
 export function FormFlowFooter({
   title = "Guardado correctamente",
   description,
   actions,
-  showBackToPrincipal = true,
+  sectionLink,
   onNavigate,
 }: {
   title?: string
   description?: string
   actions: FlowAction[]
-  showBackToPrincipal?: boolean
+  /** Low-emphasis link to the related section, e.g. "Ir a Vacunas". */
+  sectionLink?: FlowAction
   /** Called before navigation (e.g. to close the parent dialog). */
   onNavigate?: () => void
 }) {
@@ -50,26 +51,29 @@ export function FormFlowFooter({
           {description && <p className="text-sm text-success/80">{description}</p>}
         </div>
       </div>
-      <div className="grid gap-2 sm:grid-cols-2">
-        {actions.map((action) => (
+
+      {/* Priority order, stacked vertically: first action is primary. */}
+      <div className="flex flex-col gap-2">
+        {actions.map((action, i) => (
           <Button
             key={action.label}
-            variant={action.tone === "outline" ? "outline" : "default"}
-            className={cn("h-11 justify-start gap-2 rounded-xl")}
+            variant={i === 0 ? "default" : "outline"}
+            className="h-12 w-full justify-start gap-2 rounded-xl text-base"
             onClick={() => run(action)}
           >
             {action.icon && <action.icon className="h-4 w-4" />}
             {action.label}
           </Button>
         ))}
-        {showBackToPrincipal && (
+
+        {sectionLink && (
           <Button
             variant="ghost"
-            className="h-11 justify-start gap-2 rounded-xl text-muted-foreground"
-            onClick={() => run({ label: "Principal", href: "/" })}
+            className="h-11 w-full justify-start gap-2 rounded-xl text-muted-foreground"
+            onClick={() => run(sectionLink)}
           >
-            <Home className="h-4 w-4" />
-            Volver a Principal
+            {sectionLink.icon ? <sectionLink.icon className="h-4 w-4" /> : <ArrowRight className="h-4 w-4" />}
+            {sectionLink.label}
           </Button>
         )}
       </div>

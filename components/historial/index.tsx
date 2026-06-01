@@ -38,10 +38,12 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { mascotas, historialLuna } from "@/lib/mock-data"
 import { SectionHeader } from "@/components/shared/section-header"
 import { LargePrimaryAction } from "@/components/shared/large-primary-action"
 import { EmptyState } from "@/components/shared/empty-state"
+import { EstudiosPanel } from "@/components/estudios"
 
 const tipoEventoIcons: Record<string, typeof Activity> = {
   "Consulta": Stethoscope,
@@ -85,9 +87,17 @@ export function HistorialPage() {
     <div className="animate-section-in mx-auto max-w-[1600px] space-y-6">
       <SectionHeader
         title="Historia Clínica"
-        description="Registro completo de consultas y eventos médicos del paciente."
+        description="Registro completo de consultas, eventos médicos y estudios del paciente."
         action={<LargePrimaryAction label="Nueva consulta" icon={Plus} href="/historial?nueva-consulta=1" />}
       />
+
+      <Tabs defaultValue="historia" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="historia">Historia clínica</TabsTrigger>
+          <TabsTrigger value="estudios">Estudios y archivos</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="historia" className="space-y-6">
 
       {/* Filters */}
       <Card className="rounded-2xl">
@@ -352,6 +362,15 @@ export function HistorialPage() {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="estudios" className="space-y-4">
+          <div className="flex items-center justify-end">
+            <LargePrimaryAction label="Cargar estudio" icon={Plus} tone="green" href="/estudios?nuevo=1" />
+          </div>
+          <EstudiosPanel />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

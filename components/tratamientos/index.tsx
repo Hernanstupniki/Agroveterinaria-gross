@@ -347,7 +347,7 @@ export function TratamientosPage() {
       <QuickCreateClientDialog
         open={clientDialogOpen}
         onOpenChange={setClientDialogOpen}
-        onCreatePet={() => {
+        onNextPet={() => {
           setPetInitialCliente(null)
           setPetDialogOpen(true)
         }}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import {
   AlertTriangle,
@@ -48,6 +48,9 @@ import { LargePrimaryAction } from "@/components/shared/large-primary-action"
 import { StatusBadge } from "@/components/shared/status-badge"
 import { EmptyState } from "@/components/shared/empty-state"
 import { KpiStrip, type KpiItem } from "@/components/shared/kpi-strip"
+import { QuickCreateClientDialog } from "@/components/shared/quick-create-client-dialog"
+import { QuickCreatePetDialog } from "@/components/shared/quick-create-pet-dialog"
+import { NewVaccineDialog } from "./new-vaccine-dialog"
 
 function formatDate(date?: string | null) {
   if (!date) return "-"
@@ -62,6 +65,18 @@ export function VacunasPage() {
   const [duenoFilter, setDuenoFilter] = useState("todos")
   const [estadoFilter, setEstadoFilter] = useState("todos")
   const [fechaProxima, setFechaProxima] = useState("")
+  const [vaccineDialogOpen, setVaccineDialogOpen] = useState(false)
+  const [clientDialogOpen, setClientDialogOpen] = useState(false)
+  const [petDialogOpen, setPetDialogOpen] = useState(false)
+  const [petInitialCliente, setPetInitialCliente] = useState<number | null>(null)
+
+  // Auto-open the new-vaccine flow when arriving from another flow (?nueva=1).
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    if (new URLSearchParams(window.location.search).get("nueva") === "1") {
+      setVaccineDialogOpen(true)
+    }
+  }, [])
 
   const stats = {
     aplicadas: vacunasClinicas.filter((v) => v.estado === "Aplicada").length,
@@ -103,7 +118,7 @@ export function VacunasPage() {
       <SectionHeader
         title="Vacunas"
         description="Control global de vacunación y recordatorios WhatsApp por paciente. El calendario se adapta a la etapa de vida (cachorro, adulto, senior)."
-        action={<LargePrimaryAction label="Aplicar vacuna" icon={Plus} tone="green" href="/vacunas?nueva=1" />}
+        action={<LargePrimaryAction label="Aplicar vacuna" icon={Plus} tone="green" onClick={() => setVaccineDialogOpen(true)} />}
       />
 
       {vacunasVencidas.length > 0 && (
@@ -227,7 +242,7 @@ export function VacunasPage() {
                   icon={Syringe}
                   title="No hay vacunas para estos filtros"
                   description="Ajustá los filtros o registrá una nueva aplicación."
-                  action={<LargePrimaryAction label="Aplicar vacuna" icon={Plus} tone="green" href="/vacunas?nueva=1" />}
+                  action={<LargePrimaryAction label="Aplicar vacuna" icon={Plus} tone="green" onClick={() => setVaccineDialogOpen(true)} />}
                 />
               ) : (
               <div className="rounded-md border">
@@ -331,6 +346,34 @@ export function VacunasPage() {
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Resumen</h2>
         <KpiStrip items={kpis} className="lg:grid-cols-4 xl:grid-cols-4" />
       </div>
+
+      <NewVaccineDialog
+        open={vaccineDialogOpen}
+        onOpenChange={setVaccineDialogOpen}
+        onCreateClient={() => {
+          setVaccineDialogOpen(false)
+          setClientDialogOpen(true)
+        }}
+        onCreatePet={(clienteId) => {
+          setVaccineDialogOpen(false)
+          setPetInitialCliente(clienteId)
+          setPetDialogOpen(true)
+        }}
+      />
+      <QuickCreateClientDialog
+        open={clientDialogOpen}
+        onOpenChange={setClientDialogOpen}
+        onNextPet={() => {
+          setPetInitialCliente(null)
+          setPetDialogOpen(true)
+        }}
+      />
+      <QuickCreatePetDialog
+        open={petDialogOpen}
+        onOpenChange={setPetDialogOpen}
+        initialClienteId={petInitialCliente}
+        onCreateClient={() => setClientDialogOpen(true)}
+      />
     </div>
   )
 }

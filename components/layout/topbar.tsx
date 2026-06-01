@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { Search, Bell, User, ChevronDown } from "lucide-react"
+import { Search, Bell, User, ChevronDown, Settings } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -54,6 +54,18 @@ export function Topbar() {
 
       {/* Right group */}
       <div className="ml-auto flex items-center gap-1 sm:gap-2">
+        {/* Configuración — relocated here as a gear */}
+        <Button
+          asChild
+          variant="ghost"
+          size="icon"
+          className="text-white hover:bg-white/10 hover:text-white"
+        >
+          <Link href="/configuracion" aria-label="Configuración" title="Configuración">
+            <Settings className="h-5 w-5" />
+          </Link>
+        </Button>
+
         {/* Notifications */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

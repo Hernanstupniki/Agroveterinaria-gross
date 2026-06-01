@@ -11,13 +11,10 @@ import {
   PawPrint,
   BookOpen,
   Syringe,
-  FileText,
   Pill,
   Calendar,
   Scissors,
-  MessageCircle,
   BarChart3,
-  Settings,
   ChevronLeft,
   ChevronRight,
   Menu,
@@ -25,20 +22,18 @@ import {
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
-// Canonical navigation: action-first, Resumen near the end, Configuración last.
+// Canonical navigation, action-first. Estudios lives inside Historia Clínica;
+// Recordatorios WhatsApp lives inside Clientes; Configuración is the header gear.
 const menuItems = [
   { href: "/", label: "Principal", icon: Home },
   { href: "/clientes", label: "Clientes", icon: Users },
   { href: "/mascotas", label: "Mascotas", icon: PawPrint },
-  { href: "/historial", label: "Historia Clínica", icon: BookOpen },
   { href: "/vacunas", label: "Vacunas", icon: Syringe },
   { href: "/tratamientos", label: "Tratamientos", icon: Pill },
+  { href: "/historial", label: "Historia Clínica", icon: BookOpen },
   { href: "/cirugias", label: "Cirugías", icon: Scissors },
   { href: "/turnos", label: "Turnos", icon: Calendar },
-  { href: "/estudios", label: "Estudios y Archivos", icon: FileText },
-  { href: "/recordatorios", label: "Recordatorios WhatsApp", icon: MessageCircle },
   { href: "/resumen", label: "Resumen", icon: BarChart3 },
-  { href: "/configuracion", label: "Configuración", icon: Settings },
 ]
 
 function SidebarContent({ collapsed, onToggle }: { collapsed: boolean; onToggle?: () => void }) {

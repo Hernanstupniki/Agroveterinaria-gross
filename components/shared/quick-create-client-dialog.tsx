@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { PawPrint, Eye } from "lucide-react"
+import { PawPrint } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -15,12 +15,13 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { FormFlowFooter } from "./form-flow-footer"
+import { useFlowStore } from "@/components/layout/flow-store"
 
 interface QuickCreateClientDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** Invoked when the user chooses to create a pet for the new client (Flow A). */
-  onCreatePet?: () => void
+  /** Called after save; passes the new client's id so the next dialog can pre-fill it. */
+  onNextPet?: (clienteId: number) => void
 }
 
 const emptyForm = {
@@ -32,21 +33,17 @@ const emptyForm = {
   consentimientoWhatsApp: true,
 }
 
-/**
- * Flow A — register a client without leaving the current screen, then offer the
- * natural next steps. Persistence is mocked (no backend yet); on save we move to
- * the success step. The structure is backend-ready.
- */
-export function QuickCreateClientDialog({ open, onOpenChange, onCreatePet }: QuickCreateClientDialogProps) {
+export function QuickCreateClientDialog({ open, onOpenChange, onNextPet }: QuickCreateClientDialogProps) {
+  const { addCliente } = useFlowStore()
   const [form, setForm] = useState(emptyForm)
-  const [saved, setSaved] = useState(false)
+  const [savedId, setSavedId] = useState<number | null>(null)
 
   const set = (key: keyof typeof emptyForm, value: string | boolean) =>
     setForm((f) => ({ ...f, [key]: value }))
 
   const reset = () => {
     setForm(emptyForm)
-    setSaved(false)
+    setSavedId(null)
   }
 
   const handleOpenChange = (next: boolean) => {
@@ -62,26 +59,35 @@ export function QuickCreateClientDialog({ open, onOpenChange, onCreatePet }: Qui
           <DialogDescription>Registrá al propietario y sus datos de contacto.</DialogDescription>
         </DialogHeader>
 
-        {saved ? (
+        {savedId !== null ? (
           <FormFlowFooter
-            title={`Cliente ${form.nombre || ""} guardado`}
+            title={`Cliente ${form.nombre} guardado`}
             description="¿Qué querés hacer ahora?"
             onNavigate={() => handleOpenChange(false)}
             actions={[
               {
                 label: "Crear mascota para este cliente",
                 icon: PawPrint,
-                onClick: () => onCreatePet?.(),
+                // Stays on Principal — opens pet dialog with this client pre-filled
+                onClick: () => onNextPet?.(savedId),
               },
-              { label: "Ver cliente", icon: Eye, href: "/clientes", tone: "outline" },
             ]}
+            sectionLink={{ label: "Ir a Clientes", href: "/clientes" }}
           />
         ) : (
           <form
             className="space-y-4"
             onSubmit={(e) => {
               e.preventDefault()
-              setSaved(true)
+              const newId = addCliente({
+                nombre: form.nombre,
+                telefono: form.telefono,
+                whatsapp: form.whatsapp,
+                direccion: form.direccion,
+                observaciones: form.observaciones,
+                consentimientoWhatsApp: form.consentimientoWhatsApp,
+              })
+              setSavedId(newId)
             }}
           >
             <div className="grid gap-4 sm:grid-cols-2">

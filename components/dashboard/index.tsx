@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Bell,
 } from "lucide-react"
+import { TodayAttention } from "@/components/principal/today-attention"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -129,6 +130,12 @@ export function Dashboard() {
             </p>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Operative attention — same content as was on Principal */}
+      <div className="space-y-3">
+        <h2 className="text-lg font-semibold tracking-tight text-foreground">Hoy requiere atención</h2>
+        <TodayAttention />
       </div>
 
       {/* Main Content Grid */}

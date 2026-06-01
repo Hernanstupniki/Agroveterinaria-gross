@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Stethoscope, Syringe, ClipboardList, Eye } from "lucide-react"
+import { Syringe, ClipboardList, CalendarDays, PawPrint } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -22,13 +22,20 @@ import {
 } from "@/components/ui/select"
 import { ClientPetSelector } from "./client-pet-selector"
 import { FormFlowFooter } from "./form-flow-footer"
+import { useFlowStore } from "@/components/layout/flow-store"
 
 interface QuickCreatePetDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   initialClienteId?: number | null
-  /** Chain back to the new-client flow when no owner exists yet. */
+  /** Chain back to client creation when no owner exists yet. */
   onCreateClient?: () => void
+  /** Open vaccine dialog pre-filled with this pet. */
+  onNextVaccine?: (clienteId: number, mascotaId: number) => void
+  /** Open treatment dialog pre-filled with this pet. */
+  onNextTreatment?: (clienteId: number, mascotaId: number) => void
+  /** Open turno dialog pre-filled with this pet. */
+  onNextTurno?: (clienteId: number, mascotaId: number) => void
 }
 
 const emptyForm = {
@@ -43,19 +50,19 @@ const emptyForm = {
   antecedentes: "",
 }
 
-/**
- * Flow A (continued) / B — register a patient and pick (or create) its owner
- * inline, then offer to load the first clinical record. Persistence is mocked.
- */
 export function QuickCreatePetDialog({
   open,
   onOpenChange,
   initialClienteId = null,
   onCreateClient,
+  onNextVaccine,
+  onNextTreatment,
+  onNextTurno,
 }: QuickCreatePetDialogProps) {
+  const { addMascota, clientes } = useFlowStore()
   const [clienteId, setClienteId] = useState<number | null>(initialClienteId)
   const [form, setForm] = useState(emptyForm)
-  const [saved, setSaved] = useState(false)
+  const [savedData, setSavedData] = useState<{ mascotaId: number; clienteId: number } | null>(null)
 
   useEffect(() => {
     if (open) setClienteId(initialClienteId)
@@ -65,7 +72,7 @@ export function QuickCreatePetDialog({
 
   const reset = () => {
     setForm(emptyForm)
-    setSaved(false)
+    setSavedData(null)
   }
 
   const handleOpenChange = (next: boolean) => {
@@ -81,24 +88,51 @@ export function QuickCreatePetDialog({
           <DialogDescription>Asociá el paciente a un cliente y cargá sus datos básicos.</DialogDescription>
         </DialogHeader>
 
-        {saved ? (
+        {savedData ? (
           <FormFlowFooter
             title={`${form.nombre || "Mascota"} guardada`}
-            description="Podés empezar a cargar su historia clínica:"
+            description="Todo lo que cargues se registra solo en su historia clínica:"
             onNavigate={() => handleOpenChange(false)}
             actions={[
-              { label: "Cargar consulta", icon: Stethoscope, href: "/historial?nueva-consulta=1" },
-              { label: "Cargar vacuna", icon: Syringe, href: "/vacunas?nueva=1", tone: "outline" },
-              { label: "Cargar tratamiento", icon: ClipboardList, href: "/tratamientos?nuevo=1", tone: "outline" },
-              { label: "Ver ficha", icon: Eye, href: "/mascotas", tone: "outline" },
+              {
+                label: "Cargar vacuna",
+                icon: Syringe,
+                onClick: () => onNextVaccine?.(savedData.clienteId, savedData.mascotaId),
+              },
+              {
+                label: "Cargar tratamiento",
+                icon: ClipboardList,
+                onClick: () => onNextTreatment?.(savedData.clienteId, savedData.mascotaId),
+              },
+              {
+                label: "Agendar turno",
+                icon: CalendarDays,
+                onClick: () => onNextTurno?.(savedData.clienteId, savedData.mascotaId),
+              },
             ]}
+            sectionLink={{ label: "Ver ficha / historia clínica", icon: PawPrint, href: "/historial" }}
           />
         ) : (
           <form
             className="space-y-4"
             onSubmit={(e) => {
               e.preventDefault()
-              setSaved(true)
+              if (!clienteId) return
+              const dueno = clientes.find((c) => c.id === clienteId)?.nombre ?? ""
+              const newId = addMascota({
+                nombre: form.nombre,
+                especie: form.especie,
+                raza: form.raza,
+                sexo: form.sexo,
+                fechaNacimiento: form.fechaNacimiento,
+                peso: form.peso,
+                estadoGeneral: form.estadoGeneral,
+                alergias: form.alergias,
+                antecedentes: form.antecedentes,
+                clienteId,
+                dueno,
+              })
+              setSavedData({ mascotaId: newId, clienteId })
             }}
           >
             <ClientPetSelector

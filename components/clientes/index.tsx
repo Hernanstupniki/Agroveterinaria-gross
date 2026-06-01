@@ -89,8 +89,18 @@ export function ClientesPage() {
     <div className="animate-section-in mx-auto max-w-[1600px] space-y-6">
       <SectionHeader
         title="Clientes"
-        description="Gestión de clientes y dueños de mascotas."
-        action={<LargePrimaryAction label="Nuevo cliente" icon={UserPlus} onClick={() => setClientDialogOpen(true)} />}
+        description="Gestión de clientes, fichas de sus mascotas y recordatorios por WhatsApp."
+        action={
+          <>
+            <Button asChild variant="outline" className="h-12 gap-2 rounded-xl px-5 text-base font-medium">
+              <Link href="/recordatorios">
+                <MessageCircle className="h-5 w-5" />
+                Configurar WhatsApp
+              </Link>
+            </Button>
+            <LargePrimaryAction label="Nuevo cliente" icon={UserPlus} onClick={() => setClientDialogOpen(true)} />
+          </>
+        }
       />
 
       {/* Search */}
@@ -260,6 +270,12 @@ export function ClientesPage() {
                               <MessageCircle className="mr-2 h-4 w-4" />
                               Enviar WhatsApp
                             </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <Link href="/recordatorios">
+                                <MessageCircle className="mr-2 h-4 w-4" />
+                                Configurar WhatsApp
+                              </Link>
+                            </DropdownMenuItem>
                             <DropdownMenuItem onSelect={() => openPetFor(cliente.id)}>
                               <PawPrint className="mr-2 h-4 w-4" />
                               Agregar mascota
@@ -285,7 +301,7 @@ export function ClientesPage() {
       <QuickCreateClientDialog
         open={clientDialogOpen}
         onOpenChange={setClientDialogOpen}
-        onCreatePet={() => openPetFor(null)}
+        onNextPet={(id) => openPetFor(id)}
       />
       <QuickCreatePetDialog
         open={petDialogOpen}

@@ -4,37 +4,27 @@ import { useState, type ComponentType } from "react"
 import {
   Users,
   PawPrint,
-  BookOpen,
   Syringe,
   ClipboardList,
+  BookOpen,
   Scissors,
   CalendarDays,
-  FileText,
-  MessageCircle,
   BarChart3,
-  Settings,
-  FileHeart,
-  Check,
 } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { mascotas } from "@/lib/mock-data"
-import { useActivePatient } from "@/components/layout/active-patient"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { ModuleCard, ModuleButton, type ModuleTone } from "./action-card"
+import { ModuleCard, ModuleButton } from "./action-card"
+import { QuickCreateClientDialog } from "@/components/shared/quick-create-client-dialog"
+import { QuickCreatePetDialog } from "@/components/shared/quick-create-pet-dialog"
+import { NewVaccineDialog } from "@/components/vacunas/new-vaccine-dialog"
+import { NewTreatmentDialog } from "@/components/tratamientos/new-treatment-dialog"
+import { NewSurgeryDialog } from "@/components/cirugias/new-surgery-dialog"
+import { NewTurnoDialog } from "@/components/turnos/new-turno-dialog"
+
+type DialogKey = "cliente" | "mascota" | "vacuna" | "tratamiento" | "cirugia" | "turno"
 
 interface ModuleButtonDef {
   label: string
   href?: string
-  variant: "ver" | "action"
+  dialog?: DialogKey
 }
 
 interface ModuleDef {
@@ -42,21 +32,18 @@ interface ModuleDef {
   title: string
   description: string
   icon: ComponentType<{ className?: string }>
-  tone: ModuleTone
   buttons: ModuleButtonDef[]
 }
 
-// One card per module. Actions are internal buttons, never separate cards.
 const modules: ModuleDef[] = [
   {
     id: "clientes",
     title: "Clientes",
-    description: "Propietarios, contacto y mascotas asociadas.",
+    description: "Propietarios, contacto, fichas y WhatsApp.",
     icon: Users,
-    tone: "magenta",
     buttons: [
-      { label: "Ver", href: "/clientes", variant: "ver" },
-      { label: "Crear", href: "/clientes?nuevo=1", variant: "action" },
+      { label: "Ver", href: "/clientes" },
+      { label: "Crear", dialog: "cliente" },
     ],
   },
   {
@@ -64,21 +51,9 @@ const modules: ModuleDef[] = [
     title: "Mascotas",
     description: "Pacientes, fichas y datos clínicos.",
     icon: PawPrint,
-    tone: "magenta",
     buttons: [
-      { label: "Ver", href: "/mascotas", variant: "ver" },
-      { label: "Crear", href: "/mascotas?nuevo=1", variant: "action" },
-    ],
-  },
-  {
-    id: "historial",
-    title: "Historia clínica",
-    description: "Consultas, vacunas, tratamientos, cirugías y estudios.",
-    icon: BookOpen,
-    tone: "magenta",
-    buttons: [
-      { label: "Ver", href: "/historial", variant: "ver" },
-      { label: "Cargar consulta", href: "/historial?nueva-consulta=1", variant: "action" },
+      { label: "Ver", href: "/mascotas" },
+      { label: "Crear", dialog: "mascota" },
     ],
   },
   {
@@ -86,10 +61,9 @@ const modules: ModuleDef[] = [
     title: "Vacunas",
     description: "Aplicadas, próximas y vencidas.",
     icon: Syringe,
-    tone: "green",
     buttons: [
-      { label: "Ver", href: "/vacunas", variant: "ver" },
-      { label: "Cargar", href: "/vacunas?nueva=1", variant: "action" },
+      { label: "Ver", href: "/vacunas" },
+      { label: "Cargar", dialog: "vacuna" },
     ],
   },
   {
@@ -97,21 +71,26 @@ const modules: ModuleDef[] = [
     title: "Tratamientos",
     description: "Activos, finalizados y plantillas.",
     icon: ClipboardList,
-    tone: "magenta",
     buttons: [
-      { label: "Ver", href: "/tratamientos", variant: "ver" },
-      { label: "Crear", href: "/tratamientos?nuevo=1", variant: "action" },
+      { label: "Ver", href: "/tratamientos" },
+      { label: "Crear", dialog: "tratamiento" },
     ],
+  },
+  {
+    id: "historial",
+    title: "Historia clínica",
+    description: "Consultas, vacunas, tratamientos, cirugías y estudios. Se carga sola.",
+    icon: BookOpen,
+    buttons: [{ label: "Ver", href: "/historial" }],
   },
   {
     id: "cirugias",
     title: "Cirugías",
     description: "Programadas, confirmadas y realizadas.",
     icon: Scissors,
-    tone: "magenta",
     buttons: [
-      { label: "Ver", href: "/cirugias", variant: "ver" },
-      { label: "Agendar", href: "/cirugias?nueva=1", variant: "action" },
+      { label: "Ver", href: "/cirugias" },
+      { label: "Agendar", dialog: "cirugia" },
     ],
   },
   {
@@ -119,32 +98,9 @@ const modules: ModuleDef[] = [
     title: "Turnos",
     description: "Agenda clínica y próximos turnos.",
     icon: CalendarDays,
-    tone: "green",
     buttons: [
-      { label: "Ver", href: "/turnos", variant: "ver" },
-      { label: "Crear", href: "/turnos?nuevo=1", variant: "action" },
-    ],
-  },
-  {
-    id: "estudios",
-    title: "Estudios y archivos",
-    description: "Análisis, radiografías y documentos clínicos.",
-    icon: FileText,
-    tone: "green",
-    buttons: [
-      { label: "Ver", href: "/estudios", variant: "ver" },
-      { label: "Cargar", href: "/estudios?nuevo=1", variant: "action" },
-    ],
-  },
-  {
-    id: "recordatorios",
-    title: "Recordatorios WhatsApp",
-    description: "Pendientes, programados y enviados.",
-    icon: MessageCircle,
-    tone: "green",
-    buttons: [
-      { label: "Ver", href: "/recordatorios", variant: "ver" },
-      { label: "Crear", href: "/recordatorios?nuevo=1", variant: "action" },
+      { label: "Ver", href: "/turnos" },
+      { label: "Crear", dialog: "turno" },
     ],
   },
   {
@@ -152,166 +108,147 @@ const modules: ModuleDef[] = [
     title: "Resumen",
     description: "Métricas, alertas y actividad general.",
     icon: BarChart3,
-    tone: "neutral",
-    buttons: [{ label: "Ver", href: "/resumen", variant: "ver" }],
-  },
-  {
-    id: "configuracion",
-    title: "Configuración",
-    description: "Parámetros clínicos y preferencias del sistema.",
-    icon: Settings,
-    tone: "neutral",
-    buttons: [{ label: "Ver", href: "/configuracion", variant: "ver" }],
+    buttons: [{ label: "Ver", href: "/resumen" }],
   },
 ]
 
-const patientOptions = mascotas.map((pet) => ({
-  id: pet.id,
-  name: pet.nombre,
-  species: pet.especie,
-  breed: pet.raza,
-  owner: pet.dueno,
-}))
-
-/**
- * Paciente activo as a full module. The active-patient selection lives here
- * (moved out of the header). "Ver" opens the active ficha or, if none is set,
- * the patient picker; "Buscar" always opens the picker.
- */
-function PacienteActivoCard({ index }: { index: number }) {
-  const { patient, setPatient } = useActivePatient()
-  const [open, setOpen] = useState(false)
-
-  const footer = (
-    <>
-      {patient ? (
-        <ModuleButton label="Ver ficha" href={`/mascotas/${patient.id}`} variant="action" tone="magenta" />
-      ) : (
-        <ModuleButton label="Ver" onClick={() => setOpen(true)} variant="action" tone="magenta" />
-      )}
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <button
-            type="button"
-            className={cn(
-              "inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-md border bg-background px-6 text-sm font-medium shadow-xs transition-all hover:bg-accent hover:text-accent-foreground active:scale-[0.98]",
-            )}
-          >
-            Buscar
-          </button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[320px] p-0" align="start">
-          <Command>
-            <CommandInput placeholder="Buscar paciente, dueño o raza..." />
-            <CommandList>
-              <CommandEmpty>No se encontraron mascotas.</CommandEmpty>
-              {patient && (
-                <CommandGroup heading="Activo">
-                  <CommandItem
-                    value="__limpiar"
-                    onSelect={() => {
-                      setPatient(null)
-                      setOpen(false)
-                    }}
-                    className="text-muted-foreground"
-                  >
-                    Quitar paciente activo
-                  </CommandItem>
-                </CommandGroup>
-              )}
-              <CommandGroup heading="Pacientes">
-                {patientOptions.map((pet) => (
-                  <CommandItem
-                    key={pet.id}
-                    value={`${pet.name} ${pet.owner} ${pet.breed}`}
-                    onSelect={() => {
-                      setPatient(pet)
-                      setOpen(false)
-                    }}
-                    className="flex items-center gap-3 py-2"
-                  >
-                    <Check className={cn("h-4 w-4", patient?.id === pet.id ? "opacity-100" : "opacity-0")} />
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-primary/10 text-xs text-primary">{pet.name[0]}</AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium">{pet.name}</p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {pet.breed} · {pet.owner}
-                      </p>
-                    </div>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
-    </>
-  )
-
-  return (
-    <ModuleCard
-      title="Paciente activo"
-      description={
-        patient
-          ? `Ficha activa: ${patient.name}${patient.breed ? ` · ${patient.breed}` : ""}.`
-          : "Seleccioná un paciente para abrir su ficha."
-      }
-      icon={FileHeart}
-      tone="neutral"
-      index={index}
-      badge={patient?.name}
-      footer={footer}
-    />
-  )
-}
-
 export function PrincipalActions() {
+  // Active dialog
+  const [active, setActive] = useState<DialogKey | null>(null)
+
+  // Shared flow context — carries cliente & mascota across dialog transitions
+  // so the user never has to search again within the same session flow.
+  const [flowClienteId, setFlowClienteId] = useState<number | null>(null)
+  const [flowMascotaId, setFlowMascotaId] = useState<number | null>(null)
+
+  // ── Transitions ──────────────────────────────────────────────────────────
+
+  const openWith = (key: DialogKey, clienteId?: number | null, mascotaId?: number | null) => {
+    if (clienteId !== undefined) setFlowClienteId(clienteId)
+    if (mascotaId !== undefined) setFlowMascotaId(mascotaId)
+    setActive(key)
+  }
+
+  const close = () => setActive(null)
+
+  // Called when a client is created → open pet dialog pre-filled with that client
+  const handleNextPet = (clienteId: number) => {
+    openWith("mascota", clienteId, null)
+  }
+
+  // Called when a pet is created → open next clinical dialog pre-filled
+  const handlePetNextVaccine = (clienteId: number, mascotaId: number) => {
+    openWith("vacuna", clienteId, mascotaId)
+  }
+  const handlePetNextTreatment = (clienteId: number, mascotaId: number) => {
+    openWith("tratamiento", clienteId, mascotaId)
+  }
+  const handlePetNextTurno = (clienteId: number, mascotaId: number) => {
+    openWith("turno", clienteId, mascotaId)
+  }
+
+  // Called from clinical dialogs → open next clinical dialog, carry context
+  const handleNextTreatment = (cId: number | null, mId: number | null) => {
+    openWith("tratamiento", cId, mId)
+  }
+  const handleNextSurgery = (cId: number | null, mId: number | null) => {
+    openWith("cirugia", cId, mId)
+  }
+  const handleNextTurno = (cId: number | null, mId: number | null) => {
+    openWith("turno", cId, mId)
+  }
+
+  // Chain back: any dialog can request opening client/pet creation
+  const goCreateClient = () => openWith("cliente")
+  const goCreatePet = (clienteId: number | null = null) => openWith("mascota", clienteId, null)
+
   return (
-    <div className="stagger-in grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
-      {modules.slice(0, 9).map((mod, i) => (
-        <ModuleCard
-          key={mod.id}
-          title={mod.title}
-          description={mod.description}
-          icon={mod.icon}
-          tone={mod.tone}
-          index={i}
-          footer={mod.buttons.map((b) => (
-            <ModuleButton
-              key={b.label}
-              label={b.label}
-              href={b.href}
-              variant={b.variant}
-              tone={mod.tone}
-            />
-          ))}
-        />
-      ))}
+    <>
+      <div className="stagger-in grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4">
+        {modules.map((mod, i) => (
+          <ModuleCard
+            key={mod.id}
+            title={mod.title}
+            description={mod.description}
+            icon={mod.icon}
+            tone="magenta"
+            index={i}
+            footer={mod.buttons.map((b) =>
+              b.dialog ? (
+                <ModuleButton
+                  key={b.label}
+                  label={b.label}
+                  variant="action"
+                  tone="magenta"
+                  onClick={() => openWith(b.dialog!)}
+                />
+              ) : (
+                <ModuleButton key={b.label} label={b.label} href={b.href} variant="ver" tone="magenta" />
+              ),
+            )}
+          />
+        ))}
+      </div>
 
-      {/* Paciente activo — module that owns the active-patient selection. */}
-      <PacienteActivoCard index={9} />
+      {/* ── Dialogs ─────────────────────────────────────────────────────── */}
 
-      {modules.slice(9).map((mod, i) => (
-        <ModuleCard
-          key={mod.id}
-          title={mod.title}
-          description={mod.description}
-          icon={mod.icon}
-          tone={mod.tone}
-          index={10 + i}
-          footer={mod.buttons.map((b) => (
-            <ModuleButton
-              key={b.label}
-              label={b.label}
-              href={b.href}
-              variant={b.variant}
-              tone={mod.tone}
-            />
-          ))}
-        />
-      ))}
-    </div>
+      <QuickCreateClientDialog
+        open={active === "cliente"}
+        onOpenChange={(o) => (o ? openWith("cliente") : close())}
+        onNextPet={handleNextPet}
+      />
+
+      <QuickCreatePetDialog
+        open={active === "mascota"}
+        onOpenChange={(o) => (o ? openWith("mascota") : close())}
+        initialClienteId={flowClienteId}
+        onCreateClient={goCreateClient}
+        onNextVaccine={handlePetNextVaccine}
+        onNextTreatment={handlePetNextTreatment}
+        onNextTurno={handlePetNextTurno}
+      />
+
+      <NewVaccineDialog
+        open={active === "vacuna"}
+        onOpenChange={(o) => (o ? openWith("vacuna") : close())}
+        initialClienteId={flowClienteId}
+        initialMascotaId={flowMascotaId}
+        onCreateClient={goCreateClient}
+        onCreatePet={goCreatePet}
+        onNextTreatment={handleNextTreatment}
+        onNextTurno={handleNextTurno}
+      />
+
+      <NewTreatmentDialog
+        open={active === "tratamiento"}
+        onOpenChange={(o) => (o ? openWith("tratamiento") : close())}
+        initialClienteId={flowClienteId}
+        initialMascotaId={flowMascotaId}
+        onCreateClient={goCreateClient}
+        onCreatePet={goCreatePet}
+        onNextSurgery={handleNextSurgery}
+        onNextTurno={handleNextTurno}
+      />
+
+      <NewSurgeryDialog
+        open={active === "cirugia"}
+        onOpenChange={(o) => (o ? openWith("cirugia") : close())}
+        initialClienteId={flowClienteId}
+        initialMascotaId={flowMascotaId}
+        onCreateClient={goCreateClient}
+        onCreatePet={goCreatePet}
+        onNextTreatment={handleNextTreatment}
+        onNextTurno={handleNextTurno}
+      />
+
+      <NewTurnoDialog
+        open={active === "turno"}
+        onOpenChange={(o) => (o ? openWith("turno") : close())}
+        initialClienteId={flowClienteId}
+        initialMascotaId={flowMascotaId}
+        onCreateClient={goCreateClient}
+        onCreatePet={goCreatePet}
+      />
+    </>
   )
 }

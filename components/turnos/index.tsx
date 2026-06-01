@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import {
   Plus,
@@ -32,6 +32,9 @@ import { SectionHeader } from "@/components/shared/section-header"
 import { LargePrimaryAction } from "@/components/shared/large-primary-action"
 import { StatusBadge } from "@/components/shared/status-badge"
 import { KpiStrip, type KpiItem } from "@/components/shared/kpi-strip"
+import { NewTurnoDialog } from "./new-turno-dialog"
+import { QuickCreateClientDialog } from "@/components/shared/quick-create-client-dialog"
+import { QuickCreatePetDialog } from "@/components/shared/quick-create-pet-dialog"
 
 const estadoColors: Record<string, string> = {
   "Pendiente": "bg-secondary text-secondary-foreground",
@@ -71,6 +74,18 @@ const weekData = generateWeekData()
 export function TurnosPage() {
   const [activeTab, setActiveTab] = useState("dia")
   const [selectedDate, setSelectedDate] = useState(currentDate.getDate())
+  const [turnoDialogOpen, setTurnoDialogOpen] = useState(false)
+  const [clientDialogOpen, setClientDialogOpen] = useState(false)
+  const [petDialogOpen, setPetDialogOpen] = useState(false)
+  const [petInitialCliente, setPetInitialCliente] = useState<number | null>(null)
+
+  // Auto-open the new-turno flow when arriving from another flow (?nuevo=1).
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    if (new URLSearchParams(window.location.search).get("nuevo") === "1") {
+      setTurnoDialogOpen(true)
+    }
+  }, [])
 
   const turnosActivos = turnosHoy.filter(t => 
     t.estado !== "Finalizado" && t.estado !== "Cancelado"
@@ -90,7 +105,7 @@ export function TurnosPage() {
       <SectionHeader
         title="Turnos"
         description="Gestión de agenda y turnos. Si el turno es una cirugía, se conecta con la sección Cirugías."
-        action={<LargePrimaryAction label="Nuevo turno" icon={Plus} href="/turnos?nuevo=1" />}
+        action={<LargePrimaryAction label="Nuevo turno" icon={Plus} onClick={() => setTurnoDialogOpen(true)} />}
       />
 
       {/* Calendar Navigation */}
@@ -279,6 +294,34 @@ export function TurnosPage() {
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Resumen</h2>
         <KpiStrip items={kpis} className="lg:grid-cols-4 xl:grid-cols-4" />
       </div>
+
+      <NewTurnoDialog
+        open={turnoDialogOpen}
+        onOpenChange={setTurnoDialogOpen}
+        onCreateClient={() => {
+          setTurnoDialogOpen(false)
+          setClientDialogOpen(true)
+        }}
+        onCreatePet={(clienteId) => {
+          setTurnoDialogOpen(false)
+          setPetInitialCliente(clienteId)
+          setPetDialogOpen(true)
+        }}
+      />
+      <QuickCreateClientDialog
+        open={clientDialogOpen}
+        onOpenChange={setClientDialogOpen}
+        onNextPet={() => {
+          setPetInitialCliente(null)
+          setPetDialogOpen(true)
+        }}
+      />
+      <QuickCreatePetDialog
+        open={petDialogOpen}
+        onOpenChange={setPetDialogOpen}
+        initialClienteId={petInitialCliente}
+        onCreateClient={() => setClientDialogOpen(true)}
+      />
     </div>
   )
 }

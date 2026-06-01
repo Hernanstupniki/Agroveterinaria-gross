@@ -284,7 +284,7 @@ export function MascotasPage() {
         <QuickCreateClientDialog
           open={clientDialogOpen}
           onOpenChange={setClientDialogOpen}
-          onCreatePet={() => setPetDialogOpen(true)}
+          onNextPet={() => setPetDialogOpen(true)}
         />
       </div>
     </TooltipProvider>

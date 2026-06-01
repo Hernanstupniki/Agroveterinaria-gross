@@ -61,7 +61,25 @@ const tipoIcons: Record<string, typeof FileText> = {
   "Informe PDF": File,
 }
 
+/** Full page (route /estudios): header + the estudios listing panel. */
 export function EstudiosPage() {
+  return (
+    <div className="animate-section-in mx-auto max-w-[1600px] space-y-6">
+      <SectionHeader
+        title="Estudios y Archivos"
+        description="Adjuntá análisis, radiografías o archivos. Cada estudio queda en la historia clínica."
+        action={<LargePrimaryAction label="Cargar estudio" icon={Upload} tone="green" href="/estudios?nuevo=1" />}
+      />
+      <EstudiosPanel />
+    </div>
+  )
+}
+
+/**
+ * Estudios listing (filters + table + KPIs) without its own page header, so it
+ * can be embedded inside Historia Clínica as a tab.
+ */
+export function EstudiosPanel() {
   const [searchTerm, setSearchTerm] = useState("")
   const [tipoFilter, setTipoFilter] = useState<string>("todos")
   const [estadoFilter, setEstadoFilter] = useState<string>("todos")
@@ -86,13 +104,7 @@ export function EstudiosPage() {
   ]
 
   return (
-    <div className="animate-section-in mx-auto max-w-[1600px] space-y-6">
-      <SectionHeader
-        title="Estudios y Archivos"
-        description="Adjuntá análisis, radiografías o archivos. Cada estudio queda en la historia clínica."
-        action={<LargePrimaryAction label="Cargar estudio" icon={Upload} tone="green" href="/estudios?nuevo=1" />}
-      />
-
+    <div className="space-y-6">
       {/* Filters */}
       <Card className="rounded-2xl">
         <CardContent className="pt-6">

@@ -1,15 +1,4 @@
-import { Calendar, Syringe, Clock, MessageCircle, ClipboardList, Scissors } from "lucide-react"
 import { PrincipalActions } from "./principal-actions"
-import { TodayAttention } from "./today-attention"
-import { KpiStrip, type KpiItem } from "@/components/shared/kpi-strip"
-import {
-  turnosHoy,
-  vacunasPendientes,
-  controlesPendientes,
-  recordatoriosProgramados,
-  tratamientosActivos,
-  cirugiasProgramadas,
-} from "@/lib/mock-data"
 
 const hoy = new Date().toLocaleDateString("es-AR", {
   weekday: "long",
@@ -19,26 +8,6 @@ const hoy = new Date().toLocaleDateString("es-AR", {
 })
 
 export function Principal() {
-  const kpis: KpiItem[] = [
-    { label: "Turnos hoy", value: turnosHoy.length, icon: Calendar, href: "/turnos" },
-    {
-      label: "Vacunas vencidas",
-      value: vacunasPendientes.filter((v) => v.estado === "Vencida").length,
-      icon: Syringe,
-      tone: "critical",
-      href: "/vacunas",
-    },
-    { label: "Controles pendientes", value: controlesPendientes.length, icon: Clock, tone: "warning", href: "/historial" },
-    {
-      label: "WhatsApp pendientes",
-      value: recordatoriosProgramados.filter((r) => r.estado === "Programado").length,
-      icon: MessageCircle,
-      href: "/recordatorios",
-    },
-    { label: "Tratamientos activos", value: tratamientosActivos.length, icon: ClipboardList, tone: "success", href: "/tratamientos" },
-    { label: "Cirugías programadas", value: cirugiasProgramadas.length, icon: Scissors, href: "/cirugias" },
-  ]
-
   return (
     <div className="animate-section-in mx-auto max-w-[1600px] space-y-8">
       {/* Header */}
@@ -54,27 +23,8 @@ export function Principal() {
         </p>
       </header>
 
-      {/* Actions hub — VER... and CREAR / CARGAR... */}
-      <section className="space-y-4">
-        <h2 className="text-base font-bold uppercase tracking-[0.12em] text-foreground">
-          Acciones
-        </h2>
-        <PrincipalActions />
-      </section>
-
-      {/* Operative attention */}
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold tracking-tight text-foreground">Hoy requiere atención</h2>
-        <TodayAttention />
-      </section>
-
-      {/* Secondary metrics — intentionally last */}
-      <section className="space-y-3 border-t border-border/70 pt-6">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Resumen administrativo
-        </h2>
-        <KpiStrip items={kpis} />
-      </section>
+      {/* Actions hub */}
+      <PrincipalActions />
     </div>
   )
 }

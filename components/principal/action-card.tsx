@@ -73,7 +73,10 @@ export function ModuleCard({
   )
 }
 
-/** Footer action button: neutral outline for both ver and action variants. */
+/**
+ * Footer action button. "Ver" is an outline link to the section; "action"
+ * (Crear / Cargar / Agendar) is the filled violet primary that opens the flow.
+ */
 export function ModuleButton({
   label,
   href,
@@ -87,7 +90,7 @@ export function ModuleButton({
   tone?: ModuleTone
 }) {
   const className = cn(
-    buttonVariants({ variant: "outline", size: "lg" }),
+    buttonVariants({ variant: variant === "action" ? "default" : "outline", size: "lg" }),
     "flex-1",
     "active:scale-[0.98]",
   )
