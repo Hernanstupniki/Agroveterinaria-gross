@@ -59,6 +59,7 @@ import {
   createStudyFileRecord,
   fileToStudyAttachment,
   formatFileSize,
+  getAllStudyFiles,
   getStudyFilesForPet,
   restoreStudyFileRecord,
   STUDY_STATUS_OPTIONS,
@@ -584,6 +585,371 @@ export function StudyFilesPanel({ client, pet, defaultShowUpload = false }: Clin
   )
 }
 
+export function StudyFilesCompleteView({
+  client,
+  pet,
+  scope = "pet",
+  defaultShowUpload = false,
+}: Partial<ClinicalActionSelection> & { scope?: "global" | "pet"; defaultShowUpload?: boolean }) {
+  const [records, setRecords] = useState<StudyFileRecord[]>([])
+  const [searchTerm, setSearchTerm] = useState("")
+  const [tipoFilter, setTipoFilter] = useState("todos")
+  const [profesionalFilter, setProfesionalFilter] = useState("todos")
+  const [estadoFilter, setEstadoFilter] = useState("todos")
+  const [dateFrom, setDateFrom] = useState("")
+  const [dateTo, setDateTo] = useState("")
+  const [showUpload, setShowUpload] = useState(defaultShowUpload)
+  const [previewRecord, setPreviewRecord] = useState<StudyFileRecord | null>(null)
+  const [editingRecord, setEditingRecord] = useState<StudyFileRecord | null>(null)
+  const isGlobal = scope === "global"
+  const canUploadInline = Boolean(client && pet)
+
+  function refreshRecords() {
+    setRecords(isGlobal || !pet ? getAllStudyFiles() : getStudyFilesForPet(pet.id))
+    setShowUpload(false)
+    setEditingRecord(null)
+  }
+
+  function handleFormSaved(updatedRecord?: StudyFileRecord) {
+    if (updatedRecord) {
+      setRecords((current) => current.map((record) => (record.id === updatedRecord.id ? updatedRecord : record)))
+      setShowUpload(false)
+      setEditingRecord(null)
+      return
+    }
+    refreshRecords()
+  }
+
+  useEffect(() => {
+    refreshRecords()
+    setShowUpload(defaultShowUpload && canUploadInline)
+  }, [pet?.id, scope])
+
+  const filteredRecords = useMemo(() => {
+    const term = searchTerm.toLowerCase().trim()
+    return records.filter((record) => {
+      const matchesSearch =
+        !term ||
+        record.tipo.toLowerCase().includes(term) ||
+        record.descripcion.toLowerCase().includes(term) ||
+        record.petName.toLowerCase().includes(term) ||
+        record.clientName.toLowerCase().includes(term) ||
+        record.archivoNombre?.toLowerCase().includes(term)
+      const matchesTipo = tipoFilter === "todos" || record.tipo === tipoFilter
+      const matchesProfesional = profesionalFilter === "todos" || record.profesional === profesionalFilter
+      const matchesEstado = estadoFilter === "todos" || record.estado === estadoFilter
+      const matchesDateFrom = !dateFrom || record.fecha >= dateFrom
+      const matchesDateTo = !dateTo || record.fecha <= dateTo
+      return matchesSearch && matchesTipo && matchesProfesional && matchesEstado && matchesDateFrom && matchesDateTo
+    })
+  }, [records, searchTerm, tipoFilter, profesionalFilter, estadoFilter, dateFrom, dateTo])
+
+  const availableTypes = Array.from(new Set([...STUDY_TYPE_OPTIONS, ...records.map((record) => record.tipo)]))
+  const availableProfessionals = Array.from(new Set(records.map((record) => record.profesional).filter(Boolean)))
+  const title = isGlobal ? "Estudios y archivos" : `Estudios y archivos de ${pet?.nombre || "la mascota"}`
+  const description = isGlobal
+    ? "Archivo clinico global para buscar estudios, documentos y resultados de toda la clinica."
+    : "Documentacion clinica, estudios y archivos asociados a esta mascota."
+  const uploadHref = client && pet ? `/estudios/agregar?clienteId=${client.id}&mascotaId=${pet.id}` : "/estudios/agregar"
+  const hasFilters = searchTerm || tipoFilter !== "todos" || profesionalFilter !== "todos" || estadoFilter !== "todos" || dateFrom || dateTo
+
+  function updateRecordInState(record: StudyFileRecord, updates: Partial<StudyFileRecord>) {
+    const next = { ...record, ...updates }
+    if (record.source === "local") updateStudyFileRecord(record.id, updates)
+    setRecords((current) => current.map((item) => (item.id === record.id ? next : item)))
+  }
+
+  function handleArchive(record: StudyFileRecord) {
+    if (record.source === "local") archiveStudyFileRecord(record.id)
+    updateRecordInState(record, { estado: "Archivado", archivedAt: new Date().toISOString().slice(0, 10) })
+  }
+
+  function handleRestore(record: StudyFileRecord) {
+    if (record.source === "local") restoreStudyFileRecord(record.id)
+    updateRecordInState(record, { estado: "Resultado recibido", archivedAt: null })
+  }
+
+  function clearFilters() {
+    setSearchTerm("")
+    setTipoFilter("todos")
+    setProfesionalFilter("todos")
+    setEstadoFilter("todos")
+    setDateFrom("")
+    setDateTo("")
+  }
+
+  return (
+    <div className="space-y-5">
+      <Card>
+        <CardHeader className="border-b">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-primary" />
+                {title}
+              </CardTitle>
+              <CardDescription>{description}</CardDescription>
+            </div>
+            {canUploadInline && defaultShowUpload ? (
+              <Button className="min-h-12 rounded-xl bg-primary px-5 py-3 text-center font-bold leading-tight hover:bg-primary/90" onClick={() => setShowUpload(true)}>
+                <Upload className="mr-2 h-5 w-5 shrink-0" />
+                Cargar archivo / estudio
+              </Button>
+            ) : (
+              <Button className="min-h-12 rounded-xl bg-primary px-5 py-3 text-center font-bold leading-tight hover:bg-primary/90" asChild>
+                <Link href={uploadHref}>
+                  <Upload className="mr-2 h-5 w-5 shrink-0" />
+                  Cargar archivo / estudio
+                </Link>
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4 pt-5">
+          <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-[minmax(0,1.5fr)_160px_180px_180px_160px_160px]">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                className="h-12 rounded-xl pl-10"
+                placeholder={isGlobal ? "Buscar mascota, cliente, descripcion o archivo..." : "Buscar tipo, descripcion o archivo..."}
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+              />
+            </div>
+            <Select value={tipoFilter} onValueChange={setTipoFilter}>
+              <SelectTrigger className="h-12 rounded-xl"><SelectValue placeholder="Tipo" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos los tipos</SelectItem>
+                {availableTypes.map((type) => <SelectItem key={type} value={type}>{type}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={profesionalFilter} onValueChange={setProfesionalFilter}>
+              <SelectTrigger className="h-12 rounded-xl"><SelectValue placeholder="Profesional" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos los profesionales</SelectItem>
+                {availableProfessionals.map((professional) => <SelectItem key={professional} value={professional}>{professional}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={estadoFilter} onValueChange={setEstadoFilter}>
+              <SelectTrigger className="h-12 rounded-xl"><SelectValue placeholder="Estado" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos los estados</SelectItem>
+                {STUDY_STATUS_OPTIONS.map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Input type="date" className="h-12 rounded-xl" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} aria-label="Fecha desde" />
+            <Input type="date" className="h-12 rounded-xl" value={dateTo} onChange={(event) => setDateTo(event.target.value)} aria-label="Fecha hasta" />
+          </div>
+          {hasFilters && (
+            <div className="flex justify-end">
+              <Button variant="outline" className="h-10 rounded-xl px-4 font-semibold" onClick={clearFilters}>
+                Limpiar filtros
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {canUploadInline && (showUpload || editingRecord) && (
+        <StudyUploadForm
+          clientId={client!.id}
+          petId={pet!.id}
+          initialRecord={editingRecord}
+          onSaved={handleFormSaved}
+          onCancel={() => {
+            setShowUpload(false)
+            setEditingRecord(null)
+          }}
+        />
+      )}
+
+      <Card>
+        <CardHeader className="border-b">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <CardTitle>Listado de estudios</CardTitle>
+              <CardDescription>{filteredRecords.length} registros encontrados</CardDescription>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {isGlobal ? "Vista global de la clinica" : "Filtrado por esta mascota"}
+            </p>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3 pt-5">
+          {filteredRecords.map((record) => (
+            <StudyRecordCard
+              key={record.id}
+              record={record}
+              showPatient={isGlobal}
+              onPreview={() => setPreviewRecord(record)}
+              onEdit={() => setEditingRecord(record)}
+              onArchive={() => handleArchive(record)}
+              onRestore={() => handleRestore(record)}
+            />
+          ))}
+          {filteredRecords.length === 0 && (
+            <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed p-8 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                <FileText className="h-7 w-7 text-primary" />
+              </div>
+              <div>
+                <p className="font-bold">Sin estudios para los filtros actuales</p>
+                <p className="text-sm text-muted-foreground">Podes cargar un archivo o limpiar la busqueda para revisar otros registros.</p>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog open={Boolean(previewRecord)} onOpenChange={(open) => !open && setPreviewRecord(null)}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>{previewRecord?.tipo || "Visualizar archivo"}</DialogTitle>
+            <DialogDescription>{previewRecord?.archivoNombre || "Registro mock sin archivo real adjunto."}</DialogDescription>
+          </DialogHeader>
+          {previewRecord && (
+            <div className="space-y-4">
+              {previewRecord.archivoUrl && isImage(previewRecord) && (
+                <img src={previewRecord.archivoUrl} alt={previewRecord.archivoNombre || previewRecord.tipo} className="max-h-[65vh] w-full rounded-xl border object-contain" />
+              )}
+              {previewRecord.archivoUrl && isPdf(previewRecord) && (
+                <iframe title={previewRecord.archivoNombre || previewRecord.tipo} src={previewRecord.archivoUrl} className="h-[65vh] w-full rounded-xl border" />
+              )}
+              {(!previewRecord.archivoUrl || (!isImage(previewRecord) && !isPdf(previewRecord))) && (
+                <div className="rounded-xl border bg-muted/30 p-5">
+                  <p className="font-semibold">{previewRecord.archivoNombre || "Archivo no disponible para preview"}</p>
+                  <p className="mt-2 text-sm text-muted-foreground">{previewRecord.descripcion}</p>
+                  <p className="mt-3 text-xs text-muted-foreground">Los archivos demo sin URL real muestran solo sus metadatos.</p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
+
+function StudyRecordCard({
+  record,
+  showPatient,
+  onPreview,
+  onEdit,
+  onArchive,
+  onRestore,
+}: {
+  record: StudyFileRecord
+  showPatient: boolean
+  onPreview: () => void
+  onEdit: () => void
+  onArchive: () => void
+  onRestore: () => void
+}) {
+  const Icon = isImage(record) ? ImageIcon : FileText
+  const isArchived = record.estado === "Archivado" || record.estado === "Archivado en historial"
+  const fileLabel = record.archivoNombre || "Sin archivo adjunto"
+  const fileMeta = record.archivoSize ? formatFileSize(record.archivoSize) : record.archivoTipo || "Archivo demo"
+
+  return (
+    <article className={`rounded-2xl border bg-card p-4 shadow-sm transition-colors hover:border-primary/35 ${isArchived ? "bg-muted/20" : ""}`}>
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,2fr)_minmax(180px,0.7fr)_auto] lg:items-center">
+        {showPatient && (
+          <div className="flex min-w-0 items-center gap-3">
+            <Avatar className="h-11 w-11 shrink-0">
+              <AvatarFallback className="bg-primary/10 text-sm font-bold text-primary">
+                {record.petName[0]}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0">
+              <Link href={`/mascotas/${record.petId}`} className="font-bold leading-tight hover:text-primary">
+                {record.petName}
+              </Link>
+              <p className="break-words text-sm text-muted-foreground">{record.clientName}</p>
+            </div>
+          </div>
+        )}
+
+        <div className={`min-w-0 ${showPatient ? "" : "lg:col-span-2"}`}>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <Icon className="h-5 w-5" />
+            </span>
+            <div className="min-w-0">
+              <h3 className="break-words text-base font-bold leading-tight">{record.tipo}</h3>
+              <p className="text-sm text-muted-foreground">{formatDate(record.fecha)} - {record.profesional}</p>
+            </div>
+          </div>
+          <p className="mt-3 break-words text-sm leading-relaxed text-muted-foreground">{record.descripcion}</p>
+        </div>
+
+        <div className="min-w-0 space-y-2">
+          <Badge className={estadoColors[record.estado] || "bg-muted text-muted-foreground"}>
+            {record.estado}
+          </Badge>
+          <div className="rounded-xl bg-muted/35 px-3 py-2">
+            <p className="break-words text-sm font-semibold">{fileLabel}</p>
+            <p className="text-xs text-muted-foreground">{fileMeta}</p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2 lg:w-48 lg:justify-end">
+          <Button variant="outline" className="h-10 rounded-xl px-3 font-semibold" onClick={onPreview}>
+            <Eye className="mr-2 h-4 w-4 shrink-0" />
+            Ver
+          </Button>
+          {record.archivoUrl ? (
+            <Button variant="outline" className="h-10 rounded-xl px-3 font-semibold" asChild>
+              <a href={record.archivoUrl} download={record.archivoNombre || "archivo"}>
+                <Download className="mr-2 h-4 w-4 shrink-0" />
+                Descargar
+              </a>
+            </Button>
+          ) : (
+            <Button variant="outline" className="h-10 rounded-xl px-3 font-semibold" disabled title="Archivo demo sin URL real">
+              <Download className="mr-2 h-4 w-4 shrink-0" />
+              Descargar
+            </Button>
+          )}
+          {showPatient && (
+            <Button variant="outline" className="h-10 rounded-xl px-3 font-semibold" asChild>
+              <Link href={`/mascotas/${record.petId}`}>Ver ficha</Link>
+            </Button>
+          )}
+          {showPatient && (
+            <Button variant="ghost" className="h-10 rounded-xl px-3 font-semibold" asChild>
+              <Link href={`/historial-clinico/ver?clienteId=${record.clientId}&mascotaId=${record.petId}`}>Historia</Link>
+            </Button>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={onEdit}>
+                <Edit className="mr-2 h-4 w-4" />
+                Editar
+              </DropdownMenuItem>
+              {isArchived ? (
+                <DropdownMenuItem onClick={onRestore}>
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Restaurar
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem onClick={onArchive}>
+                  <Archive className="mr-2 h-4 w-4" />
+                  Archivar
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+    </article>
+  )
+}
+
 function ActionCard({
   icon: Icon,
   title,
@@ -646,6 +1012,8 @@ export function EstudiosPage() {
 }
 
 export function BuscarEstudiosFlow() {
+  return <StudyFilesCompleteView scope="global" />
+
   return (
     <ClinicalActionFlow
       title="Buscar Estudio"
@@ -653,7 +1021,7 @@ export function BuscarEstudiosFlow() {
       actionLabel="Buscar archivos"
       icon={FileText}
     >
-      {({ client, pet }) => <StudyFilesPanel client={client} pet={pet} />}
+      {({ client, pet }) => <StudyFilesCompleteView client={client} pet={pet} />}
     </ClinicalActionFlow>
   )
 }
@@ -666,7 +1034,7 @@ export function AgregarEstudioFlow() {
       actionLabel="Agregar archivo"
       icon={Upload}
     >
-      {({ client, pet }) => <StudyFilesPanel client={client} pet={pet} defaultShowUpload />}
+      {({ client, pet }) => <StudyFilesCompleteView client={client} pet={pet} defaultShowUpload />}
     </ClinicalActionFlow>
   )
 }

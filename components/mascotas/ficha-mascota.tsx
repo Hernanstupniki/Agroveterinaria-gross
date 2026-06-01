@@ -52,6 +52,7 @@ import {
   type VaccineDisplayItem,
   type VaccineDisplayStatus,
 } from "@/lib/vaccine-workflow"
+import { StudyFilesCompleteView } from "@/components/estudios"
 import { getStudyFilesForPet, type StudyFileRecord } from "@/lib/study-files-store"
 
 const MOCK_TODAY = new Date("2026-05-30T00:00:00")
@@ -821,6 +822,8 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
         </TabsContent>
 
         <TabsContent value="estudios" className="space-y-6">
+          <StudyFilesCompleteView client={cliente} pet={mascota} />
+          {false && (
           <Card>
             <CardHeader className="border-b">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -870,6 +873,7 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
               )}
             </CardContent>
           </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="historia" className="space-y-6">
