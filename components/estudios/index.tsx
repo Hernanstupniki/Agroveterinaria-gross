@@ -9,12 +9,14 @@ import {
   Eye,
   FileText,
   Image as ImageIcon,
+  MoreHorizontal,
   Plus,
   RotateCcw,
   Search,
   Upload,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -34,7 +36,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { ClinicalActionFlow, type ClinicalActionSelection } from "@/components/clinical/action-flow"
 import { VETERINARIANS } from "@/lib/clinical-history-builder"
 import {
@@ -279,7 +295,10 @@ export function StudyFilesPanel({ client, pet, defaultShowUpload = false }: Clin
   const [records, setRecords] = useState<StudyFileRecord[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [tipoFilter, setTipoFilter] = useState("todos")
+  const [profesionalFilter, setProfesionalFilter] = useState("todos")
   const [estadoFilter, setEstadoFilter] = useState("todos")
+  const [dateFrom, setDateFrom] = useState("")
+  const [dateTo, setDateTo] = useState("")
   const [showUpload, setShowUpload] = useState(defaultShowUpload)
   const [previewRecord, setPreviewRecord] = useState<StudyFileRecord | null>(null)
   const [editingRecord, setEditingRecord] = useState<StudyFileRecord | null>(null)
@@ -314,12 +333,16 @@ export function StudyFilesPanel({ client, pet, defaultShowUpload = false }: Clin
         record.descripcion.toLowerCase().includes(term) ||
         record.archivoNombre?.toLowerCase().includes(term)
       const matchesTipo = tipoFilter === "todos" || record.tipo === tipoFilter
+      const matchesProfesional = profesionalFilter === "todos" || record.profesional === profesionalFilter
       const matchesEstado = estadoFilter === "todos" || record.estado === estadoFilter
-      return matchesSearch && matchesTipo && matchesEstado
+      const matchesDateFrom = !dateFrom || record.fecha >= dateFrom
+      const matchesDateTo = !dateTo || record.fecha <= dateTo
+      return matchesSearch && matchesTipo && matchesProfesional && matchesEstado && matchesDateFrom && matchesDateTo
     })
-  }, [records, searchTerm, tipoFilter, estadoFilter])
+  }, [records, searchTerm, tipoFilter, profesionalFilter, estadoFilter, dateFrom, dateTo])
 
   const availableTypes = Array.from(new Set([...STUDY_TYPE_OPTIONS, ...records.map((record) => record.tipo)]))
+  const availableProfessionals = Array.from(new Set(records.map((record) => record.profesional).filter(Boolean)))
 
   function updateRecordInState(record: StudyFileRecord, updates: Partial<StudyFileRecord>) {
     const next = { ...record, ...updates }
@@ -358,7 +381,7 @@ export function StudyFilesPanel({ client, pet, defaultShowUpload = false }: Clin
           </div>
         </CardHeader>
         <CardContent className="space-y-4 pt-5">
-          <div className="grid gap-3 lg:grid-cols-[minmax(0,1.5fr)_220px_220px]">
+          <div className="grid gap-3 xl:grid-cols-[minmax(0,1.5fr)_160px_180px_180px_160px_160px]">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -375,6 +398,13 @@ export function StudyFilesPanel({ client, pet, defaultShowUpload = false }: Clin
                 {availableTypes.map((type) => <SelectItem key={type} value={type}>{type}</SelectItem>)}
               </SelectContent>
             </Select>
+            <Select value={profesionalFilter} onValueChange={setProfesionalFilter}>
+              <SelectTrigger className="h-12 rounded-xl"><SelectValue placeholder="Profesional" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos los profesionales</SelectItem>
+                {availableProfessionals.map((professional) => <SelectItem key={professional} value={professional}>{professional}</SelectItem>)}
+              </SelectContent>
+            </Select>
             <Select value={estadoFilter} onValueChange={setEstadoFilter}>
               <SelectTrigger className="h-12 rounded-xl"><SelectValue placeholder="Estado" /></SelectTrigger>
               <SelectContent>
@@ -382,6 +412,8 @@ export function StudyFilesPanel({ client, pet, defaultShowUpload = false }: Clin
                 {STUDY_STATUS_OPTIONS.map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}
               </SelectContent>
             </Select>
+            <Input type="date" className="h-12 rounded-xl" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} aria-label="Fecha desde" />
+            <Input type="date" className="h-12 rounded-xl" value={dateTo} onChange={(event) => setDateTo(event.target.value)} aria-label="Fecha hasta" />
           </div>
         </CardContent>
       </Card>
@@ -399,79 +431,115 @@ export function StudyFilesPanel({ client, pet, defaultShowUpload = false }: Clin
         />
       )}
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        {filteredRecords.map((record) => {
-          const Icon = isImage(record) ? ImageIcon : FileText
-          const isArchived = record.estado === "Archivado" || record.estado === "Archivado en historial"
+      <Card>
+        <CardHeader>
+          <CardTitle>Listado de Estudios</CardTitle>
+          <CardDescription>{filteredRecords.length} registros encontrados</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="min-w-[150px]">Mascota</TableHead>
+                  <TableHead className="min-w-[170px]">Tipo</TableHead>
+                  <TableHead className="min-w-[260px]">Descripción</TableHead>
+                  <TableHead className="min-w-[120px]">Fecha</TableHead>
+                  <TableHead className="min-w-[150px]">Profesional</TableHead>
+                  <TableHead className="min-w-[150px]">Estado</TableHead>
+                  <TableHead className="min-w-[160px] text-center">Archivo</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredRecords.map((record) => {
+                  const Icon = isImage(record) ? ImageIcon : FileText
+                  const isArchived = record.estado === "Archivado" || record.estado === "Archivado en historial"
 
-          return (
-            <Card key={record.id} className={isArchived ? "border-muted bg-muted/20" : ""}>
-              <CardContent className="space-y-4 p-4">
-                <div className="flex min-w-0 gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <Icon className="h-6 w-6" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="break-words text-lg font-bold leading-tight">{record.tipo}</h3>
-                      <Badge className={estadoColors[record.estado] || "bg-muted text-muted-foreground"}>{record.estado}</Badge>
-                    </div>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {formatDate(record.fecha)} · {record.profesional}
-                    </p>
-                    <p className="mt-2 line-clamp-2 text-sm">{record.descripcion}</p>
-                  </div>
-                </div>
-
-                <div className="rounded-xl bg-muted/35 p-3 text-sm">
-                  <p className="break-words font-semibold">{record.archivoNombre || "Sin archivo adjunto"}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {record.archivoTipo || "Metadata mock"} · {formatFileSize(record.archivoSize)}
-                  </p>
-                </div>
-
-                <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
-                  <Button variant="outline" className="min-h-11 rounded-xl px-3 py-2 font-semibold leading-tight" onClick={() => setPreviewRecord(record)}>
-                    <Eye className="mr-2 h-4 w-4 shrink-0" />
-                    Visualizar
-                  </Button>
-                  {record.archivoUrl ? (
-                    <Button variant="outline" className="min-h-11 rounded-xl px-3 py-2 font-semibold leading-tight" asChild>
-                      <a href={record.archivoUrl} download={record.archivoNombre || "archivo"}>
-                        <Download className="mr-2 h-4 w-4 shrink-0" />
-                        Descargar
-                      </a>
-                    </Button>
-                  ) : (
-                    <Button variant="outline" className="min-h-11 rounded-xl px-3 py-2 font-semibold leading-tight" disabled>
-                      <Download className="mr-2 h-4 w-4 shrink-0" />
-                      Descargar
-                    </Button>
-                  )}
-                  <Button variant="outline" className="min-h-11 rounded-xl px-3 py-2 font-semibold leading-tight" onClick={() => setEditingRecord(record)}>
-                    <Edit className="mr-2 h-4 w-4 shrink-0" />
-                    Editar
-                  </Button>
-                  {isArchived ? (
-                    <Button className="min-h-11 rounded-xl bg-primary px-3 py-2 font-bold leading-tight hover:bg-primary/90" onClick={() => handleRestore(record)}>
-                      <RotateCcw className="mr-2 h-4 w-4 shrink-0" />
-                      Restaurar
-                    </Button>
-                  ) : (
-                    <Button variant="outline" className="min-h-11 rounded-xl px-3 py-2 font-semibold leading-tight" onClick={() => handleArchive(record)}>
-                      <Archive className="mr-2 h-4 w-4 shrink-0" />
-                      Archivar
-                    </Button>
-                  )}
-                  <Button variant="outline" className="min-h-11 rounded-xl px-3 py-2 font-semibold leading-tight" asChild>
-                    <Link href={`/mascotas/${pet.id}`}>Ficha</Link>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
+                  return (
+                    <TableRow key={record.id} className={isArchived ? "bg-muted/20" : undefined}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
+                              {record.petName[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                          <Link href={`/mascotas/${record.petId}`} className="font-medium hover:text-primary">
+                            {record.petName}
+                          </Link>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                          <span className="font-medium">{record.tipo}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <p className="line-clamp-2 text-sm">{record.descripcion}</p>
+                      </TableCell>
+                      <TableCell>{record.fecha}</TableCell>
+                      <TableCell>{record.profesional}</TableCell>
+                      <TableCell>
+                        <Badge className={estadoColors[record.estado] || "bg-muted text-muted-foreground"}>
+                          {record.estado}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-center gap-1">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setPreviewRecord(record)} title="Visualizar">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          {record.archivoUrl ? (
+                            <Button variant="ghost" size="icon" className="h-8 w-8" asChild title="Descargar">
+                              <a href={record.archivoUrl} download={record.archivoNombre || "archivo"}>
+                                <Download className="h-4 w-4" />
+                              </a>
+                            </Button>
+                          ) : record.archivoNombre ? (
+                            <Button variant="ghost" size="icon" className="h-8 w-8" disabled title="Archivo demo sin URL real">
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          ) : (
+                            <Button variant="outline" size="sm" className="h-8 rounded-lg px-3" onClick={() => setEditingRecord(record)}>
+                              <Upload className="mr-1 h-3.5 w-3.5" />
+                              Cargar
+                            </Button>
+                          )}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => setEditingRecord(record)}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Editar
+                              </DropdownMenuItem>
+                              {isArchived ? (
+                                <DropdownMenuItem onClick={() => handleRestore(record)}>
+                                  <RotateCcw className="mr-2 h-4 w-4" />
+                                  Restaurar
+                                </DropdownMenuItem>
+                              ) : (
+                                <DropdownMenuItem onClick={() => handleArchive(record)}>
+                                  <Archive className="mr-2 h-4 w-4" />
+                                  Archivar
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
 
       {filteredRecords.length === 0 && (
         <Card>
