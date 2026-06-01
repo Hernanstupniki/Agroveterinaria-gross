@@ -2,7 +2,6 @@
 
 import Link from "next/link"
 import {
-  ClipboardList,
   FileText,
   HeartPulse,
   Pill,
@@ -59,7 +58,7 @@ const primaryActions = [
 
 export function Dashboard() {
   return (
-    <div className="mx-auto flex min-h-[calc(100vh-8rem)] w-full max-w-6xl flex-col justify-center gap-8 py-6">
+    <div className="mx-auto flex min-h-[calc(100vh-8rem)] w-full max-w-7xl flex-col justify-center gap-8 py-6">
       <div className="max-w-3xl space-y-3">
         <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-sm font-medium text-primary">
           <HeartPulse className="h-4 w-4" />
@@ -75,23 +74,22 @@ export function Dashboard() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
         {primaryActions.map((action) => (
-          <Link key={action.title} href={action.href!} className="group block min-h-[220px] min-w-0 xl:min-h-[240px] 2xl:min-h-[220px]">
+          <Link key={action.title} href={action.href!} className="group block min-w-0">
             <Card className={`h-full transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${action.className}`}>
-              <CardContent className="flex h-full flex-col justify-between gap-5 p-5 xl:p-4 2xl:p-5">
-                <div className="space-y-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-background/90 text-primary shadow-sm sm:h-14 sm:w-14">
+              <CardContent className="flex h-full flex-col gap-5 p-5 xl:p-4 2xl:p-5">
+                <div className="flex flex-col gap-4 sm:flex-row xl:flex-col 2xl:flex-row">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-background/90 text-primary shadow-sm sm:h-14 sm:w-14">
                     <action.icon className="h-6 w-6 shrink-0 sm:h-7 sm:w-7" />
                   </div>
-                  <div className="space-y-2">
+                  <div className="min-w-0">
                     <h2 className="text-lg font-bold leading-tight 2xl:text-xl">{action.title}</h2>
-                    <p className="text-sm leading-relaxed opacity-80">{action.description}</p>
+                    <p className="mt-2 text-sm leading-relaxed opacity-80">{action.description}</p>
                   </div>
                 </div>
-                <div className="mt-auto inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-primary px-3 py-3 text-center text-sm font-bold leading-tight text-primary-foreground shadow-sm whitespace-normal">
-                  <span>{action.title}</span>
-                  <ClipboardList className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-1" />
+                <div className="mt-auto inline-flex min-h-12 items-center justify-center rounded-xl bg-primary px-4 py-3 text-center text-base font-bold leading-tight text-primary-foreground shadow-sm group-hover:bg-primary/90 whitespace-normal">
+                  <span className="text-center leading-tight">{action.title}</span>
                 </div>
               </CardContent>
             </Card>
