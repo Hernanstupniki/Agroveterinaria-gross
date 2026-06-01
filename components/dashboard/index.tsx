@@ -3,6 +3,7 @@
 import Link from "next/link"
 import {
   ClipboardList,
+  FileText,
   HeartPulse,
   Pill,
   Syringe,
@@ -47,6 +48,13 @@ const primaryActions = [
     icon: Pill,
     className: "border-primary/20 bg-card hover:border-primary/50 hover:bg-primary/5",
   },
+  {
+    title: "Estudios y Archivos",
+    description: "Cargar, ver o archivar estudios y documentos clinicos.",
+    href: "/estudios",
+    icon: FileText,
+    className: "border-primary/20 bg-card hover:border-primary/50 hover:bg-primary/5",
+  },
 ]
 
 export function Dashboard() {
@@ -67,7 +75,7 @@ export function Dashboard() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {primaryActions.map((action) => (
           <Link key={action.title} href={action.href!} className="group block min-h-[220px] min-w-0 xl:min-h-[240px] 2xl:min-h-[220px]">
             <Card className={`h-full transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${action.className}`}>

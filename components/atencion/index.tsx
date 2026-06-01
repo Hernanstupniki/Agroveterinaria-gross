@@ -5,7 +5,7 @@ import Link from "next/link"
 import type { LucideIcon } from "lucide-react"
 import {
   ArrowLeft, ArrowRight, Bell, Check, CheckCircle2, ChevronDown, ChevronUp, ClipboardList, FileText, HeartPulse,
-  Pill, Plus, Scissors, ShieldAlert, Stethoscope, Syringe, AlertTriangle, X, Users,
+  Pill, Plus, Scissors, ShieldAlert, Stethoscope, Syringe, AlertTriangle, X, Users, Upload, Trash2,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -24,6 +24,7 @@ import {
   type ClasificacionAtencion, type AtencionBase, type AccionesActivas,
 } from "@/lib/atencion-store"
 import { VETERINARIANS } from "@/lib/clinical-history-builder"
+import { fileToStudyAttachment, formatFileSize, STUDY_STATUS_OPTIONS, STUDY_TYPE_OPTIONS } from "@/lib/study-files-store"
 
 type AtencionMode = "breve" | "completa"
 type FlowStep = "atencion" | "acciones" | "resumen" | "resultado"
@@ -46,7 +47,7 @@ function createEmptyAcciones(): AccionesActivas {
     vacuna: { activa: false, data: { vaccineName: "", doseLabel: "", observations: "" } },
     tratamiento: { activa: false, data: { diagnosis: "", medicamento: "", dosis: "", frecuencia: "", duracion: "", indicaciones: "", nextControlDate: "" } },
     cirugia: { activa: false, data: { surgeryType: "", status: "Programada", notes: "" } },
-    estudio: { activa: false, data: { studyType: "", description: "" } },
+    estudio: { activa: false, data: { studyType: "", description: "", estado: "Resultado recibido", files: [] } },
     recordatorio: { activa: false, data: { date: "", reminderType: "Control", message: "" } },
   }
 }
@@ -158,15 +159,88 @@ function CirugiaAccionForm({ acciones, setAcciones }: { acciones: AccionesActiva
 
 function EstudioAccionForm({ acciones, setAcciones }: { acciones: AccionesActivas; setAcciones: (a: AccionesActivas) => void }) {
   const data = acciones.estudio.data
+
+  async function handleFiles(files: FileList | null) {
+    if (!files || files.length === 0) return
+    const attachments = await Promise.all(Array.from(files).map((file) => fileToStudyAttachment(file)))
+    setAcciones({
+      ...acciones,
+      estudio: {
+        ...acciones.estudio,
+        data: { ...data, files: [...(data.files || []), ...attachments] },
+      },
+    })
+  }
+
   return (
     <div className="space-y-4">
-      <div className="space-y-2">
-        <Label>Tipo de estudio</Label>
-        <Input className="h-11 rounded-xl" placeholder="Ej: Radiografía, Análisis sanguíneo, Ecografía..." value={data.studyType} onChange={(e) => setAcciones({ ...acciones, estudio: { ...acciones.estudio, data: { ...data, studyType: e.target.value } } })} />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label>Tipo de estudio</Label>
+          <Select value={data.studyType || "Estudio sin especificar"} onValueChange={(v) => setAcciones({ ...acciones, estudio: { ...acciones.estudio, data: { ...data, studyType: v } } })}>
+            <SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {STUDY_TYPE_OPTIONS.map((type) => <SelectItem key={type} value={type}>{type}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Estado</Label>
+          <Select value={data.estado || "Resultado recibido"} onValueChange={(v) => setAcciones({ ...acciones, estudio: { ...acciones.estudio, data: { ...data, estado: v as typeof data.estado } } })}>
+            <SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {STUDY_STATUS_OPTIONS.map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       <div className="space-y-2">
         <Label>Descripcion</Label>
         <Textarea className="rounded-xl" rows={2} placeholder="Descripción o detalle del estudio..." value={data.description} onChange={(e) => setAcciones({ ...acciones, estudio: { ...acciones.estudio, data: { ...data, description: e.target.value } } })} />
+      </div>
+      <div className="space-y-3 rounded-xl border border-dashed bg-muted/25 p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <Label className="font-semibold">Archivos adjuntos</Label>
+            <p className="text-sm text-muted-foreground">PDF, imagenes o documentos. Es opcional para guardar la atencion.</p>
+          </div>
+          <Button type="button" variant="outline" className="relative h-11 overflow-hidden rounded-xl px-4 font-bold">
+            <Upload className="mr-2 h-4 w-4" />
+            Adjuntar archivo
+            <input
+              type="file"
+              multiple
+              accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt"
+              className="absolute inset-0 cursor-pointer opacity-0"
+              onChange={(event) => {
+                void handleFiles(event.target.files)
+                event.currentTarget.value = ""
+              }}
+            />
+          </Button>
+        </div>
+        {data.files && data.files.length > 0 && (
+          <div className="grid gap-2">
+            {data.files.map((file, index) => (
+              <div key={`${file.name}-${index}`} className="flex flex-col gap-2 rounded-lg border bg-background px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <p className="break-words text-sm font-semibold">{file.name}</p>
+                  <p className="text-xs text-muted-foreground">{file.type || "Archivo"} · {formatFileSize(file.size)}</p>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 rounded-lg text-destructive hover:text-destructive"
+                  onClick={() => setAcciones({ ...acciones, estudio: { ...acciones.estudio, data: { ...data, files: data.files?.filter((_, i) => i !== index) || [] } } })}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Quitar
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

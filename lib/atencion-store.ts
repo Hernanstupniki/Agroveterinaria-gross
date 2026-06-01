@@ -5,6 +5,7 @@ import {
   type ClinicalHistoryEvent,
 } from "@/lib/clinical-history-mock"
 import { updateMascotaData } from "@/lib/mascota-store"
+import { createStudyFileRecord, type StudyFileAttachment, type StudyFileStatus } from "@/lib/study-files-store"
 
 export type ClasificacionAtencion =
   | "consulta_general"
@@ -64,6 +65,8 @@ export interface CirugiaAccion {
 export interface EstudioAccion {
   studyType: string
   description: string
+  estado?: StudyFileStatus
+  files?: StudyFileAttachment[]
 }
 
 export interface RecordatorioAccion {
@@ -243,6 +246,22 @@ export function guardarAtencionCompleta(draft: AtencionCompletaDraft): AtencionR
 
     if (acciones.estudio.activa) {
       const e = acciones.estudio.data
+      const studyTitle = e.studyType || "Estudio solicitado"
+      const files = e.files && e.files.length > 0 ? e.files : [null]
+
+      files.forEach((attachment) => {
+        createStudyFileRecord({
+          clientId,
+          petId,
+          tipo: studyTitle,
+          descripcion: e.description,
+          fecha: base.date,
+          profesional: base.veterinarian,
+          estado: e.estado || "Resultado recibido",
+          attachment,
+        })
+      })
+
       const estudioEvent: ClinicalHistoryEvent = {
         id: `local-estudio-${Date.now()}-e`,
         petId,
@@ -252,10 +271,11 @@ export function guardarAtencionCompleta(draft: AtencionCompletaDraft): AtencionR
         eventType: "Estudio",
         date: base.date,
         veterinarian: base.veterinarian,
-        title: e.studyType,
-        reason: e.studyType,
+        title: studyTitle,
+        reason: studyTitle,
         notes: e.description || undefined,
-        status: "Pendiente",
+        status: e.estado || "Resultado recibido",
+        attachmentName: e.files?.map((file) => file.name).join(", ") || "",
       }
       eventIds.push(addEventToHistory(estudioEvent))
     }
@@ -353,6 +373,8 @@ export interface EstudioAtencionDraft {
   veterinarian: string
   studyType: string
   description?: string
+  estado?: StudyFileStatus
+  files?: StudyFileAttachment[]
 }
 
 export interface RecordatorioAtencionDraft {
@@ -400,7 +422,20 @@ export function guardarAtencion(draft: AtencionDraft): AtencionResult {
       eventIds.push(addEventToHistory({ id: `local-cirugia-${Date.now()}`, petId: d.petId, clientId: d.clientId, petName: "", clientName: "", eventType: "Cirugía", date: d.date, veterinarian: d.veterinarian, title: d.surgeryType, reason: d.surgeryType, notes: d.notes, status: d.status || "Programada" }))
     } else if (draft.tipo === "estudio") {
       const d = draft as EstudioAtencionDraft
-      eventIds.push(addEventToHistory({ id: `local-estudio-${Date.now()}`, petId: d.petId, clientId: d.clientId, petName: "", clientName: "", eventType: "Estudio", date: d.date, veterinarian: d.veterinarian, title: d.studyType, reason: d.studyType, notes: d.description, status: "Pendiente" }))
+      const files = d.files && d.files.length > 0 ? d.files : [null]
+      files.forEach((attachment) => {
+        createStudyFileRecord({
+          clientId: d.clientId,
+          petId: d.petId,
+          tipo: d.studyType,
+          descripcion: d.description,
+          fecha: d.date,
+          profesional: d.veterinarian,
+          estado: d.estado || "Resultado recibido",
+          attachment,
+        })
+      })
+      eventIds.push(addEventToHistory({ id: `local-estudio-${Date.now()}`, petId: d.petId, clientId: d.clientId, petName: "", clientName: "", eventType: "Estudio", date: d.date, veterinarian: d.veterinarian, title: d.studyType || "Estudio solicitado", reason: d.studyType, notes: d.description, status: d.estado || "Resultado recibido", attachmentName: d.files?.map((file) => file.name).join(", ") || "" }))
     } else if (draft.tipo === "recordatorio") {
       const d = draft as RecordatorioAtencionDraft
       eventIds.push(addEventToHistory({ id: `local-recordatorio-${Date.now()}`, petId: d.petId, clientId: d.clientId, petName: "", clientName: "", eventType: "Recordatorio", date: d.date, veterinarian: "", title: d.reminderType, reason: d.reminderType, notes: d.message, status: "Programado" }))

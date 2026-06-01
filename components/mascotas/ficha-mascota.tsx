@@ -33,7 +33,6 @@ import { EditarFichaDialog } from "@/components/mascotas/editar-ficha-dialog"
 import {
   cirugias,
   clientes,
-  estudiosArchivos,
   recordatoriosProgramados,
   tratamientosActivos,
   vacunasRegistradas,
@@ -53,6 +52,7 @@ import {
   type VaccineDisplayItem,
   type VaccineDisplayStatus,
 } from "@/lib/vaccine-workflow"
+import { getStudyFilesForPet, type StudyFileRecord } from "@/lib/study-files-store"
 
 const MOCK_TODAY = new Date("2026-05-30T00:00:00")
 
@@ -168,6 +168,7 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
   const [historyStatusFilter, setHistoryStatusFilter] = useState("todos")
   const [historyDateFrom, setHistoryDateFrom] = useState("")
   const [historyDateTo, setHistoryDateTo] = useState("")
+  const [estudiosMascota, setEstudiosMascota] = useState<StudyFileRecord[]>(() => getStudyFilesForPet(mascota.id))
   const [expandedHistoryItems, setExpandedHistoryItems] = useState<Array<string | number>>([])
   const [expandedResumenItems, setExpandedResumenItems] = useState<Array<string | number>>([])
   const [expandedTreatmentItems, setExpandedTreatmentItems] = useState<Array<string | number>>([])
@@ -175,13 +176,13 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
 
   useEffect(() => {
     setTimelineRefreshKey((k) => k + 1)
+    setEstudiosMascota(getStudyFilesForPet(mascota.id))
   }, [mascota.id])
 
   const vacunasMascota = vacunasRegistradas.filter((item) => item.mascotaId === mascota.id)
   const planVacunasMascota = buildVaccineDisplayList(mascota.id)
   const tratamientosMascota = tratamientosActivos.filter((item) => item.mascotaId === mascota.id)
   const tratamientosActivosMascota = tratamientosMascota.filter((item) => item.estado === "Activo")
-  const estudiosMascota = estudiosArchivos.filter((item) => item.mascotaId === mascota.id)
   const cirugiasMascota = cirugias.filter((item) => item.mascotaId === mascota.id)
   const cirugiasProgramadas = cirugiasMascota.filter(
     (item) => item.estado === "Programada" || item.estado === "Confirmada" || item.estado === "Pendiente confirmación",
@@ -307,7 +308,7 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
     { label: "Vacuna", icon: Syringe, href: `/vacunas/registrar?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}` },
     { label: "Tratamiento", icon: Pill, href: `/tratamientos/registrar?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}` },
     { label: "Cirugía", icon: Scissors, href: `/cirugias/agendar?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}` },
-{ label: "Estudio", icon: FileText, href: `/estudios?mascotaId=${mascota.id}` },
+    { label: "Estudio", icon: FileText, href: `/estudios?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}` },
   { label: "Recordatorio", icon: MessageCircle, href: `/recordatorios?mascotaId=${mascota.id}` },
   ]
 
@@ -831,7 +832,7 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
                   <CardDescription>Documentación secundaria asociada al paciente.</CardDescription>
                 </div>
                 <Button className="h-12 rounded-xl bg-primary px-5 font-bold hover:bg-primary/90" asChild>
-                  <Link href="/estudios">
+                  <Link href={`/estudios?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}`}>
                     <Plus className="mr-2 h-4 w-4" />
                     Cargar estudio
                   </Link>
@@ -841,18 +842,24 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
             <CardContent className="pt-5">
               {estudiosMascota.length > 0 ? (
                 <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                  {estudiosMascota.map((estudio) => (
+                      {estudiosMascota.map((estudio) => (
                     <div key={estudio.id} className="flex items-center justify-between gap-3 rounded-xl border p-4">
                       <div className="min-w-0">
                         <p className="font-semibold">{estudio.tipo}</p>
                         <p className="text-sm text-muted-foreground">{formatDate(estudio.fecha)}</p>
                         <p className="mt-1 line-clamp-2 text-sm">{estudio.descripcion}</p>
                       </div>
-                      {estudio.archivo && (
-                        <Button variant="outline" size="icon" className="h-10 w-10 shrink-0">
+                      {estudio.archivoUrl ? (
+                        <Button variant="outline" size="icon" className="h-10 w-10 shrink-0" asChild>
+                          <a href={estudio.archivoUrl} download={estudio.archivoNombre || "archivo"}>
+                            <Download className="h-4 w-4" />
+                          </a>
+                        </Button>
+                      ) : estudio.archivoNombre ? (
+                        <Button variant="outline" size="icon" className="h-10 w-10 shrink-0" disabled title="Archivo demo sin URL real">
                           <Download className="h-4 w-4" />
                         </Button>
-                      )}
+                      ) : null}
                     </div>
                   ))}
                 </div>
