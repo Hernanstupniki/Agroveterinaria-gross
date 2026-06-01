@@ -12,31 +12,27 @@ services:
       NEXT_TELEMETRY_DISABLED: 1
 
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/ >/dev/null || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000 >/dev/null || exit 1"]
       interval: 20s
       timeout: 5s
       retries: 5
       start_period: 40s
 
     networks:
-      
-proxy
-db
+      - proxy
+      - db
 
     labels:
-      
-traefik.enable=true
-traefik.docker.network=proxy
+      - traefik.enable=true
+      - traefik.docker.network=proxy
 
-      
-traefik.http.routers.agroveterinaria-gross-prototipo01.rule=Host(agroveterinariagross-prototipo01.${DOMAIN_NAME:-zubuagency.com})
-traefik.http.routers.agroveterinaria-gross-prototipo01.entrypoints=websecure
-traefik.http.routers.agroveterinaria-gross-prototipo01.tls=true
-traefik.http.routers.agroveterinaria-gross-prototipo01.tls.certresolver=mytlschallenge
-traefik.http.routers.agroveterinaria-gross-prototipo01.priority=10
+      - traefik.http.routers.agroveterinaria-gross-prototipo01.rule=Host(`agroveterinariagross-prototipo01.${DOMAIN_NAME:-zubuagency.com}`)
+      - traefik.http.routers.agroveterinaria-gross-prototipo01.entrypoints=websecure
+      - traefik.http.routers.agroveterinaria-gross-prototipo01.tls=true
+      - traefik.http.routers.agroveterinaria-gross-prototipo01.tls.certresolver=mytlschallenge
+      - traefik.http.routers.agroveterinaria-gross-prototipo01.priority=10
 
-      
-traefik.http.services.agroveterinaria-gross-prototipo01.loadbalancer.server.port=3000
+      - traefik.http.services.agroveterinaria-gross-prototipo01.loadbalancer.server.port=3000
 
 networks:
   proxy:
