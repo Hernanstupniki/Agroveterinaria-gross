@@ -104,6 +104,14 @@ export function ClinicalActionFlow({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="flex justify-start sm:justify-end">
+              <Button className="min-h-12 rounded-xl bg-primary px-4 py-3 text-center font-bold leading-tight text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90" asChild>
+                <Link href="/clientes/agregar">
+                  <UserPlus className="mr-2 h-4 w-4 shrink-0" />
+                  Crear cliente con mascota
+                </Link>
+              </Button>
+            </div>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -151,12 +159,6 @@ export function ClinicalActionFlow({
               })}
             </div>
 
-            <Button className="h-12 rounded-xl bg-primary px-4 text-center font-bold leading-tight text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90" asChild>
-              <Link href="/clientes/agregar">
-                <UserPlus className="mr-2 h-4 w-4" />
-                Crear cliente con mascota
-              </Link>
-            </Button>
           </CardContent>
         </Card>
       )}
@@ -171,6 +173,17 @@ export function ClinicalActionFlow({
             <CardDescription>Elegí la mascota sobre la que vas a cargar la acción clínica.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <Button variant="outline" className="min-h-12 rounded-xl px-4 py-3 text-center font-bold leading-tight" onClick={() => setSelectedClientId(null)}>
+                Cambiar cliente
+              </Button>
+              <Button className="min-h-12 rounded-xl bg-primary px-4 py-3 text-center font-bold leading-tight hover:bg-primary/90" asChild>
+                <Link href={`/clientes/agregar?clienteId=${selectedClient.id}`}>
+                  <PawPrint className="mr-2 h-4 w-4 shrink-0" />
+                  Agregar mascota a este cliente
+                </Link>
+              </Button>
+            </div>
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {selectedClientPets.map((pet) => (
                 <button
@@ -195,17 +208,6 @@ export function ClinicalActionFlow({
               ))}
             </div>
 
-            <div className="flex flex-wrap gap-2">
-              <Button variant="outline" className="h-12 rounded-xl px-4 text-center font-bold leading-tight" onClick={() => setSelectedClientId(null)}>
-                Cambiar cliente
-              </Button>
-              <Button className="h-12 rounded-xl bg-primary px-4 text-center font-bold leading-tight hover:bg-primary/90" asChild>
-                <Link href={`/clientes/agregar?clienteId=${selectedClient.id}`}>
-                  <PawPrint className="mr-2 h-4 w-4" />
-                  Agregar mascota a este cliente
-                </Link>
-              </Button>
-            </div>
           </CardContent>
         </Card>
       )}
