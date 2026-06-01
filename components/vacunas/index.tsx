@@ -5,9 +5,6 @@ import Link from "next/link"
 import type { LucideIcon } from "lucide-react"
 import {
   AlertTriangle,
-  Bell,
-  Calendar,
-  CheckCircle2,
   ClipboardList,
   History,
   Plus,
@@ -17,8 +14,8 @@ import {
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -31,7 +28,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { ClinicalActionFlow } from "@/components/clinical/action-flow"
 import { ProtocolSearchFilter, defaultFilterState, filterProtocols, type ProtocolSearchFilterState } from "@/components/clinical/protocol-search-filter"
-import { ApplicabilityBadges, CompatibilityNotice, PetTaxonomySummary, TaxonomyApplicabilityEditor } from "@/components/clinical/taxonomy-controls"
+import { ApplicabilityBadges, PetTaxonomySummary, TaxonomyApplicabilityEditor } from "@/components/clinical/taxonomy-controls"
 import { getPetTaxonomy, protocolMatchesPet } from "@/lib/animal-taxonomy"
 import { durationPresets, reminderPresets } from "@/lib/clinical-presets"
 import { clientes, mascotas } from "@/lib/mock-data"
@@ -149,8 +146,6 @@ export function VaccineRegistrationForm({
   const selectedDoses = getDosesForVaccine(selectedVaccineId)
   const [selectedDoseId, setSelectedDoseId] = useState(selectedDoses[0]?.id || "")
   const [appliedAt, setAppliedAt] = useState("2026-06-01")
-  const [origin, setOrigin] = useState<"aplicada_hoy" | "carga_historica">("aplicada_hoy")
-  const [manualConfirm, setManualConfirm] = useState(false)
 
   const effectiveDoseId = selectedDoses.some((dose) => dose.id === selectedDoseId)
     ? selectedDoseId
@@ -165,13 +160,7 @@ export function VaccineRegistrationForm({
     (record) => record.vaccineId === selectedVaccineId && record.doseId === effectiveDoseId && record.appliedAt === appliedAt,
   )
   const outOfOrder = Boolean(previousDose && !hasPreviousDose)
-  const canSave = Boolean(
-    selectedVaccine &&
-      selectedDose &&
-      appliedAt &&
-      !duplicateDose &&
-      (!outOfOrder || origin === "carga_historica" || manualConfirm),
-  )
+  const canSave = Boolean(selectedVaccine && selectedDose && appliedAt && !duplicateDose)
 
   return (
     <div className="space-y-5">
@@ -233,28 +222,10 @@ export function VaccineRegistrationForm({
               </Select>
             </div>
 
-            <Field label="Fecha de aplicacion" value={appliedAt} onChange={setAppliedAt} placeholder="AAAA-MM-DD" />
-            <Field label="Aplicada por" placeholder="Veterinario/responsable" />
-          </div>
-
-          <div className="grid gap-3 rounded-lg border bg-background p-4 md:grid-cols-2">
-            <label className="flex items-start gap-3 text-sm">
-              <Checkbox
-                checked={origin === "carga_historica"}
-                onCheckedChange={(checked) => setOrigin(checked ? "carga_historica" : "aplicada_hoy")}
-              />
-              <span>
-                <span className="block font-medium">Cargar como registro historico</span>
-                <span className="text-muted-foreground">Usar si la dosis ya estaba aplicada anteriormente.</span>
-              </span>
-            </label>
-            <label className="flex items-start gap-3 text-sm">
-              <Checkbox checked={manualConfirm} onCheckedChange={(checked) => setManualConfirm(Boolean(checked))} />
-              <span>
-                <span className="block font-medium">Confirmar dosis fuera de orden</span>
-                <span className="text-muted-foreground">Permite continuar si falta una dosis previa en el sistema.</span>
-              </span>
-            </label>
+            <div className="space-y-2">
+              <Label>Fecha de aplicación</Label>
+              <Input type="date" className="h-12 bg-background" value={appliedAt} onChange={(e) => setAppliedAt(e.target.value)} />
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -262,42 +233,12 @@ export function VaccineRegistrationForm({
             <Textarea className="bg-background" placeholder="Lote, laboratorio, reaccion, indicaciones o notas clinicas..." />
           </div>
 
-          <ValidationPanel duplicate={duplicateDose} outOfOrder={outOfOrder} canSave={canSave} />
-          <CompatibilityNotice protocol={selectedVaccine} pet={pet} />
+          <ValidationPanel duplicate={duplicateDose} outOfOrder={outOfOrder} />
 
-          {selectedVaccine && selectedDose && (
-            <Card className="border-primary/25 bg-background">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Calendar className="h-5 w-5 text-primary" />
-                  Calculo automatico del esquema
-                </CardTitle>
-                <CardDescription>Basado en la configuracion de dosis de {selectedVaccine.name}.</CardDescription>
-              </CardHeader>
-              <CardContent className="grid gap-3 md:grid-cols-3">
-                <Info label="Dosis guardada" value={selectedDose.name} />
-                <Info label="Origen" value={origin === "carga_historica" ? "Carga historica" : "Aplicada hoy"} />
-                <Info
-                  label="Proxima dosis"
-                  value={nextDose ? `${nextDose.dose.name} - ${formatDate(nextDose.estimatedAt)}` : "Esquema completo"}
-                />
-                <Info
-                  label="Recordatorio"
-                  value={nextDose?.reminder.reminderDate ? formatDate(nextDose.reminder.reminderDate) : "Sin fecha calculable"}
-                />
-                <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 md:col-span-3">
-                  <div className="flex items-center gap-2 font-medium text-primary">
-                    <Bell className="h-4 w-4" />
-                    Recordatorio preparado
-                  </div>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {nextDose
-                      ? `Cliente: ${client.nombre}. Mascota: ${pet.nombre}. Vacuna: ${selectedVaccine.name}. Dosis: ${nextDose.dose.name}. Fecha estimada: ${formatDate(nextDose.estimatedAt)}.`
-                      : "No se genera recordatorio porque no hay proxima dosis configurada."}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+          {nextDose && (
+            <p className="rounded-lg border bg-background/60 px-3 py-2 text-sm text-muted-foreground">
+              Próxima dosis estimada: <span className="font-medium text-foreground">{nextDose.dose.name} — {formatDate(nextDose.estimatedAt)}</span>
+            </p>
           )}
 
           {canSave ? (
@@ -310,7 +251,7 @@ export function VaccineRegistrationForm({
                   onInlineSaved?.({
                     vaccineName: selectedVaccine.name,
                     doseLabel: selectedDose.name,
-                    observations: `Origen: ${origin === "carga_historica" ? "Carga historica" : "Aplicada hoy"}`,
+                    observations: undefined,
                     appliedAt,
                   })
                 }
@@ -324,13 +265,13 @@ export function VaccineRegistrationForm({
             )
           ) : (
             <Button className="h-14 w-full text-base font-bold" disabled>
-              Completar validaciones para guardar
+              Seleccioná vacuna, dosis y fecha para guardar
             </Button>
           )}
         </CardContent>
       </Card>
 
-      <VaccinationHistory petId={pet.id} />
+      {mode !== "inline" && <VaccinationHistory petId={pet.id} />}
     </div>
   )
 }
@@ -798,25 +739,18 @@ function PatientSummary({ client, pet }: { client: { nombre: string }; pet: { no
   )
 }
 
-function ValidationPanel({ duplicate, outOfOrder, canSave }: { duplicate: boolean; outOfOrder: boolean; canSave: boolean }) {
-  if (!duplicate && !outOfOrder) {
-    return (
-      <div className="flex items-center gap-2 rounded-lg border border-success/25 bg-success/10 p-3 text-sm text-success">
-        <CheckCircle2 className="h-4 w-4" />
-        Validacion lista: cliente, mascota, vacuna y dosis seleccionadas.
-      </div>
-    )
-  }
+function ValidationPanel({ duplicate, outOfOrder }: { duplicate: boolean; outOfOrder: boolean }) {
+  if (!duplicate && !outOfOrder) return null
 
   return (
-    <div className={`rounded-lg border p-3 text-sm ${canSave ? "border-warning/30 bg-warning/10" : "border-destructive/30 bg-destructive/10"}`}>
+    <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm">
       <div className="flex items-center gap-2 font-medium">
         <AlertTriangle className="h-4 w-4" />
         Revisar antes de guardar
       </div>
       <ul className="mt-2 list-inside list-disc space-y-1 text-muted-foreground">
-        {duplicate && <li>Ya existe un registro demo con esta vacuna, dosis, mascota y fecha.</li>}
-        {outOfOrder && <li>La dosis seleccionada parece fuera de orden. Marcar carga historica o confirmar manualmente.</li>}
+        {duplicate && <li>Ya existe un registro con esta vacuna, dosis y fecha para esta mascota.</li>}
+        {outOfOrder && <li>La dosis seleccionada parece fuera de orden en el esquema.</li>}
       </ul>
     </div>
   )

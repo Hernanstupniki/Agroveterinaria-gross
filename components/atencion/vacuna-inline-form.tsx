@@ -13,7 +13,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { VETERINARIANS } from "@/lib/clinical-history-builder"
 import { getActiveVaccinesForSpecies, getDosesForVaccine } from "@/lib/vaccine-workflow"
 import { clientes, mascotas } from "@/lib/mock-data"
 import type { VacunaAtencionDraft } from "@/lib/atencion-store"
@@ -33,7 +32,7 @@ export function VacunaInlineForm({ petId, clientId, onSaved, onCancel }: VacunaI
 
   const [form, setForm] = useState({
     date: new Date().toISOString().slice(0, 10),
-    veterinarian: VETERINARIANS[0] || "",
+    veterinarian: "",
     vaccineId: availableVaccines[0]?.id || "",
     doseLabel: "",
     observations: "",
@@ -59,22 +58,9 @@ export function VacunaInlineForm({ petId, clientId, onSaved, onCancel }: VacunaI
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2">
-          <Label>Fecha</Label>
-          <Input type="date" className="h-11 rounded-xl" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} />
-        </div>
-        <div className="space-y-2">
-          <Label>Veterinario</Label>
-          <Select value={form.veterinarian} onValueChange={(v) => setForm((f) => ({ ...f, veterinarian: v }))}>
-            <SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {VETERINARIANS.map((v) => (
-                <SelectItem key={v} value={v}>{v}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      <div className="space-y-2">
+        <Label>Fecha</Label>
+        <Input type="date" className="h-11 rounded-xl" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} />
       </div>
 
       <div className="space-y-2">

@@ -6,7 +6,6 @@ import type { LucideIcon } from "lucide-react"
 import {
   AlertTriangle,
   CalendarClock,
-  Clock,
   ClipboardList,
   Plus,
   RotateCcw,
@@ -30,7 +29,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { ClinicalActionFlow } from "@/components/clinical/action-flow"
 import { ProtocolSearchFilter, defaultFilterState, filterProtocols, type ProtocolSearchFilterState } from "@/components/clinical/protocol-search-filter"
-import { ApplicabilityBadges, CompatibilityNotice, PetTaxonomySummary, TaxonomyApplicabilityEditor } from "@/components/clinical/taxonomy-controls"
+import { ApplicabilityBadges, PetTaxonomySummary, TaxonomyApplicabilityEditor } from "@/components/clinical/taxonomy-controls"
 import { getPetTaxonomy, protocolMatchesPet } from "@/lib/animal-taxonomy"
 import { controlFrequencyPresets, reminderPresets, surgeryDurationPresets, surgeryFollowUpDurationPresets } from "@/lib/clinical-presets"
 import { cirugias, clientes, mascotas, profesionales } from "@/lib/mock-data"
@@ -376,7 +375,6 @@ export function ScheduleSurgeryForm({
   mode?: "page" | "inline"
   onInlineSaved?: (draft: { surgeryType: string; status: string; notes: string }) => void
 }) {
-  const veterinarios = profesionales.filter((profesional) => profesional.rol === "Veterinario")
   const petTaxonomy = useMemo(() => getPetTaxonomy(pet), [pet])
   const availableProtocols = useMemo(() => getSurgeryProtocolsForPet(pet), [pet])
   const compatibleCount = availableProtocols.filter((protocol) => protocolMatchesPet(protocol, petTaxonomy)).length
@@ -426,9 +424,14 @@ export function ScheduleSurgeryForm({
               label: `${protocol.name} - ${protocolMatchesPet(protocol, petTaxonomy) ? "compatible" : "no compatible"}`,
             }))}
           />
-          <Field label="Veterinario" placeholder={veterinarios.map((veterinario) => veterinario.nombre).join(" / ")} />
-          <Field label="Fecha" placeholder="AAAA-MM-DD" value={scheduledDate} onChange={setScheduledDate} />
-          <Field label="Hora" placeholder="HH:MM" />
+          <div className="space-y-2">
+            <Label>Fecha</Label>
+            <Input type="date" className="h-12 bg-background" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label>Hora</Label>
+            <Input type="time" className="h-12 bg-background" />
+          </div>
           <PresetSelect
             label="Duración estimada"
             value={procedureDurationId}
@@ -437,28 +440,9 @@ export function ScheduleSurgeryForm({
           />
           <Field label="Riesgo" placeholder="Bajo / Moderado / Alto" />
         </div>
-        <CompatibilityNotice protocol={selectedProtocol} pet={pet} />
         <div className="space-y-2">
           <Label>Notas preoperatorias</Label>
-          <Textarea placeholder="Ayuno, estudios requeridos, consentimiento, observaciones..." />
-        </div>
-
-        <div className="rounded-lg border border-primary/20 bg-background p-3 text-sm">
-          <div className="flex items-center gap-2 font-medium text-primary">
-            <Clock className="h-4 w-4" />
-            Estado inicial: agendada
-          </div>
-          <p className="mt-1 text-muted-foreground">Luego se podrá pasar a en preparación, realizada, cancelada o reprogramada.</p>
-          {selectedProtocol && (
-            <div className="mt-3 grid gap-2 md:grid-cols-3">
-              <Info label="Seguimiento" value={getSurgeryFollowUpDurationPreset(selectedProtocol).label} />
-              <Info label="Control" value={getSurgeryFrequencyPreset(selectedProtocol).label} />
-              <Info label="Recordatorio" value={getSurgeryReminderPreset(selectedProtocol).label} />
-              {followUps.slice(0, 4).map((control) => (
-                <Info key={control.id} label={control.title} value={`${control.dueDate} / aviso ${control.reminderDate || "-"}`} />
-              ))}
-            </div>
-          )}
+          <Textarea className="bg-white" placeholder="Ayuno, estudios requeridos, consentimiento, observaciones..." />
         </div>
 
         {mode === "inline" ? (

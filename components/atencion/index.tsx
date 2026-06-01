@@ -4,8 +4,8 @@ import { useState } from "react"
 import Link from "next/link"
 import type { LucideIcon } from "lucide-react"
 import {
-  ArrowLeft, ArrowRight, Bell, Check, CheckCircle2, ChevronDown, ChevronUp, ClipboardList, FileText, HeartPulse,
-  Pill, Plus, Scissors, ShieldAlert, Stethoscope, Syringe, AlertTriangle, X, Users, Upload, Trash2,
+  ArrowLeft, ArrowRight, Bell, Check, CheckCircle2, ClipboardList, FileText, HeartPulse,
+  Pill, Plus, Scissors, ShieldAlert, Stethoscope, Syringe, AlertTriangle, X, Upload, Trash2,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -143,7 +143,7 @@ function CirugiaAccionForm({ acciones, setAcciones }: { acciones: AccionesActiva
       <div className="space-y-2">
         <Label>Estado</Label>
         <Select value={data.status} onValueChange={(v) => setAcciones({ ...acciones, cirugia: { ...acciones.cirugia, data: { ...data, status: v } } })}>
-          <SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-11 rounded-xl bg-white"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="Programada">Programada</SelectItem>
             <SelectItem value="Pendiente confirmacion">Pendiente confirmacion</SelectItem>
@@ -153,7 +153,7 @@ function CirugiaAccionForm({ acciones, setAcciones }: { acciones: AccionesActiva
       </div>
       <div className="space-y-2">
         <Label>Observaciones</Label>
-        <Textarea className="rounded-xl" rows={2} placeholder="Detalles del procedimiento..." value={data.notes} onChange={(e) => setAcciones({ ...acciones, cirugia: { ...acciones.cirugia, data: { ...data, notes: e.target.value } } })} />
+        <Textarea className="rounded-xl bg-white" rows={2} placeholder="Detalles del procedimiento..." value={data.notes} onChange={(e) => setAcciones({ ...acciones, cirugia: { ...acciones.cirugia, data: { ...data, notes: e.target.value } } })} />
       </div>
     </div>
   )
@@ -180,7 +180,7 @@ function EstudioAccionForm({ acciones, setAcciones }: { acciones: AccionesActiva
         <div className="space-y-2">
           <Label>Tipo de estudio</Label>
           <Select value={data.studyType || "Estudio sin especificar"} onValueChange={(v) => setAcciones({ ...acciones, estudio: { ...acciones.estudio, data: { ...data, studyType: v } } })}>
-            <SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-11 rounded-xl bg-white"><SelectValue /></SelectTrigger>
             <SelectContent>
               {STUDY_TYPE_OPTIONS.map((type) => <SelectItem key={type} value={type}>{type}</SelectItem>)}
             </SelectContent>
@@ -189,7 +189,7 @@ function EstudioAccionForm({ acciones, setAcciones }: { acciones: AccionesActiva
         <div className="space-y-2">
           <Label>Estado</Label>
           <Select value={data.estado || "Resultado recibido"} onValueChange={(v) => setAcciones({ ...acciones, estudio: { ...acciones.estudio, data: { ...data, estado: v as typeof data.estado } } })}>
-            <SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-11 rounded-xl bg-white"><SelectValue /></SelectTrigger>
             <SelectContent>
               {STUDY_STATUS_OPTIONS.map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}
             </SelectContent>
@@ -198,7 +198,7 @@ function EstudioAccionForm({ acciones, setAcciones }: { acciones: AccionesActiva
       </div>
       <div className="space-y-2">
         <Label>Descripcion</Label>
-        <Textarea className="rounded-xl" rows={2} placeholder="Descripción o detalle del estudio..." value={data.description} onChange={(e) => setAcciones({ ...acciones, estudio: { ...acciones.estudio, data: { ...data, description: e.target.value } } })} />
+        <Textarea className="rounded-xl bg-white" rows={2} placeholder="Descripción o detalle del estudio..." value={data.description} onChange={(e) => setAcciones({ ...acciones, estudio: { ...acciones.estudio, data: { ...data, description: e.target.value } } })} />
       </div>
       <div className="space-y-3 rounded-xl border border-dashed bg-muted/25 p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -255,12 +255,12 @@ function RecordatorioAccionForm({ acciones, setAcciones }: { acciones: AccionesA
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <Label>Fecha del recordatorio</Label>
-          <Input type="date" className="h-11 rounded-xl" value={data.date} onChange={(e) => setAcciones({ ...acciones, recordatorio: { ...acciones.recordatorio, data: { ...data, date: e.target.value } } })} />
+          <Input type="date" className="h-11 rounded-xl bg-white" value={data.date} onChange={(e) => setAcciones({ ...acciones, recordatorio: { ...acciones.recordatorio, data: { ...data, date: e.target.value } } })} />
         </div>
         <div className="space-y-2">
           <Label>Tipo</Label>
           <Select value={data.reminderType} onValueChange={(v) => setAcciones({ ...acciones, recordatorio: { ...acciones.recordatorio, data: { ...data, reminderType: v } } })}>
-            <SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-11 rounded-xl bg-white"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="Control">Control</SelectItem>
               <SelectItem value="Vacuna">Vacuna</SelectItem>
@@ -273,7 +273,7 @@ function RecordatorioAccionForm({ acciones, setAcciones }: { acciones: AccionesA
       </div>
       <div className="space-y-2">
         <Label>Mensaje</Label>
-        <Textarea className="rounded-xl" rows={2} placeholder="Descripción del recordatorio..." value={data.message} onChange={(e) => setAcciones({ ...acciones, recordatorio: { ...acciones.recordatorio, data: { ...data, message: e.target.value } } })} />
+        <Textarea className="rounded-xl bg-white" rows={2} placeholder="Descripción del recordatorio..." value={data.message} onChange={(e) => setAcciones({ ...acciones, recordatorio: { ...acciones.recordatorio, data: { ...data, message: e.target.value } } })} />
       </div>
     </div>
   )
@@ -282,8 +282,6 @@ function RecordatorioAccionForm({ acciones, setAcciones }: { acciones: AccionesA
 function NuevaAtencionContent({ client, pet }: ClinicalActionSelection) {
   const [step, setStep] = useState<FlowStep>("atencion")
   const [savedResult, setSavedResult] = useState<{ eventIds: string[] } | null>(null)
-  const [atencionMode, setAtencionMode] = useState<AtencionMode>("breve")
-  const [showClinicalData, setShowClinicalData] = useState(false)
   const [alergiaInput, setAlergiaInput] = useState("")
   const [antecedenteInput, setAntecedenteInput] = useState("")
   const [condicionInput, setCondicionInput] = useState("")
@@ -320,7 +318,6 @@ function NuevaAtencionContent({ client, pet }: ClinicalActionSelection) {
   if (step === "resultado" && savedResult) {
     return (
       <div className="mx-auto max-w-3xl">
-        <StepIndicator currentStep="resultado" />
         <div className="flex flex-col items-center justify-center gap-6 py-12 text-center">
           <div className="flex h-24 w-24 items-center justify-center rounded-full bg-success/10">
             <CheckCircle2 className="h-12 w-12 text-success" />
@@ -358,7 +355,6 @@ function NuevaAtencionContent({ client, pet }: ClinicalActionSelection) {
     const accionesList = ACCIONES_CLINICAS.filter((a) => acciones[a.key as keyof AccionesActivas].activa)
     return (
       <div className="mx-auto max-w-5xl space-y-5">
-        <StepIndicator currentStep="resumen" />
         <div className="flex items-center gap-3">
           <Button variant="outline" className="h-11 rounded-xl px-4 font-bold" onClick={() => setStep("acciones")}>
             <ArrowLeft className="mr-2 h-4 w-4" />Volver a acciones
@@ -411,8 +407,7 @@ function NuevaAtencionContent({ client, pet }: ClinicalActionSelection) {
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 <div className="rounded-lg border p-4"><p className="text-xs text-muted-foreground mb-1">Clasificacion</p><p className="font-medium">{clasificacionLabel}</p></div>
                 <div className="rounded-lg border p-4"><p className="text-xs text-muted-foreground mb-1">Fecha</p><p className="font-medium">{base.date}</p></div>
-                <div className="rounded-lg border p-4"><p className="text-xs text-muted-foreground mb-1">Veterinario</p><p className="font-medium">{base.veterinarian}</p></div>
-                <div className="rounded-lg border p-4 sm:col-span-2 lg:col-span-3"><p className="text-xs text-muted-foreground mb-1">Motivo</p><p className="font-medium">{base.reason || "Atencion sin detalle"}</p></div>
+                <div className="rounded-lg border p-4 sm:col-span-2 lg:col-span-2"><p className="text-xs text-muted-foreground mb-1">Motivo</p><p className="font-medium">{base.reason || "Atencion sin detalle"}</p></div>
               </div>
               {base.diagnosis && <div className="rounded-lg border p-4"><p className="text-xs text-muted-foreground mb-1">Diagnostico</p><p className="font-medium">{base.diagnosis}</p></div>}
               {(base.weight || base.temperature) && (
@@ -454,7 +449,6 @@ function NuevaAtencionContent({ client, pet }: ClinicalActionSelection) {
   if (step === "acciones") {
     return (
       <div className="mx-auto max-w-5xl space-y-5">
-        <StepIndicator currentStep="acciones" />
         <div className="flex items-center gap-3">
           <Button variant="outline" className="h-11 rounded-xl px-4 font-bold" onClick={() => setStep("atencion")}>
             <ArrowLeft className="mr-2 h-4 w-4" />Volver a atención
@@ -594,53 +588,23 @@ function NuevaAtencionContent({ client, pet }: ClinicalActionSelection) {
 
   return (
     <div className="mx-auto max-w-5xl space-y-5">
-      <StepIndicator currentStep="atencion" />
 
       <Card>
         <CardHeader className="border-b">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2 text-xl">
-                <Stethoscope className="h-5 w-5 text-primary" />
-                Atención clínica
-              </CardTitle>
-              <CardDescription className="mt-1">
-                Registrá los datos de la atención para {pet.nombre}. Por ahora todos los campos de texto son opcionales.
-              </CardDescription>
-            </div>
+          <div>
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <Stethoscope className="h-5 w-5 text-primary" />
+              Atención clínica
+            </CardTitle>
+            <CardDescription className="mt-1">
+              Registrá los datos principales de la atención para {pet.nombre}. El motivo es obligatorio; el resto es opcional.
+            </CardDescription>
           </div>
         </CardHeader>
         <CardContent className="space-y-6 pt-6">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-muted-foreground">Registrando atención para {pet.nombre} · {client.nombre}</p>
-          </div>
-
-          <div>
-            <Label className="text-base font-semibold">Modo de atención</Label>
-            <p className="mt-1 text-sm text-muted-foreground">Breve para consultas rápidas. Completa para agregar síntomas, diagnóstico y más.</p>
-            <div className="mt-3 flex gap-3">
-              <button
-                type="button"
-                onClick={() => setAtencionMode("breve")}
-                className={`flex-1 rounded-xl border-2 p-4 text-center transition-all ${atencionMode === "breve" ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/30"}`}
-              >
-                <p className={`font-semibold ${atencionMode === "breve" ? "text-primary" : "text-foreground"}`}>Atención breve</p>
-                <p className="mt-1 text-xs text-muted-foreground">Fecha, veterinario y motivo</p>
-              </button>
-              <button
-                type="button"
-                onClick={() => setAtencionMode("completa")}
-                className={`flex-1 rounded-xl border-2 p-4 text-center transition-all ${atencionMode === "completa" ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/30"}`}
-              >
-                <p className={`font-semibold ${atencionMode === "completa" ? "text-primary" : "text-foreground"}`}>Atención completa</p>
-                <p className="mt-1 text-xs text-muted-foreground">Síntomas, diagnóstico, peso, temperatura y más</p>
-              </button>
-            </div>
-          </div>
-
           <div>
             <Label className="text-base font-semibold">Clasificación de la atención</Label>
-            <p className="mt-1 text-sm text-muted-foreground mb-3">La clasificación solo ordena el registro. Las acciones clínicas se agregan en el siguiente paso.</p>
+            <p className="mt-1 text-sm text-muted-foreground mb-3">Las acciones clínicas se agregan en el siguiente paso.</p>
             <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
               {CLASIFICACIONES.map((c) => {
                 const Icon = CLAS_ICON_MAP[c.icon]
@@ -651,7 +615,7 @@ function NuevaAtencionContent({ client, pet }: ClinicalActionSelection) {
                     type="button"
                     onClick={() => setBase((b) => ({ ...b, clasificacion: c.key }))}
                     className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 text-center transition-all ${
-                      isSelected ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/30 hover:bg-primary/5"
+                      isSelected ? "border-primary bg-primary/5 shadow-sm" : "border-border bg-white hover:border-primary/30 hover:bg-primary/5"
                     }`}
                   >
                     {Icon && <Icon className={`h-5 w-5 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />}
@@ -662,110 +626,75 @@ function NuevaAtencionContent({ client, pet }: ClinicalActionSelection) {
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold">Fecha</Label>
-              <Input type="date" className="h-12 rounded-xl" value={base.date} onChange={(e) => setBase((b) => ({ ...b, date: e.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold">Veterinario</Label>
-              <Select value={base.veterinarian} onValueChange={(v) => setBase((b) => ({ ...b, veterinarian: v }))}>
-                <SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger>
-                <SelectContent>{VETERINARIANS.map((v) => (<SelectItem key={v} value={v}>{v}</SelectItem>))}</SelectContent>
-              </Select>
-            </div>
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold">Fecha</Label>
+            <Input type="date" className="h-12 rounded-xl max-w-xs bg-white" value={base.date} onChange={(e) => setBase((b) => ({ ...b, date: e.target.value }))} />
           </div>
 
           <div className="space-y-2">
-            <Label className="text-sm font-semibold">Motivo de atención</Label>
-            <Input className="h-12 rounded-xl text-base" placeholder="Ej: Vacunacion anual, Control de rutina, Consulta por vomitos..." value={base.reason} onChange={(e) => setBase((b) => ({ ...b, reason: e.target.value }))} />
+            <Label>Observaciones</Label>
+            <Textarea className="rounded-xl bg-white" rows={2} placeholder="Notas adicionales de la atención..." value={base.notes} onChange={(e) => setBase((b) => ({ ...b, notes: e.target.value }))} />
           </div>
 
-          {atencionMode === "completa" && (
-            <div className="space-y-4 rounded-xl border bg-card p-5">
-              <h3 className="text-sm font-semibold">Datos clinicos opcionales</h3>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Sintomas</Label>
-                  <Textarea className="rounded-xl" rows={2} placeholder="Descripción de síntomas observados..." value={base.symptoms} onChange={(e) => setBase((b) => ({ ...b, symptoms: e.target.value }))} />
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-2">
+              <Label>Peso (kg)</Label>
+              <Input className="h-11 rounded-xl bg-white" placeholder="Ej: 28.5" value={base.weight} onChange={(e) => setBase((b) => ({ ...b, weight: e.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Temperatura (°C)</Label>
+              <Input className="h-11 rounded-xl bg-white" placeholder="Ej: 38.5" value={base.temperature} onChange={(e) => setBase((b) => ({ ...b, temperature: e.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Próximo control</Label>
+              <Input type="date" className="h-11 rounded-xl bg-white" value={base.nextControlDate} onChange={(e) => setBase((b) => ({ ...b, nextControlDate: e.target.value }))} />
+            </div>
+          </div>
+
+          <div className="rounded-xl border-2 border-warning/30 bg-warning/5 p-4">
+            <div className="mb-3 flex items-center gap-2">
+              <ShieldAlert className="h-4 w-4 text-warning" />
+              <span className="text-sm font-semibold">Datos importantes detectados durante la atención</span>
+            </div>
+            <p className="mb-4 text-xs text-muted-foreground">Si se agrega algo acá, se actualizará la ficha de la mascota y quedará registrado en la historia clínica.</p>
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2"><ShieldAlert className="h-4 w-4 text-destructive" /> Agregar alergia</Label>
+                <div className="flex gap-2">
+                  <Input className="h-10 flex-1 bg-white" placeholder="Ej: Penicilina, Pollo..." value={alergiaInput} onChange={(e) => setAlergiaInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); const v = alergiaInput.trim(); if (v) { setBase((b) => ({ ...b, newAlergias: [...b.newAlergias, v] })); setAlergiaInput("") } } }} />
+                  <Button type="button" variant="outline" className="h-10 px-3" onClick={() => { const v = alergiaInput.trim(); if (v) { setBase((b) => ({ ...b, newAlergias: [...b.newAlergias, v] })); setAlergiaInput("") } }}><Plus className="mr-1 h-4 w-4" />Agregar</Button>
                 </div>
-                <div className="space-y-2">
-                  <Label>Diagnostico</Label>
-                  <Textarea className="rounded-xl" rows={2} placeholder="Diagnostico clinico..." value={base.diagnosis} onChange={(e) => setBase((b) => ({ ...b, diagnosis: e.target.value }))} />
+                {base.newAlergias.length > 0 && (
+                  <div className="flex flex-wrap gap-2">{base.newAlergias.map((a, i) => (
+                    <span key={i} className="inline-flex items-center gap-1 rounded-full border border-destructive/30 bg-destructive/10 px-3 py-1 text-sm font-medium text-destructive">{a}<button onClick={() => setBase((b) => ({ ...b, newAlergias: b.newAlergias.filter((_, idx) => idx !== i) }))} className="ml-1 rounded-full p-0.5 hover:bg-black/10"><X className="h-3 w-3" /></button></span>
+                  ))}</div>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2"><HeartPulse className="h-4 w-4 text-warning" /> Agregar antecedente</Label>
+                <div className="flex gap-2">
+                  <Input className="h-10 flex-1 bg-white" placeholder="Ej: Convulsiones anteriores..." value={antecedenteInput} onChange={(e) => setAntecedenteInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); const v = antecedenteInput.trim(); if (v) { setBase((b) => ({ ...b, newAntecedentes: [...b.newAntecedentes, v] })); setAntecedenteInput("") } } }} />
+                  <Button type="button" variant="outline" className="h-10 px-3" onClick={() => { const v = antecedenteInput.trim(); if (v) { setBase((b) => ({ ...b, newAntecedentes: [...b.newAntecedentes, v] })); setAntecedenteInput("") } }}><Plus className="mr-1 h-4 w-4" />Agregar</Button>
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>Peso (kg)</Label>
-                    <Input className="h-11 rounded-xl" placeholder="Ej: 28.5" value={base.weight} onChange={(e) => setBase((b) => ({ ...b, weight: e.target.value }))} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Temperatura ( °C)</Label>
-                    <Input className="h-11 rounded-xl" placeholder="Ej: 38.5" value={base.temperature} onChange={(e) => setBase((b) => ({ ...b, temperature: e.target.value }))} />
-                  </div>
+                {base.newAntecedentes.length > 0 && (
+                  <div className="flex flex-wrap gap-2">{base.newAntecedentes.map((a, i) => (
+                    <span key={i} className="inline-flex items-center gap-1 rounded-full border border-warning/30 bg-warning/10 px-3 py-1 text-sm font-medium text-warning">{a}<button onClick={() => setBase((b) => ({ ...b, newAntecedentes: b.newAntecedentes.filter((_, idx) => idx !== i) }))} className="ml-1 rounded-full p-0.5 hover:bg-black/10"><X className="h-3 w-3" /></button></span>
+                  ))}</div>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2"><HeartPulse className="h-4 w-4 text-orange-600" /> Condición crónica</Label>
+                <div className="flex gap-2">
+                  <Input className="h-10 flex-1 bg-white" placeholder="Ej: Insuficiencia renal crónica..." value={condicionInput} onChange={(e) => setCondicionInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); const v = condicionInput.trim(); if (v) { setBase((b) => ({ ...b, newCondicionesCronicas: [...b.newCondicionesCronicas, v] })); setCondicionInput("") } } }} />
+                  <Button type="button" variant="outline" className="h-10 px-3" onClick={() => { const v = condicionInput.trim(); if (v) { setBase((b) => ({ ...b, newCondicionesCronicas: [...b.newCondicionesCronicas, v] })); setCondicionInput("") } }}><Plus className="mr-1 h-4 w-4" />Agregar</Button>
                 </div>
-                <div className="space-y-2">
-                  <Label>Proximo control</Label>
-                  <Input type="date" className="h-11 rounded-xl" value={base.nextControlDate} onChange={(e) => setBase((b) => ({ ...b, nextControlDate: e.target.value }))} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Observaciones</Label>
-                  <Textarea className="rounded-xl" rows={2} placeholder="Notas adicionales..." value={base.notes} onChange={(e) => setBase((b) => ({ ...b, notes: e.target.value }))} />
-                </div>
+                {base.newCondicionesCronicas.length > 0 && (
+                  <div className="flex flex-wrap gap-2">{base.newCondicionesCronicas.map((a, i) => (
+                    <span key={i} className="inline-flex items-center gap-1 rounded-full border border-orange-300/30 bg-orange-50 px-3 py-1 text-sm font-medium text-orange-700">{a}<button onClick={() => setBase((b) => ({ ...b, newCondicionesCronicas: b.newCondicionesCronicas.filter((_, idx) => idx !== i) }))} className="ml-1 rounded-full p-0.5 hover:bg-black/10"><X className="h-3 w-3" /></button></span>
+                  ))}</div>
+                )}
               </div>
             </div>
-          )}
-
-          <div className="rounded-xl border-2 border-warning/30 bg-warning/5">
-            <button type="button" className="flex w-full items-center justify-between p-4 text-left" onClick={() => setShowClinicalData(!showClinicalData)}>
-              <span className="flex items-center gap-2 text-sm font-semibold">
-                <ShieldAlert className="h-4 w-4 text-warning" />
-                Datos importantes detectados durante la atención
-              </span>
-              {showClinicalData ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-            </button>
-            {showClinicalData && (
-              <div className="space-y-4 px-4 pb-4">
-                <p className="text-xs text-muted-foreground">Se actualizarán la ficha de la mascota y se registrarán como eventos en la historia clínica.</p>
-                <div className="space-y-3">
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2"><ShieldAlert className="h-4 w-4 text-destructive" /> Agregar alergia</Label>
-                    <div className="flex gap-2">
-                      <Input className="h-10 flex-1" placeholder="Ej: Penicilina, Pollo..." value={alergiaInput} onChange={(e) => setAlergiaInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); const v = alergiaInput.trim(); if (v) { setBase((b) => ({ ...b, newAlergias: [...b.newAlergias, v] })); setAlergiaInput("") } } }} />
-                      <Button type="button" variant="outline" className="h-10 px-3" onClick={() => { const v = alergiaInput.trim(); if (v) { setBase((b) => ({ ...b, newAlergias: [...b.newAlergias, v] })); setAlergiaInput("") } }}><Plus className="mr-1 h-4 w-4" />Agregar</Button>
-                    </div>
-                    {base.newAlergias.length > 0 && (
-                      <div className="flex flex-wrap gap-2">{base.newAlergias.map((a, i) => (
-                        <span key={i} className="inline-flex items-center gap-1 rounded-full border border-destructive/30 bg-destructive/10 px-3 py-1 text-sm font-medium text-destructive">{a}<button onClick={() => setBase((b) => ({ ...b, newAlergias: b.newAlergias.filter((_, idx) => idx !== i) }))} className="ml-1 rounded-full p-0.5 hover:bg-black/10"><X className="h-3 w-3" /></button></span>
-                      ))}</div>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2"><HeartPulse className="h-4 w-4 text-warning" /> Agregar antecedente</Label>
-                    <div className="flex gap-2">
-                      <Input className="h-10 flex-1" placeholder="Ej: Convulsiones anteriores..." value={antecedenteInput} onChange={(e) => setAntecedenteInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); const v = antecedenteInput.trim(); if (v) { setBase((b) => ({ ...b, newAntecedentes: [...b.newAntecedentes, v] })); setAntecedenteInput("") } } }} />
-                      <Button type="button" variant="outline" className="h-10 px-3" onClick={() => { const v = antecedenteInput.trim(); if (v) { setBase((b) => ({ ...b, newAntecedentes: [...b.newAntecedentes, v] })); setAntecedenteInput("") } }}><Plus className="mr-1 h-4 w-4" />Agregar</Button>
-                    </div>
-                    {base.newAntecedentes.length > 0 && (
-                      <div className="flex flex-wrap gap-2">{base.newAntecedentes.map((a, i) => (
-                        <span key={i} className="inline-flex items-center gap-1 rounded-full border border-warning/30 bg-warning/10 px-3 py-1 text-sm font-medium text-warning">{a}<button onClick={() => setBase((b) => ({ ...b, newAntecedentes: b.newAntecedentes.filter((_, idx) => idx !== i) }))} className="ml-1 rounded-full p-0.5 hover:bg-black/10"><X className="h-3 w-3" /></button></span>
-                      ))}</div>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2"><HeartPulse className="h-4 w-4 text-orange-600" /> Condición crónica</Label>
-                    <div className="flex gap-2">
-                      <Input className="h-10 flex-1" placeholder="Ej: Insuficiencia renal crónica..." value={condicionInput} onChange={(e) => setCondicionInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); const v = condicionInput.trim(); if (v) { setBase((b) => ({ ...b, newCondicionesCronicas: [...b.newCondicionesCronicas, v] })); setCondicionInput("") } } }} />
-                      <Button type="button" variant="outline" className="h-10 px-3" onClick={() => { const v = condicionInput.trim(); if (v) { setBase((b) => ({ ...b, newCondicionesCronicas: [...b.newCondicionesCronicas, v] })); setCondicionInput("") } }}><Plus className="mr-1 h-4 w-4" />Agregar</Button>
-                    </div>
-                    {base.newCondicionesCronicas.length > 0 && (
-                      <div className="flex flex-wrap gap-2">{base.newCondicionesCronicas.map((a, i) => (
-                        <span key={i} className="inline-flex items-center gap-1 rounded-full border border-orange-300/30 bg-orange-50 px-3 py-1 text-sm font-medium text-orange-700">{a}<button onClick={() => setBase((b) => ({ ...b, newCondicionesCronicas: b.newCondicionesCronicas.filter((_, idx) => idx !== i) }))} className="ml-1 rounded-full p-0.5 hover:bg-black/10"><X className="h-3 w-3" /></button></span>
-                      ))}</div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
           <div className="pt-2 flex justify-end">

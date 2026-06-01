@@ -195,11 +195,11 @@ export function StudyUploadForm({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 pt-5">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-3">
           <div className="space-y-2">
             <Label>Tipo</Label>
             <Select value={tipo} onValueChange={setTipo}>
-              <SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-12 rounded-xl bg-white"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {STUDY_TYPE_OPTIONS.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}
               </SelectContent>
@@ -207,22 +207,12 @@ export function StudyUploadForm({
           </div>
           <div className="space-y-2">
             <Label>Fecha</Label>
-            <Input type="date" className="h-12 rounded-xl" value={fecha} onChange={(event) => setFecha(event.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label>Profesional</Label>
-            <Select value={profesional} onValueChange={setProfesional}>
-              <SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {VETERINARIANS.map((vet) => <SelectItem key={vet} value={vet}>{vet}</SelectItem>)}
-                <SelectItem value="Equipo clinico">Equipo clinico</SelectItem>
-              </SelectContent>
-            </Select>
+            <Input type="date" className="h-12 rounded-xl bg-white" value={fecha} onChange={(event) => setFecha(event.target.value)} />
           </div>
           <div className="space-y-2">
             <Label>Estado</Label>
             <Select value={estado} onValueChange={(value) => setEstado(value as StudyFileStatus)}>
-              <SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-12 rounded-xl bg-white"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {STUDY_STATUS_OPTIONS.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}
               </SelectContent>
@@ -233,7 +223,7 @@ export function StudyUploadForm({
         <div className="space-y-2">
           <Label>Descripcion</Label>
           <Textarea
-            className="rounded-xl"
+            className="rounded-xl bg-white"
             rows={2}
             placeholder="Motivo, region evaluada, hallazgo o comentario del archivo..."
             value={descripcion}
@@ -248,7 +238,7 @@ export function StudyUploadForm({
                 <Label>Archivo</Label>
                 <p className="text-sm text-muted-foreground">PDF, imagenes o documentos comunes. Puede cargarse mas de uno.</p>
               </div>
-              <Button type="button" variant="outline" className="relative h-12 overflow-hidden rounded-xl px-4 font-bold">
+              <Button type="button" variant="outline" className="relative h-12 overflow-hidden rounded-xl bg-white px-4 font-bold">
                 <Upload className="mr-2 h-4 w-4" />
                 Seleccionar archivos
                 <input

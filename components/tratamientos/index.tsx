@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useMemo, useState } from "react"
 import type { LucideIcon } from "lucide-react"
-import { Calendar, CheckCircle, ClipboardList, Pause, Pill, Plus, Settings, Stethoscope, XCircle } from "lucide-react"
+import { CheckCircle, ClipboardList, Pause, Pill, Plus, Settings, Stethoscope, XCircle } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -19,17 +19,15 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { ClinicalActionFlow } from "@/components/clinical/action-flow"
 import { ProtocolSearchFilter, defaultFilterState, filterProtocols, type ProtocolSearchFilterState } from "@/components/clinical/protocol-search-filter"
-import { ApplicabilityBadges, CompatibilityNotice, PetTaxonomySummary, TaxonomyApplicabilityEditor } from "@/components/clinical/taxonomy-controls"
+import { ApplicabilityBadges, PetTaxonomySummary, TaxonomyApplicabilityEditor } from "@/components/clinical/taxonomy-controls"
 import { getPetTaxonomy, protocolMatchesPet } from "@/lib/animal-taxonomy"
 import { controlFrequencyPresets, durationPresets, reminderPresets } from "@/lib/clinical-presets"
 import { clientes, mascotas } from "@/lib/mock-data"
 import {
   activeTreatmentsSeed,
   buildActiveTreatmentView,
-  calculateTreatmentEndDate,
   calculateNextTreatmentControl,
   formatControlFrequency,
-  generateTreatmentControls,
   getTreatmentDurationPreset,
   getTreatmentFrequencyPreset,
   getTreatmentProtocolsForPet,
@@ -146,14 +144,6 @@ export function TreatmentRegistrationForm({
     () => calculateNextTreatmentControl(startedAt, selectedProtocolId),
     [startedAt, selectedProtocolId],
   )
-  const estimatedEndDate = useMemo(
-    () => calculateTreatmentEndDate(startedAt, selectedProtocolId),
-    [startedAt, selectedProtocolId],
-  )
-  const generatedControls = useMemo(
-    () => generateTreatmentControls(startedAt, selectedProtocolId),
-    [startedAt, selectedProtocolId],
-  )
   const canSave = Boolean(client.id && pet.id && selectedProtocol && startedAt)
 
   return (
@@ -197,11 +187,12 @@ export function TreatmentRegistrationForm({
               </SelectContent>
             </Select>
           </div>
-          <Field label="Fecha de inicio" value={startedAt} onChange={setStartedAt} placeholder="AAAA-MM-DD" />
+          <div className="space-y-2">
+            <Label>Fecha de inicio</Label>
+            <Input type="date" className="h-12 bg-background" value={startedAt} onChange={(e) => setStartedAt(e.target.value)} />
+          </div>
           <Field label="Diagnostico / motivo" placeholder="Diagnostico clinico" />
-          <Field label="Responsable" placeholder="Dr./Dra." />
         </div>
-        <CompatibilityNotice protocol={selectedProtocol} pet={pet} />
 
         <Card className="border-primary/25 bg-background">
           <CardHeader>
@@ -219,42 +210,6 @@ export function TreatmentRegistrationForm({
           </CardContent>
         </Card>
 
-        {selectedProtocol && (
-          <Card className="border-primary/25 bg-background">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Calendar className="h-5 w-5 text-primary" />
-                Seguimiento preparado
-              </CardTitle>
-              <CardDescription>Basado en el protocolo {selectedProtocol.name}.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-3 md:grid-cols-3">
-              <Info label="Duracion estimada" value={getTreatmentDurationPreset(selectedProtocol).label} />
-              <Info
-                label="Fecha final"
-                value={selectedProtocol.durationType === "lifetime" ? "Sin fecha final automatica" : formatDate(estimatedEndDate)}
-              />
-              <Info label="Frecuencia de control" value={formatControlFrequency(selectedProtocol)} />
-              <Info label="Recordatorio" value={getTreatmentReminderPreset(selectedProtocol).label} />
-              <Info label="Proximo control" value={formatDate(nextControl)} />
-              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 md:col-span-3">
-                <p className="font-medium text-primary">Historia clinica y seguimiento activo</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Al guardar, el registro queda preparado para la historia clinica de {pet.nombre}, actividad del dia y controles futuros.
-                </p>
-                <div className="mt-3 grid gap-2 md:grid-cols-3">
-                  {generatedControls.slice(0, 6).map((control) => (
-                    <Info
-                      key={control.id}
-                      label={control.title}
-                      value={`Control ${formatDate(control.dueDate)} / aviso ${formatDate(control.reminderDate)}`}
-                    />
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         <div className="space-y-2">
           <Label>Observaciones y seguimiento</Label>

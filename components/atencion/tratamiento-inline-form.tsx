@@ -6,14 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { VETERINARIANS } from "@/lib/clinical-history-builder"
 import type { TratamientoAtencionDraft } from "@/lib/atencion-store"
 
 interface TratamientoInlineFormProps {
@@ -26,7 +18,7 @@ interface TratamientoInlineFormProps {
 export function TratamientoInlineForm({ petId, clientId, onSaved, onCancel }: TratamientoInlineFormProps) {
   const [form, setForm] = useState({
     date: new Date().toISOString().slice(0, 10),
-    veterinarian: VETERINARIANS[0] || "",
+    veterinarian: "",
     diagnosis: "",
     medicamento: "",
     dosis: "",
@@ -56,22 +48,9 @@ export function TratamientoInlineForm({ petId, clientId, onSaved, onCancel }: Tr
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2">
-          <Label>Fecha</Label>
-          <Input type="date" className="h-11 rounded-xl" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} />
-        </div>
-        <div className="space-y-2">
-          <Label>Veterinario</Label>
-          <Select value={form.veterinarian} onValueChange={(v) => setForm((f) => ({ ...f, veterinarian: v }))}>
-            <SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {VETERINARIANS.map((v) => (
-                <SelectItem key={v} value={v}>{v}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      <div className="space-y-2">
+        <Label>Fecha</Label>
+        <Input type="date" className="h-11 rounded-xl" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} />
       </div>
 
       <div className="space-y-2">

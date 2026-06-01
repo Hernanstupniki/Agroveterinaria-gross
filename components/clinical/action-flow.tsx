@@ -214,97 +214,71 @@ export function ClinicalActionFlow({
 
       {selectedClient && selectedPet && (
         <div className="space-y-4">
-          <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-primary/6 via-card to-yellow-50/40 shadow-sm">
-            <CardContent className="p-3 sm:p-4">
-              <div className="grid gap-3 xl:grid-cols-[minmax(230px,0.9fr)_minmax(340px,1.25fr)_210px] xl:items-start">
-                <div className="flex min-w-0 gap-3">
-                  <Avatar className="h-11 w-11 shrink-0 ring-2 ring-primary/10">
-                    <AvatarFallback className="bg-primary text-base font-bold text-primary-foreground">
+          <Card className="overflow-hidden border-primary/20 shadow-sm">
+            <CardContent className="p-0">
+              <div className="grid xl:grid-cols-[auto_1fr_auto] xl:items-center divide-y xl:divide-y-0 xl:divide-x">
+                <div className="flex items-center gap-3 px-4 py-3">
+                  <Avatar className="h-10 w-10 shrink-0 ring-2 ring-primary/10">
+                    <AvatarFallback className="bg-primary text-sm font-bold text-primary-foreground">
                       {selectedPet.nombre[0]}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="min-w-0 space-y-1">
+                  <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="text-xl font-bold leading-tight">{selectedPet.nombre}</h2>
+                      <h2 className="text-base font-bold leading-tight">{selectedPet.nombre}</h2>
                       {selectedPet.estadoGeneral !== "Saludable" && (
-                        <Badge className="rounded-full bg-destructive px-2.5 py-0.5 text-xs text-destructive-foreground">
+                        <Badge className="rounded-full bg-destructive px-2 py-0 text-xs text-destructive-foreground">
                           {selectedPet.estadoGeneral}
                         </Badge>
                       )}
                     </div>
-                    <p className="text-sm font-semibold text-foreground">
-                      {selectedPet.especie} · {selectedPet.raza}
-                    </p>
-                    <p className="text-xs leading-relaxed text-muted-foreground sm:text-sm">
-                      {selectedPet.edad} · {selectedPet.sexo} · {selectedPet.peso} kg · {selectedPet.esterilizado ? "Esterilizado" : "No esterilizado"}
-                    </p>
-                    <p className="hidden">
-                      <span className="font-semibold text-foreground">Dueño:</span> {selectedClient.nombre} · {selectedClient.telefono} · {selectedClient.email}
-                    </p>
-                    {(selectedPet.alergias.length > 0 || selectedPet.antecedentes.length > 0) && (
-                      <p className="hidden">
-                        {selectedPet.alergias.length > 0 && (
-                          <>
-                            <span className="font-semibold text-destructive">Alergias:</span> {selectedPet.alergias.join(", ")}
-                          </>
-                        )}
-                        {selectedPet.alergias.length > 0 && selectedPet.antecedentes.length > 0 && " · "}
-                        {selectedPet.antecedentes.length > 0 && (
-                          <>
-                            <span className="font-semibold text-warning">Antecedentes:</span> {selectedPet.antecedentes.join(", ")}
-                          </>
-                        )}
-                      </p>
-                    )}
-                    <p className="hidden">
-                      <span className="font-semibold text-foreground">Última consulta:</span> {selectedPet.ultimaConsulta || "-"}
-                      <span className="mx-1">·</span>
-                      <span className="font-semibold text-foreground">Último diagnóstico:</span> {selectedPet.ultimoDiagnostico || "-"}
+                    <p className="text-xs text-muted-foreground">{selectedPet.especie} · {selectedPet.raza}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {selectedPet.edad} · {selectedPet.sexo} · {selectedPet.peso} kg{selectedPet.esterilizado ? " · Esterilizado" : ""}
                     </p>
                   </div>
                 </div>
 
-                <div className="min-w-0 space-y-2 text-sm">
-                  <p className="break-words text-muted-foreground">
-                    <span className="font-semibold text-foreground">Dueño:</span> {selectedClient.nombre} · {selectedClient.telefono} · <span className="text-xs sm:text-sm">{selectedClient.email}</span>
+                <div className="min-w-0 space-y-1.5 px-4 py-3">
+                  <p className="text-xs text-muted-foreground">
+                    <span className="font-semibold text-foreground">{selectedClient.nombre}</span>
+                    {" · "}{selectedClient.telefono}
                   </p>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedPet.alergias.length > 0 && (
-                      <span className="rounded-full border border-destructive/25 bg-destructive/10 px-3 py-1 text-xs font-bold text-destructive sm:text-sm">
-                        Alergia: {selectedPet.alergias.join(", ")}
-                      </span>
-                    )}
-                    {selectedPet.antecedentes.length > 0 && (
-                      <span className="rounded-full border border-warning/30 bg-warning/10 px-3 py-1 text-xs font-semibold text-warning sm:text-sm">
-                        Antecedente: {selectedPet.antecedentes.join(", ")}
-                      </span>
-                    )}
-                  </div>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    <p className="rounded-xl bg-muted/45 px-3 py-2 text-xs leading-tight text-muted-foreground sm:text-sm">
-                      <span className="font-semibold text-foreground">Última consulta:</span> {selectedPet.ultimaConsulta || "-"}
-                    </p>
-                    <p className="rounded-xl bg-muted/45 px-3 py-2 text-xs leading-tight text-muted-foreground sm:text-sm">
-                      <span className="font-semibold text-foreground">Último diagnóstico:</span> {selectedPet.ultimoDiagnostico || "-"}
-                    </p>
-                  </div>
+                  {(selectedPet.alergias.length > 0 || selectedPet.antecedentes.length > 0) && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedPet.alergias.length > 0 && (
+                        <span className="rounded-full border border-destructive/25 bg-destructive/10 px-2.5 py-0.5 text-xs font-bold text-destructive">
+                          Alergia: {selectedPet.alergias.join(", ")}
+                        </span>
+                      )}
+                      {selectedPet.antecedentes.length > 0 && (
+                        <span className="rounded-full border border-warning/30 bg-warning/10 px-2.5 py-0.5 text-xs font-semibold text-warning">
+                          Antecedente: {selectedPet.antecedentes.join(", ")}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    <span className="font-semibold text-foreground">Última consulta:</span> {selectedPet.ultimaConsulta || "-"}
+                    <span className="mx-1.5">·</span>
+                    <span className="font-semibold text-foreground">Diagnóstico:</span> {selectedPet.ultimoDiagnostico || "-"}
+                  </p>
                 </div>
 
-                <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-1">
-                  <Button className="min-h-10 rounded-xl bg-primary px-3 py-2 text-center text-sm font-bold leading-tight shadow-sm shadow-primary/15 hover:bg-primary/90 whitespace-normal" onClick={() => setSelectedPetId(null)}>
-                    <UserPlus className="mr-2 h-4 w-4 shrink-0" />
+                <div className="flex flex-wrap xl:flex-col gap-2 px-4 py-3">
+                  <Button size="sm" className="h-8 rounded-lg bg-primary px-3 text-xs font-bold hover:bg-primary/90" onClick={() => setSelectedPetId(null)}>
                     Cambiar mascota
                   </Button>
-                  <Button variant="outline" className="min-h-10 rounded-xl px-3 py-2 text-center text-sm font-semibold leading-tight whitespace-normal" asChild>
+                  <Button size="sm" variant="outline" className="h-8 rounded-lg px-3 text-xs font-semibold" asChild>
                     <a href={`/mascotas/${selectedPet.id}`} target="_blank" rel="noopener noreferrer">
-                      <FileText className="mr-2 h-4 w-4 shrink-0" />
-                      Ver ficha clínica
+                      <FileText className="mr-1.5 h-3.5 w-3.5" />
+                      Ver ficha
                     </a>
                   </Button>
-                  <Button variant="outline" className="min-h-10 rounded-xl px-3 py-2 text-center text-sm font-semibold leading-tight whitespace-normal" asChild>
+                  <Button size="sm" variant="outline" className="h-8 rounded-lg px-3 text-xs font-semibold" asChild>
                     <Link href={`/historial-clinico/ver?clienteId=${selectedClient.id}&mascotaId=${selectedPet.id}`} target="_blank" rel="noopener noreferrer">
-                      <ClipboardList className="mr-2 h-4 w-4 shrink-0" />
-                      Ver historia clínica
+                      <ClipboardList className="mr-1.5 h-3.5 w-3.5" />
+                      Historia clínica
                     </Link>
                   </Button>
                 </div>

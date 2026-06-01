@@ -186,10 +186,15 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
   const [reminderStatusFilter, setReminderStatusFilter] = useState("todos")
   const [reminderTypeFilter, setReminderTypeFilter] = useState("todos")
   const [reminderDateFilter, setReminderDateFilter] = useState("")
+  const [reminderDateTo, setReminderDateTo] = useState("")
+  const [surgeryDateFrom, setSurgeryDateFrom] = useState("")
+  const [surgeryDateTo, setSurgeryDateTo] = useState("")
+  const [surgeryVetFilter, setSurgeryVetFilter] = useState("todos")
+  const [treatmentDateFrom, setTreatmentDateFrom] = useState("")
+  const [treatmentDateTo, setTreatmentDateTo] = useState("")
   const [estudiosMascota, setEstudiosMascota] = useState<StudyFileRecord[]>(() => getStudyFilesForPet(mascota.id))
   const [expandedHistoryItems, setExpandedHistoryItems] = useState<Array<string | number>>([])
   const [expandedResumenItems, setExpandedResumenItems] = useState<Array<string | number>>([])
-  const [expandedTreatmentItems, setExpandedTreatmentItems] = useState<Array<string | number>>([])
   const [timelineRefreshKey, setTimelineRefreshKey] = useState(0)
 
   useEffect(() => {
@@ -259,12 +264,15 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
         !term ||
         item.medicamento.toLowerCase().includes(term) ||
         item.diagnostico.toLowerCase().includes(term) ||
-        item.indicaciones.toLowerCase().includes(term)
+        item.indicaciones.toLowerCase().includes(term) ||
+        item.estado.toLowerCase().includes(term)
       const matchesStatus = treatmentStatusFilter === "todos" || item.estado === treatmentStatusFilter
       const matchesProtocol = treatmentProtocolFilter === "todos" || item.medicamento === treatmentProtocolFilter
-      return matchesSearch && matchesStatus && matchesProtocol
+      const matchesDateFrom = !treatmentDateFrom || (item.proximoControl || "") >= treatmentDateFrom
+      const matchesDateTo = !treatmentDateTo || (item.proximoControl || "") <= treatmentDateTo
+      return matchesSearch && matchesStatus && matchesProtocol && matchesDateFrom && matchesDateTo
     })
-  }, [tratamientosMascota, treatmentSearch, treatmentStatusFilter, treatmentProtocolFilter])
+  }, [tratamientosMascota, treatmentSearch, treatmentStatusFilter, treatmentProtocolFilter, treatmentDateFrom, treatmentDateTo])
   const filteredSurgeryRows = useMemo(() => {
     const term = surgerySearch.toLowerCase().trim()
     return cirugiasMascota.filter((item) => {
@@ -272,12 +280,16 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
         !term ||
         item.tipo.toLowerCase().includes(term) ||
         item.veterinario.toLowerCase().includes(term) ||
-        item.estado.toLowerCase().includes(term)
+        item.estado.toLowerCase().includes(term) ||
+        item.fecha.toLowerCase().includes(term)
       const matchesStatus = surgeryStatusFilter === "todos" || item.estado === surgeryStatusFilter
       const matchesProcedure = surgeryProcedureFilter === "todos" || item.tipo === surgeryProcedureFilter
-      return matchesSearch && matchesStatus && matchesProcedure
+      const matchesVet = surgeryVetFilter === "todos" || item.veterinario === surgeryVetFilter
+      const matchesDateFrom = !surgeryDateFrom || item.fecha >= surgeryDateFrom
+      const matchesDateTo = !surgeryDateTo || item.fecha <= surgeryDateTo
+      return matchesSearch && matchesStatus && matchesProcedure && matchesVet && matchesDateFrom && matchesDateTo
     })
-  }, [cirugiasMascota, surgerySearch, surgeryStatusFilter, surgeryProcedureFilter])
+  }, [cirugiasMascota, surgerySearch, surgeryStatusFilter, surgeryProcedureFilter, surgeryVetFilter, surgeryDateFrom, surgeryDateTo])
   const filteredReminderRows = useMemo(() => {
     const term = reminderSearch.toLowerCase().trim()
     return recordatoriosConBucket.filter((item) => {
@@ -285,14 +297,15 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
         !term ||
         item.tipo.toLowerCase().includes(term) ||
         item.destinatario.toLowerCase().includes(term) ||
-        item.mensaje.toLowerCase().includes(term)
+        item.mensaje.toLowerCase().includes(term) ||
+        item.estado.toLowerCase().includes(term)
       const matchesStatus = reminderStatusFilter === "todos" || item.bucket === reminderStatusFilter || item.estado === reminderStatusFilter
       const matchesType = reminderTypeFilter === "todos" || item.tipo === reminderTypeFilter
-      const matchesDate = !reminderDateFilter || item.fechaProgramada === reminderDateFilter
-      return matchesSearch && matchesStatus && matchesType && matchesDate
+      const matchesDateFrom = !reminderDateFilter || item.fechaProgramada >= reminderDateFilter
+      const matchesDateTo = !reminderDateTo || item.fechaProgramada <= reminderDateTo
+      return matchesSearch && matchesStatus && matchesType && matchesDateFrom && matchesDateTo
     })
-  }, [recordatoriosConBucket, reminderSearch, reminderStatusFilter, reminderTypeFilter, reminderDateFilter])
-  const treatmentHistoryEventos = allTimelineEvents.filter((event) => event.tipo === "Tratamiento")
+  }, [recordatoriosConBucket, reminderSearch, reminderStatusFilter, reminderTypeFilter, reminderDateFilter, reminderDateTo])
   const timelinePreview = useMemo(
     () => [...allTimelineEvents].sort((a, b) => b.fecha.localeCompare(a.fecha)).slice(0, 4),
     [allTimelineEvents],
@@ -379,6 +392,39 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
     setHistoryStatusFilter("todos")
     setHistoryDateFrom("")
     setHistoryDateTo("")
+  }
+
+  const clearVaccineFilters = () => {
+    setVaccineSearch("")
+    setVaccineStatusFilter("todos")
+    setVaccineTypeFilter("todos")
+    setVaccineDateFrom("")
+    setVaccineDateTo("")
+  }
+
+  const clearTreatmentFilters = () => {
+    setTreatmentSearch("")
+    setTreatmentStatusFilter("todos")
+    setTreatmentProtocolFilter("todos")
+    setTreatmentDateFrom("")
+    setTreatmentDateTo("")
+  }
+
+  const clearSurgeryFilters = () => {
+    setSurgerySearch("")
+    setSurgeryStatusFilter("todos")
+    setSurgeryProcedureFilter("todos")
+    setSurgeryDateFrom("")
+    setSurgeryDateTo("")
+    setSurgeryVetFilter("todos")
+  }
+
+  const clearReminderFilters = () => {
+    setReminderSearch("")
+    setReminderStatusFilter("todos")
+    setReminderTypeFilter("todos")
+    setReminderDateFilter("")
+    setReminderDateTo("")
   }
 
   const quickActions = [
@@ -748,8 +794,8 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
               </div>
             </CardHeader>
             <CardContent className="space-y-4 pt-5">
-              <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-[minmax(0,1.3fr)_160px_190px_160px_160px]">
-                <CompactSearchInput value={vaccineSearch} onChange={setVaccineSearch} placeholder="Buscar vacuna, dosis u observacion..." />
+              <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-[minmax(0,1.3fr)_160px_190px_160px_160px_auto]">
+                <CompactSearchInput value={vaccineSearch} onChange={setVaccineSearch} placeholder="Buscar vacuna, dosis o estado…" />
                 <Select value={vaccineStatusFilter} onValueChange={setVaccineStatusFilter}>
                   <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="Estado" /></SelectTrigger>
                   <SelectContent>
@@ -766,6 +812,7 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
                 </Select>
                 <Input type="date" className="h-11 rounded-xl" value={vaccineDateFrom} onChange={(event) => setVaccineDateFrom(event.target.value)} aria-label="Fecha desde" />
                 <Input type="date" className="h-11 rounded-xl" value={vaccineDateTo} onChange={(event) => setVaccineDateTo(event.target.value)} aria-label="Fecha hasta" />
+                <Button variant="outline" size="sm" className="h-11 rounded-xl px-3 text-xs font-semibold" onClick={clearVaccineFilters}>Limpiar</Button>
               </div>
               <CompactGridHeader columns="md:grid-cols-[1.2fr_0.9fr_0.8fr_0.9fr_0.9fr_0.9fr_1fr]" labels={["Vacuna", "Dosis", "Estado", "Aplicada", "Proxima", "Recordatorio", "Acciones"]} />
               {filteredVaccineRows.length > 0 ? (
@@ -774,8 +821,10 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
                     <VaccineDisplayRow key={vacuna.id} item={vacuna} clienteId={cliente?.id} mascotaId={mascota.id} />
                   ))}
                 </div>
+              ) : planVacunasMascota.length === 0 ? (
+                <CompactEmptyState icon={Syringe} title="No hay vacunas registradas para esta mascota" description="Registra la primera vacuna para comenzar el plan de vacunación." />
               ) : (
-                <CompactEmptyState icon={Syringe} title="Sin vacunas para los filtros actuales" description="Registra una vacuna o ajusta los filtros para revisar el plan." />
+                <CompactEmptyState icon={Syringe} title="Sin vacunas para los filtros actuales" description="Ajusta los filtros o busca con otros términos." />
               )}
               {false && (<>
               {planVacunasMascota.length > 0 ? (
@@ -815,9 +864,9 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
                 <div>
                   <CardTitle className="flex items-center gap-2">
                     <Pill className="h-5 w-5 text-primary" />
-                    Tratamientos activos
+                    Tratamientos
                   </CardTitle>
-                  <CardDescription>Medicación, evolución y próximos controles abiertos.</CardDescription>
+                  <CardDescription>Medicación activa, evolución y próximos controles.</CardDescription>
                 </div>
                 <Button className="h-12 rounded-xl bg-primary px-5 font-bold hover:bg-primary/90" asChild>
                   <Link href={`/tratamientos/registrar?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}`}>
@@ -828,8 +877,8 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
               </div>
             </CardHeader>
             <CardContent className="space-y-4 pt-5">
-              <div className="grid gap-3 lg:grid-cols-3">
-                <CompactSearchInput value={treatmentSearch} onChange={setTreatmentSearch} placeholder="Buscar tratamiento, motivo o medicacion..." />
+              <div className="grid gap-3 lg:grid-cols-3 xl:grid-cols-[minmax(0,1.4fr)_160px_190px_160px_160px_auto]">
+                <CompactSearchInput value={treatmentSearch} onChange={setTreatmentSearch} placeholder="Buscar tratamiento, medicación o motivo…" />
                 <Select value={treatmentStatusFilter} onValueChange={setTreatmentStatusFilter}>
                   <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="Estado" /></SelectTrigger>
                   <SelectContent>
@@ -838,12 +887,15 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
                   </SelectContent>
                 </Select>
                 <Select value={treatmentProtocolFilter} onValueChange={setTreatmentProtocolFilter}>
-                  <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="Tratamiento" /></SelectTrigger>
+                  <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="Protocolo / tipo" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="todos">Todos los tratamientos</SelectItem>
+                    <SelectItem value="todos">Todos los protocolos</SelectItem>
                     {[...new Set(tratamientosMascota.map((item) => item.medicamento))].map((name) => <SelectItem key={name} value={name}>{name}</SelectItem>)}
                   </SelectContent>
                 </Select>
+                <Input type="date" className="h-11 rounded-xl" value={treatmentDateFrom} onChange={(event) => setTreatmentDateFrom(event.target.value)} aria-label="Fecha desde" />
+                <Input type="date" className="h-11 rounded-xl" value={treatmentDateTo} onChange={(event) => setTreatmentDateTo(event.target.value)} aria-label="Fecha hasta" />
+                <Button variant="outline" size="sm" className="h-11 rounded-xl px-3 text-xs font-semibold" onClick={clearTreatmentFilters}>Limpiar</Button>
               </div>
               <CompactGridHeader columns="md:grid-cols-[1fr_0.8fr_1fr_1fr_1fr_1fr_1fr]" labels={["Tratamiento", "Estado", "Motivo", "Medicacion", "Dosis/frecuencia", "Proximo control", "Acciones"]} />
               {filteredTreatmentRows.length > 0 ? (
@@ -852,55 +904,10 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
                     <TreatmentCompactRow key={tratamiento.id} tratamiento={tratamiento} clienteId={cliente?.id} mascotaId={mascota.id} />
                   ))}
                 </div>
+              ) : tratamientosMascota.length === 0 ? (
+                <CompactEmptyState icon={Pill} title="No hay tratamientos activos o históricos" description="Registra el primer tratamiento para este paciente." />
               ) : (
-                <CompactEmptyState icon={Pill} title="Sin tratamientos para los filtros actuales" description="Registra un tratamiento o ajusta los filtros." />
-              )}
-              {false && (<>
-              {tratamientosActivosMascota.length > 0 ? (
-                <div className="grid gap-4 lg:grid-cols-2">
-                  {tratamientosActivosMascota.map((tratamiento) => (
-                    <TreatmentActiveCard key={tratamiento.id} tratamiento={tratamiento} clienteId={cliente?.id} mascotaId={mascota.id} />
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
-                  Sin tratamientos activos.
-                </div>
-              )}
-              </>)}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="border-b">
-              <CardTitle className="flex items-center gap-2">
-                <FileHeart className="h-5 w-5 text-primary" />
-                Historial de tratamientos
-              </CardTitle>
-              <CardDescription>Registro cronológico de tratamientos iniciados.</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-5">
-              {treatmentHistoryEventos.length > 0 ? (
-                <div className="space-y-4">
-                  {treatmentHistoryEventos.map((evento) => (
-                    <ClinicalTimelineItem
-                      key={evento.id}
-                      event={evento}
-                      isExpanded={expandedTreatmentItems.includes(evento.id)}
-                      onToggle={() =>
-                        setExpandedTreatmentItems((current) =>
-                          current.includes(evento.id)
-                            ? current.filter((item) => item !== evento.id)
-                            : [...current, evento.id],
-                        )
-                      }
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
-                  Sin historial de tratamientos registrado.
-                </div>
+                <CompactEmptyState icon={Pill} title="Sin tratamientos para los filtros actuales" description="Ajusta los filtros o busca con otros términos." />
               )}
             </CardContent>
           </Card>
@@ -933,8 +940,8 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
               </div>
             </CardHeader>
             <CardContent className="space-y-4 pt-5">
-              <div className="grid gap-3 lg:grid-cols-3">
-                <CompactSearchInput value={surgerySearch} onChange={setSurgerySearch} placeholder="Buscar cirugia, profesional o estado..." />
+              <div className="grid gap-3 lg:grid-cols-3 xl:grid-cols-[minmax(0,1.4fr)_160px_190px_160px_160px_160px_auto]">
+                <CompactSearchInput value={surgerySearch} onChange={setSurgerySearch} placeholder="Buscar cirugía, procedimiento o estado…" />
                 <Select value={surgeryStatusFilter} onValueChange={setSurgeryStatusFilter}>
                   <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="Estado" /></SelectTrigger>
                   <SelectContent>
@@ -949,6 +956,16 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
                     {[...new Set(cirugiasMascota.map((item) => item.tipo))].map((name) => <SelectItem key={name} value={name}>{name}</SelectItem>)}
                   </SelectContent>
                 </Select>
+                <Select value={surgeryVetFilter} onValueChange={setSurgeryVetFilter}>
+                  <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="Profesional" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos los profesionales</SelectItem>
+                    {[...new Set(cirugiasMascota.map((item) => item.veterinario))].map((vet) => <SelectItem key={vet} value={vet}>{vet}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Input type="date" className="h-11 rounded-xl" value={surgeryDateFrom} onChange={(event) => setSurgeryDateFrom(event.target.value)} aria-label="Fecha desde" />
+                <Input type="date" className="h-11 rounded-xl" value={surgeryDateTo} onChange={(event) => setSurgeryDateTo(event.target.value)} aria-label="Fecha hasta" />
+                <Button variant="outline" size="sm" className="h-11 rounded-xl px-3 text-xs font-semibold" onClick={clearSurgeryFilters}>Limpiar</Button>
               </div>
               <CompactGridHeader columns="md:grid-cols-[1.2fr_0.8fr_0.8fr_1fr_1fr_1fr]" labels={["Procedimiento", "Estado", "Fecha", "Profesional", "Seguimiento", "Acciones"]} />
               {filteredSurgeryRows.length > 0 ? (
@@ -957,8 +974,10 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
                     <SurgeryCompactRow key={cirugia.id} cirugia={cirugia} />
                   ))}
                 </div>
+              ) : cirugiasMascota.length === 0 ? (
+                <CompactEmptyState icon={Scissors} title="No hay cirugías registradas" description="Agenda una cirugía para comenzar el seguimiento quirúrgico." />
               ) : (
-                <CompactEmptyState icon={Scissors} title="Sin cirugias para los filtros actuales" description="Agenda una cirugia o ajusta los filtros." />
+                <CompactEmptyState icon={Scissors} title="Sin cirugías para los filtros actuales" description="Ajusta los filtros o busca con otros términos." />
               )}
               {false && (<>
               {[
@@ -1071,33 +1090,28 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
         <TabsContent value="historia" className="space-y-6">
           <Card>
             <CardHeader className="border-b">
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5 text-primary" />
-                Historia clínica completa
-              </CardTitle>
-              <CardDescription>Consultas, vacunas, tratamientos, cirugías, estudios, controles y recordatorios.</CardDescription>
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="h-5 w-5 text-primary" />
+                    Historia clínica
+                  </CardTitle>
+                  <CardDescription>Consultas, vacunas, tratamientos, cirugías, estudios, controles y recordatorios.</CardDescription>
+                </div>
+                <Button className="h-12 rounded-xl bg-primary px-5 font-bold hover:bg-primary/90" asChild>
+                  <Link href={`/atencion/nueva?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}`}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Nueva atención
+                  </Link>
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="pt-5">
               <div className="mb-5 space-y-4">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                  <div>
-                    <h3 className="text-xl font-bold">Historia clínica</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Consultas, vacunas, tratamientos, estudios, cirugías y controles de esta mascota.
-                    </p>
-                  </div>
-                  <Button className="min-h-14 rounded-2xl bg-primary px-6 py-3 text-base font-bold leading-tight shadow-md shadow-primary/20 hover:bg-primary/90" asChild>
-<Link href={`/atencion/nueva?clienteId=${cliente?.id || ""}&mascotaId=${mascota.id}`}>
-                      <Plus className="mr-2 h-5 w-5" />
-                      Nueva atención
-                    </Link>
-                  </Button>
-                </div>
-
                 <div className="grid gap-3 xl:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(160px,1fr))]">
                   <div className="relative">
                     <Stethoscope className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input value={historySearch} onChange={(event) => setHistorySearch(event.target.value)} className="h-11 pl-10" placeholder="Buscar diagnóstico, motivo, tratamiento, vacuna, estudio..." />
+                    <Input value={historySearch} onChange={(event) => setHistorySearch(event.target.value)} className="h-11 pl-10" placeholder="Buscar evento, diagnóstico, tratamiento o profesional…" />
                   </div>
                   <Select value={historyTypeFilter} onValueChange={setHistoryTypeFilter}>
                     <SelectTrigger className="h-11"><SelectValue placeholder="Tipo de evento" /></SelectTrigger>
@@ -1136,10 +1150,10 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
                     <HistoryCompactRow key={evento.id} event={evento} />
                   ))}
                 </div>
+              ) : allTimelineEvents.length === 0 ? (
+                <CompactEmptyState icon={Activity} title="No hay eventos clínicos registrados" description="Registra una nueva atención para comenzar el historial clínico." />
               ) : (
-                <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
-                  Sin eventos clínicos registrados.
-                </div>
+                <CompactEmptyState icon={Activity} title="Sin eventos para los filtros actuales" description="Ajusta los filtros o busca con otros términos." />
               )}
             </CardContent>
           </Card>
@@ -1165,8 +1179,8 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
               </div>
             </CardHeader>
             <CardContent className="space-y-4 pt-5">
-              <div className="grid gap-3 lg:grid-cols-4">
-                <CompactSearchInput value={reminderSearch} onChange={setReminderSearch} placeholder="Buscar recordatorio, destinatario o mensaje..." />
+              <div className="grid gap-3 lg:grid-cols-3 xl:grid-cols-[minmax(0,1.4fr)_160px_190px_160px_160px_auto]">
+                <CompactSearchInput value={reminderSearch} onChange={setReminderSearch} placeholder="Buscar recordatorio, motivo o estado…" />
                 <Select value={reminderStatusFilter} onValueChange={setReminderStatusFilter}>
                   <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="Estado" /></SelectTrigger>
                   <SelectContent>
@@ -1182,17 +1196,21 @@ export function FichaMascota({ mascotaId }: FichaMascotaProps) {
                     {[...new Set(recordatoriosMascota.map((item) => item.tipo))].map((type) => <SelectItem key={type} value={type}>{type}</SelectItem>)}
                   </SelectContent>
                 </Select>
-                <Input type="date" className="h-11 rounded-xl" value={reminderDateFilter} onChange={(event) => setReminderDateFilter(event.target.value)} aria-label="Fecha" />
+                <Input type="date" className="h-11 rounded-xl" value={reminderDateFilter} onChange={(event) => setReminderDateFilter(event.target.value)} aria-label="Fecha desde" />
+                <Input type="date" className="h-11 rounded-xl" value={reminderDateTo} onChange={(event) => setReminderDateTo(event.target.value)} aria-label="Fecha hasta" />
+                <Button variant="outline" size="sm" className="h-11 rounded-xl px-3 text-xs font-semibold" onClick={clearReminderFilters}>Limpiar</Button>
               </div>
-              <CompactGridHeader columns="md:grid-cols-[1.2fr_1.4fr_0.9fr_0.9fr_1fr]" labels={["Recordatorio", "Relacion", "Fecha", "Estado", "Acciones"]} />
+              <CompactGridHeader columns="md:grid-cols-[1.2fr_1.4fr_0.9fr_0.9fr_1fr]" labels={["Recordatorio", "Destinatario", "Fecha", "Estado", "Acciones"]} />
               {filteredReminderRows.length > 0 ? (
                 <div className="space-y-2">
                   {filteredReminderRows.map((reminder) => (
                     <ReminderCompactRow key={reminder.id} reminder={reminder} />
                   ))}
                 </div>
+              ) : recordatoriosMascota.length === 0 ? (
+                <CompactEmptyState icon={MessageCircle} title="No hay recordatorios pendientes" description="Crea un recordatorio para dar seguimiento a vacunas, controles o tratamientos." />
               ) : (
-                <CompactEmptyState icon={MessageCircle} title="Sin recordatorios para los filtros actuales" description="Crea un recordatorio o ajusta los filtros." />
+                <CompactEmptyState icon={MessageCircle} title="Sin recordatorios para los filtros actuales" description="Ajusta los filtros o busca con otros términos." />
               )}
               {false && (<>
               {recordatoriosMascota.length > 0 ? (
