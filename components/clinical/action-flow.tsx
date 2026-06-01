@@ -104,10 +104,10 @@ export function ClinicalActionFlow({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex justify-start sm:justify-end">
-              <Button className="min-h-12 rounded-xl bg-primary px-4 py-3 text-center font-bold leading-tight text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90" asChild>
+            <div className="flex justify-center">
+              <Button className="min-h-14 rounded-2xl bg-primary px-7 py-4 text-center text-base font-bold leading-tight text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90" asChild>
                 <Link href="/clientes/agregar">
-                  <UserPlus className="mr-2 h-4 w-4 shrink-0" />
+                  <UserPlus className="mr-2 h-5 w-5 shrink-0" />
                   Crear cliente con mascota
                 </Link>
               </Button>
@@ -173,13 +173,13 @@ export function ClinicalActionFlow({
             <CardDescription>Elegí la mascota sobre la que vas a cargar la acción clínica.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-              <Button variant="outline" className="min-h-12 rounded-xl px-4 py-3 text-center font-bold leading-tight" onClick={() => setSelectedClientId(null)}>
+            <div className="flex flex-col items-stretch justify-center gap-3 sm:flex-row">
+              <Button variant="outline" className="min-h-14 rounded-2xl px-7 py-4 text-center text-base font-bold leading-tight" onClick={() => setSelectedClientId(null)}>
                 Cambiar cliente
               </Button>
-              <Button className="min-h-12 rounded-xl bg-primary px-4 py-3 text-center font-bold leading-tight hover:bg-primary/90" asChild>
+              <Button className="min-h-14 rounded-2xl bg-primary px-7 py-4 text-center text-base font-bold leading-tight hover:bg-primary/90" asChild>
                 <Link href={`/clientes/agregar?clienteId=${selectedClient.id}`}>
-                  <PawPrint className="mr-2 h-4 w-4 shrink-0" />
+                  <PawPrint className="mr-2 h-5 w-5 shrink-0" />
                   Agregar mascota a este cliente
                 </Link>
               </Button>
