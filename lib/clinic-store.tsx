@@ -39,6 +39,13 @@ export interface Cliente {
   mascotas: number[]
 }
 
+/**
+ * Etapa de vida del animal (relevante para recordatorios y plan de vacunas).
+ * Sigue el estándar AAHA/WSAVA: Cachorro → Joven → Adulto → Senior.
+ * "Senior" reemplaza al término antiguo "geronte / geriátrico".
+ */
+export type EtapaVida = "Cachorro" | "Joven" | "Adulto" | "Senior"
+
 export interface Mascota {
   id: number
   nombre: string
@@ -47,6 +54,7 @@ export interface Mascota {
   sexo?: string
   fechaNacimiento?: string
   edad?: string
+  etapaVida?: EtapaVida
   peso?: string
   clienteId: number
   dueno: string
@@ -80,6 +88,19 @@ export interface Tratamiento {
   proximoControl?: string
   veterinario?: string
   estado: EstadoTratamiento
+}
+
+export interface Consulta {
+  id: number
+  mascotaId: number
+  mascota: string
+  fecha: string
+  motivo: string
+  peso?: string
+  diagnostico?: string
+  indicaciones?: string
+  proximoControl?: string
+  veterinario?: string
 }
 
 export interface Vacuna {
@@ -128,6 +149,7 @@ interface ClinicData {
   clientes: Cliente[]
   mascotas: Mascota[]
   historial: HistorialEntry[]
+  consultas: Consulta[]
   tratamientos: Tratamiento[]
   vacunas: Vacuna[]
   turnos: Turno[]
@@ -216,7 +238,7 @@ function buildSeed(): ClinicData {
     estado: (t.estado as EstadoTurno) ?? "Pendiente",
   }))
 
-  return { clientes, mascotas, historial, tratamientos, vacunas, turnos, cirugias: [] }
+  return { clientes, mascotas, historial, consultas: [], tratamientos, vacunas, turnos, cirugias: [] }
 }
 
 function nextId(items: { id: number }[]): number {
@@ -236,8 +258,9 @@ interface ClinicStore extends ClinicData {
 
   // Escrituras
   addCliente: (data: { nombre: string; telefono: string; whatsapp?: string; direccion?: string; email?: string; observaciones?: string }) => Cliente
-  addMascota: (data: { nombre: string; especie: string; raza?: string; sexo?: string; fechaNacimiento?: string; peso?: string; clienteId: number }) => Mascota
+  addMascota: (data: { nombre: string; especie: string; raza?: string; sexo?: string; fechaNacimiento?: string; etapaVida?: EtapaVida; peso?: string; clienteId: number }) => Mascota
   addTurno: (data: { mascotaId: number; fecha: string; hora: string; motivo: string; profesional?: string }) => Turno
+  addConsulta: (data: { mascotaId: number; motivo: string; peso?: string; diagnostico?: string; indicaciones?: string; proximoControl?: string; veterinario?: string }) => Consulta
   addVacuna: (data: { mascotaId: number; vacuna: string; fechaAplicada?: string; proximaFecha?: string; veterinario?: string; observaciones?: string }) => Vacuna
   addTratamiento: (data: { mascotaId: number; diagnostico: string; medicamento?: string; dosis?: string; frecuencia?: string; duracion?: string; indicaciones?: string; proximoControl?: string; veterinario?: string }) => Tratamiento
   /** Devuelve { ok: false } si la mascota no tiene un turno agendado. */
@@ -304,6 +327,7 @@ export function ClinicStoreProvider({ children }: { children: React.ReactNode })
           raza: d.raza,
           sexo: d.sexo,
           fechaNacimiento: d.fechaNacimiento,
+          etapaVida: d.etapaVida,
           peso: d.peso,
           clienteId: d.clienteId,
           dueno: cliente?.nombre ?? "",
@@ -347,6 +371,45 @@ export function ClinicStoreProvider({ children }: { children: React.ReactNode })
           ],
         }))
         return nuevo
+      },
+
+      addConsulta: (d) => {
+        const nueva: Consulta = {
+          id: nextId(data.consultas),
+          mascotaId: d.mascotaId,
+          mascota: mascotaNombre(d.mascotaId),
+          fecha: hoy(),
+          motivo: d.motivo,
+          peso: d.peso,
+          diagnostico: d.diagnostico,
+          indicaciones: d.indicaciones,
+          proximoControl: d.proximoControl,
+          veterinario: d.veterinario,
+        }
+        setData((prev) => ({
+          ...prev,
+          consultas: [...prev.consultas, nueva],
+          // Si registraron peso en la consulta, actualizamos el de la mascota.
+          mascotas: d.peso
+            ? prev.mascotas.map((m) => (m.id === d.mascotaId ? { ...m, peso: d.peso } : m))
+            : prev.mascotas,
+          historial: [
+            ...prev.historial,
+            {
+              id: nextId(prev.historial),
+              mascotaId: d.mascotaId,
+              fecha: nueva.fecha,
+              tipo: "Consulta",
+              titulo: `Consulta: ${d.motivo}`,
+              detalle:
+                [d.diagnostico, d.indicaciones, d.peso ? `Peso: ${d.peso} kg` : ""]
+                  .filter(Boolean)
+                  .join(" · ") || undefined,
+              veterinario: d.veterinario,
+            },
+          ],
+        }))
+        return nueva
       },
 
       addVacuna: (d) => {

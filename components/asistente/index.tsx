@@ -18,6 +18,7 @@ import {
   Syringe,
   Pill,
   Scissors,
+  Stethoscope,
   ArrowLeft,
   Plus,
   PawPrint,
@@ -25,8 +26,10 @@ import {
   CalendarPlus,
   LogOut,
   AlertTriangle,
+  ChevronRight,
+  FileText,
 } from "lucide-react"
-import { useClinic, type Mascota } from "@/lib/clinic-store"
+import { useClinic, type Mascota, type EtapaVida } from "@/lib/clinic-store"
 import { useAuth } from "@/lib/auth-context"
 import { configuracion } from "@/lib/mock-data"
 import { Card } from "@/components/ui/card"
@@ -36,14 +39,17 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 
-type Accion = "vacuna" | "tratamiento" | "cirugia"
+type Accion = "consulta" | "vacuna" | "tratamiento" | "cirugia"
 
 type Vista =
   | { paso: "home" }
-  | { paso: "nuevo-cliente"; volverAccion: Accion | null }
+  | { paso: "clientes" }
+  | { paso: "cliente-detalle"; clienteId: number }
+  | { paso: "historia"; mascotaId: number }
+  | { paso: "nuevo-cliente"; volverAccion: Accion | null; desdeGestion?: boolean }
   | { paso: "elegir-cliente"; accion: Accion }
   | { paso: "elegir-mascota"; accion: Accion; clienteId: number }
-  | { paso: "nueva-mascota"; accion: Accion; clienteId: number }
+  | { paso: "nueva-mascota"; accion: Accion | null; clienteId: number }
   | { paso: "cargar"; accion: Accion; mascotaId: number }
   | { paso: "listo"; titulo: string; detalle: string }
 
@@ -127,9 +133,87 @@ function Opcion({
 }
 
 const accionMeta: Record<Accion, { titulo: string; icon: React.ElementType }> = {
+  consulta: { titulo: "Consulta", icon: Stethoscope },
   vacuna: { titulo: "Vacuna", icon: Syringe },
   tratamiento: { titulo: "Tratamiento", icon: Pill },
   cirugia: { titulo: "Cirugía", icon: Scissors },
+}
+
+// Iconos para la línea de tiempo de la historia clínica.
+const iconoHistorial: Record<string, React.ElementType> = {
+  Consulta: Stethoscope,
+  Vacuna: Syringe,
+  Tratamiento: Pill,
+  Cirugía: Scissors,
+  Turno: CalendarPlus,
+}
+
+// Los animales que más van a la veterinaria, para elegir con un toque.
+const ANIMALES_COMUNES = ["Perro", "Gato", "Conejo", "Ave"]
+
+/** Selector de especie: 4 animales comunes + "Otro…" para escribir cualquier otro. */
+function SelectorEspecie({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [modoOtro, setModoOtro] = useState(false)
+  const esOtro = modoOtro || (!!value && !ANIMALES_COMUNES.includes(value))
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap gap-3">
+        {ANIMALES_COMUNES.map((a) => (
+          <Opcion
+            key={a}
+            activo={!esOtro && value === a}
+            onClick={() => {
+              setModoOtro(false)
+              onChange(a)
+            }}
+          >
+            {a}
+          </Opcion>
+        ))}
+        <Opcion
+          activo={esOtro}
+          onClick={() => {
+            setModoOtro(true)
+            onChange("")
+          }}
+        >
+          Otro…
+        </Opcion>
+      </div>
+      {esOtro && (
+        <Input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Escribí el animal (ej: Tortuga, Hurón, Caballo...)"
+          className="h-12 text-base"
+          autoFocus
+        />
+      )}
+    </div>
+  )
+}
+
+// Etapa de vida según el estándar profesional AAHA/WSAVA (4 etapas).
+// "Senior" reemplaza al término antiguo "geronte / geriátrico".
+const ETAPAS_VIDA: { value: EtapaVida; label: string }[] = [
+  { value: "Cachorro", label: "Cachorro / Cría" },
+  { value: "Joven", label: "Joven" },
+  { value: "Adulto", label: "Adulto" },
+  { value: "Senior", label: "Senior" },
+]
+
+/** Selector de etapa de vida del animal. */
+function SelectorEtapa({ value, onChange }: { value: EtapaVida | ""; onChange: (v: EtapaVida) => void }) {
+  return (
+    <div className="flex flex-wrap gap-3">
+      {ETAPAS_VIDA.map((e) => (
+        <Opcion key={e.value} activo={value === e.value} onClick={() => onChange(e.value)}>
+          {e.label}
+        </Opcion>
+      ))}
+    </div>
+  )
 }
 
 // ---------------------------------------------------------------------------
@@ -171,17 +255,48 @@ export function Asistente() {
       <main className="mx-auto max-w-5xl p-4 lg:p-8">
         {vista.paso === "home" && <Home setVista={setVista} />}
 
+        {vista.paso === "clientes" && (
+          <GestionClientes
+            onVolver={irHome}
+            onElegir={(clienteId) => setVista({ paso: "cliente-detalle", clienteId })}
+            onNuevo={() => setVista({ paso: "nuevo-cliente", volverAccion: null, desdeGestion: true })}
+          />
+        )}
+
+        {vista.paso === "cliente-detalle" && (
+          <ClienteDetalle
+            clienteId={vista.clienteId}
+            onVolver={() => setVista({ paso: "clientes" })}
+            onNuevaMascota={() => setVista({ paso: "nueva-mascota", accion: null, clienteId: vista.clienteId })}
+            onVerHistoria={(mascotaId) => setVista({ paso: "historia", mascotaId })}
+          />
+        )}
+
+        {vista.paso === "historia" && (
+          <MascotaHistoria
+            mascotaId={vista.mascotaId}
+            onVolver={() => {
+              const clienteId = clinic.mascotas.find((m) => m.id === vista.mascotaId)?.clienteId
+              setVista(clienteId ? { paso: "cliente-detalle", clienteId } : { paso: "clientes" })
+            }}
+          />
+        )}
+
         {vista.paso === "nuevo-cliente" && (
           <NuevoClienteForm
-            onVolver={irHome}
-            onListo={(clienteId) => {
+            onVolver={vista.desdeGestion ? () => setVista({ paso: "clientes" }) : irHome}
+            onListo={(clienteId, mascotaId) => {
               if (vista.volverAccion) {
-                setVista({ paso: "elegir-mascota", accion: vista.volverAccion, clienteId })
+                // Venía de una acción: ya tenemos cliente y mascota, vamos directo a cargarla.
+                setVista({ paso: "cargar", accion: vista.volverAccion, mascotaId })
+              } else if (vista.desdeGestion) {
+                // Desde la sección Clientes: vamos a la ficha del cliente recién creado.
+                setVista({ paso: "cliente-detalle", clienteId })
               } else {
                 setVista({
                   paso: "listo",
-                  titulo: "¡Cliente guardado!",
-                  detalle: "Ya podés cargarle mascotas y atenciones.",
+                  titulo: "¡Cliente y mascota guardados!",
+                  detalle: "Ya podés registrarle vacunas, tratamientos y cirugías.",
                 })
               }
             }}
@@ -210,8 +325,16 @@ export function Asistente() {
         {vista.paso === "nueva-mascota" && (
           <NuevaMascotaForm
             clienteId={vista.clienteId}
-            onVolver={() => setVista({ paso: "elegir-mascota", accion: vista.accion, clienteId: vista.clienteId })}
-            onListo={(mascotaId) => setVista({ paso: "cargar", accion: vista.accion, mascotaId })}
+            onVolver={() =>
+              vista.accion
+                ? setVista({ paso: "elegir-mascota", accion: vista.accion, clienteId: vista.clienteId })
+                : setVista({ paso: "cliente-detalle", clienteId: vista.clienteId })
+            }
+            onListo={(mascotaId) =>
+              vista.accion
+                ? setVista({ paso: "cargar", accion: vista.accion!, mascotaId })
+                : setVista({ paso: "cliente-detalle", clienteId: vista.clienteId })
+            }
           />
         )}
 
@@ -252,9 +375,15 @@ function Home({ setVista }: { setVista: (v: Vista) => void }) {
       <div className="grid gap-5 sm:grid-cols-2">
         <BotonGrande
           icon={Users}
-          titulo="Nuevo cliente"
-          descripcion="Agregar un cliente y su mascota"
-          onClick={() => setVista({ paso: "nuevo-cliente", volverAccion: null })}
+          titulo="Clientes"
+          descripcion="Buscar clientes, agregar nuevos y sus mascotas"
+          onClick={() => setVista({ paso: "clientes" })}
+        />
+        <BotonGrande
+          icon={Stethoscope}
+          titulo="Consulta"
+          descripcion="Atender: motivo, peso, diagnóstico"
+          onClick={() => setVista({ paso: "elegir-cliente", accion: "consulta" })}
         />
         <BotonGrande
           icon={Syringe}
@@ -284,28 +413,48 @@ function NuevoClienteForm({
   onListo,
 }: {
   onVolver: () => void
-  onListo: (clienteId: number) => void
+  onListo: (clienteId: number, mascotaId: number) => void
 }) {
   const clinic = useClinic()
+  // Datos del cliente
   const [nombre, setNombre] = useState("")
   const [telefono, setTelefono] = useState("")
   const [direccion, setDireccion] = useState("")
+  // Datos de la mascota (siempre se cargan junto al cliente)
+  const [mascotaNombre, setMascotaNombre] = useState("")
+  const [especie, setEspecie] = useState("")
+  const [etapa, setEtapa] = useState<EtapaVida | "">("")
+  const [raza, setRaza] = useState("")
+
+  const completo = nombre.trim() && mascotaNombre.trim() && especie
 
   const guardar = () => {
-    if (!nombre.trim()) return
+    if (!completo) return
     const cliente = clinic.addCliente({
       nombre: nombre.trim(),
       telefono: telefono.trim(),
       whatsapp: telefono.replace(/\D/g, ""),
       direccion: direccion.trim() || undefined,
     })
-    onListo(cliente.id)
+    const mascota = clinic.addMascota({
+      nombre: mascotaNombre.trim(),
+      especie,
+      raza: raza.trim() || undefined,
+      etapaVida: etapa || undefined,
+      clienteId: cliente.id,
+    })
+    onListo(cliente.id, mascota.id)
   }
 
   return (
     <div className="space-y-6">
-      <Encabezado titulo="Nuevo cliente" onVolver={onVolver} />
+      <Encabezado titulo="Nuevo cliente y su mascota" onVolver={onVolver} />
+
+      {/* Datos del cliente */}
       <Card className="space-y-5 p-6">
+        <p className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+          <Users className="h-4 w-4" /> Datos del cliente
+        </p>
         <Campo label="Nombre y apellido" requerido>
           <Input
             value={nombre}
@@ -332,11 +481,201 @@ function NuevoClienteForm({
             className="h-12 text-base"
           />
         </Campo>
-        <Button size="lg" onClick={guardar} disabled={!nombre.trim()} className="h-14 w-full text-base">
-          <Check className="h-5 w-5" />
-          Guardar cliente
-        </Button>
       </Card>
+
+      {/* Datos de la mascota */}
+      <Card className="space-y-5 p-6">
+        <p className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+          <PawPrint className="h-4 w-4" /> Su mascota
+        </p>
+        <Campo label="Nombre de la mascota" requerido>
+          <Input
+            value={mascotaNombre}
+            onChange={(e) => setMascotaNombre(e.target.value)}
+            placeholder="Ej: Luna"
+            className="h-12 text-base"
+          />
+        </Campo>
+        <Campo label="Especie" requerido>
+          <SelectorEspecie value={especie} onChange={setEspecie} />
+        </Campo>
+        <Campo label="Etapa de vida">
+          <SelectorEtapa value={etapa} onChange={setEtapa} />
+        </Campo>
+        <Campo label="Raza">
+          <Input
+            value={raza}
+            onChange={(e) => setRaza(e.target.value)}
+            placeholder="Ej: Golden Retriever"
+            className="h-12 text-base"
+          />
+        </Campo>
+      </Card>
+
+      <Button size="lg" onClick={guardar} disabled={!completo} className="h-14 w-full text-base">
+        <Check className="h-5 w-5" />
+        Guardar cliente y mascota
+      </Button>
+    </div>
+  )
+}
+
+function GestionClientes({
+  onVolver,
+  onElegir,
+  onNuevo,
+}: {
+  onVolver: () => void
+  onElegir: (clienteId: number) => void
+  onNuevo: () => void
+}) {
+  const clinic = useClinic()
+  const [busqueda, setBusqueda] = useState("")
+
+  const lista = useMemo(() => {
+    const q = busqueda.toLowerCase().trim()
+    return clinic.clientes.filter(
+      (c) => !q || c.nombre.toLowerCase().includes(q) || c.telefono.includes(q),
+    )
+  }, [clinic.clientes, busqueda])
+
+  return (
+    <div className="space-y-6">
+      <Encabezado titulo="Clientes" onVolver={onVolver} />
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
+        <Input
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          placeholder="Buscar por nombre o teléfono..."
+          className="h-16 text-lg"
+          autoFocus
+        />
+        <Button
+          size="lg"
+          onClick={onNuevo}
+          className="h-16 shrink-0 gap-3 px-8 text-lg font-bold shadow-md sm:min-w-[230px]"
+        >
+          <Plus className="h-7 w-7" strokeWidth={2.5} />
+          Nuevo cliente
+        </Button>
+      </div>
+
+      <div className="grid gap-3">
+        {lista.map((c) => {
+          const mascotas = clinic.mascotasDeCliente(c.id)
+          return (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => onElegir(c.id)}
+              className="flex items-center justify-between rounded-xl border-2 border-border bg-card p-5 text-left transition-all hover:border-primary hover:shadow-md outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              <div className="min-w-0">
+                <p className="text-lg font-semibold">{c.nombre}</p>
+                <p className="text-sm text-muted-foreground">{c.telefono || "Sin teléfono"}</p>
+                {mascotas.length > 0 && (
+                  <p className="mt-1 truncate text-sm text-primary">
+                    {mascotas.map((m) => m.nombre).join(", ")}
+                  </p>
+                )}
+              </div>
+              <span className="shrink-0 pl-3 text-sm font-medium text-muted-foreground">
+                {mascotas.length} mascota(s)
+              </span>
+            </button>
+          )
+        })}
+        {lista.length === 0 && (
+          <p className="py-8 text-center text-muted-foreground">
+            No hay clientes con ese nombre. Tocá “Nuevo cliente” para agregarlo.
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function ClienteDetalle({
+  clienteId,
+  onVolver,
+  onNuevaMascota,
+  onVerHistoria,
+}: {
+  clienteId: number
+  onVolver: () => void
+  onNuevaMascota: () => void
+  onVerHistoria: (mascotaId: number) => void
+}) {
+  const clinic = useClinic()
+  const cliente = clinic.clientes.find((c) => c.id === clienteId)
+  const mascotas = clinic.mascotasDeCliente(clienteId)
+
+  return (
+    <div className="space-y-6">
+      <Encabezado titulo={cliente?.nombre ?? "Cliente"} onVolver={onVolver} />
+
+      {/* Datos de contacto */}
+      <Card className="space-y-1 p-5">
+        <p className="text-sm text-muted-foreground">Teléfono</p>
+        <p className="text-base font-medium">{cliente?.telefono || "—"}</p>
+        {cliente?.direccion && (
+          <>
+            <p className="mt-2 text-sm text-muted-foreground">Dirección</p>
+            <p className="text-base font-medium">{cliente.direccion}</p>
+          </>
+        )}
+      </Card>
+
+      {/* Mascotas del cliente */}
+      <div>
+        <p className="mb-3 text-sm font-semibold text-muted-foreground">
+          Mascotas ({mascotas.length})
+        </p>
+        <div className="grid gap-3">
+          {mascotas.map((m) => {
+            const ultima = clinic.historialDeMascota(m.id)[0]
+            return (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => onVerHistoria(m.id)}
+                className="flex items-center gap-4 rounded-xl border-2 border-border bg-card p-5 text-left transition-all hover:border-primary hover:shadow-md outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <PawPrint className="h-6 w-6" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-lg font-semibold">{m.nombre}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {m.especie}
+                    {m.raza ? ` · ${m.raza}` : ""}
+                    {m.etapaVida ? ` · ${m.etapaVida}` : ""}
+                  </p>
+                  {ultima && (
+                    <p className="mt-1 truncate text-xs text-muted-foreground">
+                      Último: {ultima.titulo} ({ultima.fecha})
+                    </p>
+                  )}
+                </div>
+                <span className="flex shrink-0 items-center gap-1 text-sm font-medium text-primary">
+                  Ver historia
+                  <ChevronRight className="h-4 w-4" />
+                </span>
+              </button>
+            )
+          })}
+          {mascotas.length === 0 && (
+            <p className="py-4 text-center text-muted-foreground">
+              Este cliente todavía no tiene mascotas cargadas.
+            </p>
+          )}
+          <Button size="lg" onClick={onNuevaMascota} className="h-14 gap-2 text-base">
+            <Plus className="h-5 w-5" />
+            Registrar nueva mascota
+          </Button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -364,16 +703,20 @@ function ElegirCliente({
     <div className="space-y-6">
       <Encabezado titulo={`${accionMeta[accion].titulo}: elegí el cliente`} onVolver={onVolver} />
 
-      <div className="flex flex-col gap-3 sm:flex-row">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
         <Input
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
           placeholder="Buscar por nombre o teléfono..."
-          className="h-12 text-base"
+          className="h-16 text-lg"
           autoFocus
         />
-        <Button size="lg" variant="secondary" onClick={onNuevo} className="h-12 gap-2">
-          <Plus className="h-5 w-5" />
+        <Button
+          size="lg"
+          onClick={onNuevo}
+          className="h-16 shrink-0 gap-3 px-8 text-lg font-bold shadow-md sm:min-w-[230px]"
+        >
+          <Plus className="h-7 w-7" strokeWidth={2.5} />
           Nuevo cliente
         </Button>
       </div>
@@ -442,6 +785,7 @@ function ElegirMascota({
               <p className="text-sm text-muted-foreground">
                 {m.especie}
                 {m.raza ? ` · ${m.raza}` : ""}
+                {m.etapaVida ? ` · ${m.etapaVida}` : ""}
               </p>
             </div>
           </button>
@@ -470,6 +814,7 @@ function NuevaMascotaForm({
   const clinic = useClinic()
   const [nombre, setNombre] = useState("")
   const [especie, setEspecie] = useState("")
+  const [etapa, setEtapa] = useState<EtapaVida | "">("")
   const [raza, setRaza] = useState("")
 
   const guardar = () => {
@@ -478,6 +823,7 @@ function NuevaMascotaForm({
       nombre: nombre.trim(),
       especie,
       raza: raza.trim() || undefined,
+      etapaVida: etapa || undefined,
       clienteId,
     })
     onListo(mascota.id)
@@ -497,13 +843,10 @@ function NuevaMascotaForm({
           />
         </Campo>
         <Campo label="Especie" requerido>
-          <div className="flex flex-wrap gap-3">
-            {["Perro", "Gato", "Otro"].map((op) => (
-              <Opcion key={op} activo={especie === op} onClick={() => setEspecie(op)}>
-                {op}
-              </Opcion>
-            ))}
-          </div>
+          <SelectorEspecie value={especie} onChange={setEspecie} />
+        </Campo>
+        <Campo label="Etapa de vida">
+          <SelectorEtapa value={etapa} onChange={setEtapa} />
         </Campo>
         <Campo label="Raza">
           <Input
@@ -548,6 +891,7 @@ function CargarAccion({
 
       <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
         <div>
+          {accion === "consulta" && <FormConsulta mascota={mascota} onListo={onListo} />}
           {accion === "vacuna" && <FormVacuna mascota={mascota} onListo={onListo} />}
           {accion === "tratamiento" && <FormTratamiento mascota={mascota} onListo={onListo} />}
           {accion === "cirugia" && <FormCirugia mascota={mascota} onListo={onListo} />}
@@ -569,6 +913,117 @@ function CargarAccion({
   )
 }
 
+const motivosFrecuentes = [
+  "Control / Revisación",
+  "No come / Decaído",
+  "Vómitos / Diarrea",
+  "Herida / Golpe",
+  "Piel / Rascado",
+]
+
+function FormConsulta({
+  mascota,
+  onListo,
+}: {
+  mascota: Mascota
+  onListo: (titulo: string, detalle: string) => void
+}) {
+  const clinic = useClinic()
+  const [motivo, setMotivo] = useState("")
+  const [otroActivo, setOtroActivo] = useState(false)
+  const [otro, setOtro] = useState("")
+  const [peso, setPeso] = useState("")
+  const [diagnostico, setDiagnostico] = useState("")
+  const [indicaciones, setIndicaciones] = useState("")
+  const [proximoControl, setProximoControl] = useState("")
+
+  const motivoFinal = otroActivo ? otro.trim() : motivo
+
+  const guardar = () => {
+    if (!motivoFinal) return
+    clinic.addConsulta({
+      mascotaId: mascota.id,
+      motivo: motivoFinal,
+      peso: peso.trim() || undefined,
+      diagnostico: diagnostico.trim() || undefined,
+      indicaciones: indicaciones.trim() || undefined,
+      proximoControl: proximoControl || undefined,
+    })
+    onListo("¡Consulta registrada!", `Quedó en la historia de ${mascota.nombre}.`)
+  }
+
+  return (
+    <Card className="space-y-5 p-6">
+      <Campo label="¿Por qué viene?" requerido>
+        <div className="flex flex-wrap gap-3">
+          {motivosFrecuentes.map((m) => (
+            <Opcion
+              key={m}
+              activo={!otroActivo && motivo === m}
+              onClick={() => {
+                setOtroActivo(false)
+                setMotivo(m)
+              }}
+            >
+              {m}
+            </Opcion>
+          ))}
+          <Opcion activo={otroActivo} onClick={() => setOtroActivo(true)}>
+            Otro…
+          </Opcion>
+        </div>
+        {otroActivo && (
+          <Input
+            value={otro}
+            onChange={(e) => setOtro(e.target.value)}
+            placeholder="Escribí el motivo"
+            className="mt-3 h-12 text-base"
+            autoFocus
+          />
+        )}
+      </Campo>
+      <Campo label="Peso (kg)">
+        <Input
+          type="number"
+          inputMode="decimal"
+          value={peso}
+          onChange={(e) => setPeso(e.target.value)}
+          placeholder="Ej: 28.5"
+          className="h-12 text-base"
+        />
+      </Campo>
+      <Campo label="Diagnóstico (opcional)">
+        <Input
+          value={diagnostico}
+          onChange={(e) => setDiagnostico(e.target.value)}
+          placeholder="Ej: Otitis externa"
+          className="h-12 text-base"
+        />
+      </Campo>
+      <Campo label="Indicaciones (opcional)">
+        <Textarea
+          value={indicaciones}
+          onChange={(e) => setIndicaciones(e.target.value)}
+          placeholder="Ej: Limpiar el oído 2 veces por día durante 7 días"
+          className="min-h-20 text-base"
+        />
+      </Campo>
+      <Campo label="Próximo control (opcional)">
+        <Input
+          type="date"
+          value={proximoControl}
+          onChange={(e) => setProximoControl(e.target.value)}
+          className="h-12 text-base"
+        />
+      </Campo>
+      <Button size="lg" onClick={guardar} disabled={!motivoFinal} className="h-14 w-full text-base">
+        <Check className="h-5 w-5" />
+        Guardar en la historia
+      </Button>
+    </Card>
+  )
+}
+
 function FormVacuna({
   mascota,
   onListo,
@@ -577,21 +1032,32 @@ function FormVacuna({
   onListo: (titulo: string, detalle: string) => void
 }) {
   const clinic = useClinic()
-  const [vacuna, setVacuna] = useState("")
+  const [vacunas, setVacunas] = useState<string[]>([])
   const [proxima, setProxima] = useState("")
 
+  const toggle = (v: string) =>
+    setVacunas((prev) => (prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]))
+
   const guardar = () => {
-    if (!vacuna) return
-    clinic.addVacuna({ mascotaId: mascota.id, vacuna, fechaAplicada: hoy(), proximaFecha: proxima || undefined })
-    onListo("¡Vacuna registrada!", `${vacuna} quedó en la historia de ${mascota.nombre}.`)
+    if (vacunas.length === 0) return
+    vacunas.forEach((v) =>
+      clinic.addVacuna({ mascotaId: mascota.id, vacuna: v, fechaAplicada: hoy(), proximaFecha: proxima || undefined }),
+    )
+    const titulo = vacunas.length === 1 ? "¡Vacuna registrada!" : "¡Vacunas registradas!"
+    const detalle =
+      vacunas.length === 1
+        ? `${vacunas[0]} quedó en la historia de ${mascota.nombre}.`
+        : `${vacunas.length} vacunas (${vacunas.join(", ")}) quedaron en la historia de ${mascota.nombre}.`
+    onListo(titulo, detalle)
   }
 
   return (
     <Card className="space-y-5 p-6">
-      <Campo label="¿Qué vacuna le pusiste?" requerido>
+      <Campo label="¿Qué vacunas le pusiste?" requerido>
+        <p className="-mt-1 text-sm text-muted-foreground">Podés elegir varias 👇</p>
         <div className="flex flex-wrap gap-3">
           {configuracion.tiposVacunas.map((v) => (
-            <Opcion key={v} activo={vacuna === v} onClick={() => setVacuna(v)}>
+            <Opcion key={v} activo={vacunas.includes(v)} onClick={() => toggle(v)}>
               {v}
             </Opcion>
           ))}
@@ -605,9 +1071,9 @@ function FormVacuna({
           className="h-12 text-base"
         />
       </Campo>
-      <Button size="lg" onClick={guardar} disabled={!vacuna} className="h-14 w-full text-base">
+      <Button size="lg" onClick={guardar} disabled={vacunas.length === 0} className="h-14 w-full text-base">
         <Check className="h-5 w-5" />
-        Guardar en la historia
+        Guardar {vacunas.length > 0 ? `${vacunas.length} ` : ""}en la historia
       </Button>
     </Card>
   )
@@ -621,40 +1087,54 @@ function FormTratamiento({
   onListo: (titulo: string, detalle: string) => void
 }) {
   const clinic = useClinic()
-  const [diagnostico, setDiagnostico] = useState("")
+  const [diagnosticos, setDiagnosticos] = useState<string[]>([])
+  const [otroActivo, setOtroActivo] = useState(false)
   const [otro, setOtro] = useState("")
   const [medicamento, setMedicamento] = useState("")
   const [indicaciones, setIndicaciones] = useState("")
   const [proximoControl, setProximoControl] = useState("")
 
-  const nombre = diagnostico === "__otro__" ? otro.trim() : diagnostico
+  const toggle = (t: string) =>
+    setDiagnosticos((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]))
+
+  // Lista final: chips elegidos + lo escrito en "Otro" (si está activo y tiene texto)
+  const seleccionados = [...diagnosticos, ...(otroActivo && otro.trim() ? [otro.trim()] : [])]
 
   const guardar = () => {
-    if (!nombre) return
-    clinic.addTratamiento({
-      mascotaId: mascota.id,
-      diagnostico: nombre,
-      medicamento: medicamento.trim() || undefined,
-      indicaciones: indicaciones.trim() || undefined,
-      proximoControl: proximoControl || undefined,
-    })
-    onListo("¡Tratamiento cargado!", `Quedó activo en la historia de ${mascota.nombre} y se controla desde acá.`)
+    if (seleccionados.length === 0) return
+    // Un tratamiento por cada cosa elegida, así cada uno se controla por separado.
+    seleccionados.forEach((d) =>
+      clinic.addTratamiento({
+        mascotaId: mascota.id,
+        diagnostico: d,
+        medicamento: medicamento.trim() || undefined,
+        indicaciones: indicaciones.trim() || undefined,
+        proximoControl: proximoControl || undefined,
+      }),
+    )
+    const titulo = seleccionados.length === 1 ? "¡Tratamiento cargado!" : "¡Tratamientos cargados!"
+    const detalle =
+      seleccionados.length === 1
+        ? `Quedó activo en la historia de ${mascota.nombre} y se controla desde acá.`
+        : `${seleccionados.length} tratamientos (${seleccionados.join(", ")}) quedaron activos en la historia de ${mascota.nombre}.`
+    onListo(titulo, detalle)
   }
 
   return (
     <Card className="space-y-5 p-6">
-      <Campo label="¿Qué tratamiento?" requerido>
+      <Campo label="¿Qué tratamiento(s)?" requerido>
+        <p className="-mt-1 text-sm text-muted-foreground">Podés elegir varios 👇</p>
         <div className="flex flex-wrap gap-3">
           {tratamientosFrecuentes.map((t) => (
-            <Opcion key={t} activo={diagnostico === t} onClick={() => setDiagnostico(t)}>
+            <Opcion key={t} activo={diagnosticos.includes(t)} onClick={() => toggle(t)}>
               {t}
             </Opcion>
           ))}
-          <Opcion activo={diagnostico === "__otro__"} onClick={() => setDiagnostico("__otro__")}>
+          <Opcion activo={otroActivo} onClick={() => setOtroActivo((v) => !v)}>
             Otro…
           </Opcion>
         </div>
-        {diagnostico === "__otro__" && (
+        {otroActivo && (
           <Input
             value={otro}
             onChange={(e) => setOtro(e.target.value)}
@@ -688,9 +1168,14 @@ function FormTratamiento({
           className="h-12 text-base"
         />
       </Campo>
-      <Button size="lg" onClick={guardar} disabled={!nombre} className="h-14 w-full text-base">
+      <Button
+        size="lg"
+        onClick={guardar}
+        disabled={seleccionados.length === 0}
+        className="h-14 w-full text-base"
+      >
         <Check className="h-5 w-5" />
-        Guardar en la historia
+        Guardar {seleccionados.length > 1 ? `${seleccionados.length} ` : ""}en la historia
       </Button>
     </Card>
   )
@@ -806,6 +1291,76 @@ function FormCirugia({
         Programar cirugía
       </Button>
     </Card>
+  )
+}
+
+function MascotaHistoria({ mascotaId, onVolver }: { mascotaId: number; onVolver: () => void }) {
+  const clinic = useClinic()
+  const mascota = clinic.mascotas.find((m) => m.id === mascotaId)
+  const items = clinic.historialDeMascota(mascotaId)
+
+  if (!mascota) return null
+
+  return (
+    <div className="space-y-6">
+      <Encabezado titulo={`Historia de ${mascota.nombre}`} onVolver={onVolver} />
+
+      {/* Ficha resumida de la mascota */}
+      <Card className="flex flex-wrap items-center justify-between gap-4 p-5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <PawPrint className="h-6 w-6" />
+          </div>
+          <div>
+            <p className="text-lg font-semibold">{mascota.nombre}</p>
+            <p className="text-sm text-muted-foreground">
+              {mascota.especie}
+              {mascota.raza ? ` · ${mascota.raza}` : ""}
+              {mascota.etapaVida ? ` · ${mascota.etapaVida}` : ""}
+            </p>
+          </div>
+        </div>
+        <div className="text-sm text-muted-foreground">
+          <p>
+            Dueño: <span className="font-medium text-foreground">{mascota.dueno}</span>
+          </p>
+          {mascota.peso && (
+            <p>
+              Peso: <span className="font-medium text-foreground">{mascota.peso} kg</span>
+            </p>
+          )}
+        </div>
+      </Card>
+
+      {/* Línea de tiempo */}
+      {items.length === 0 ? (
+        <Card className="p-8 text-center text-muted-foreground">
+          <FileText className="mx-auto mb-2 h-8 w-8 opacity-50" />
+          Todavía no hay registros en la historia de {mascota.nombre}.
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {items.map((h) => {
+            const Icono = iconoHistorial[h.tipo] ?? FileText
+            return (
+              <Card key={h.id} className="flex gap-4 p-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <Icono className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="font-semibold">{h.titulo}</p>
+                    <span className="shrink-0 text-xs text-muted-foreground">{h.fecha}</span>
+                  </div>
+                  {h.detalle && <p className="mt-0.5 text-sm text-muted-foreground">{h.detalle}</p>}
+                  {h.veterinario && <p className="mt-0.5 text-xs text-muted-foreground">{h.veterinario}</p>}
+                </div>
+              </Card>
+            )
+          })}
+        </div>
+      )}
+    </div>
   )
 }
 
